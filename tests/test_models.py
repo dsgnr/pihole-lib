@@ -3,18 +3,169 @@
 import pytest
 from pydantic import ValidationError
 
-from pihole_lib.models import AuthResponse, PiHoleAuthSession
+from pihole_lib.models import AuthResponse, LoginInfo, PiHoleAuthSession
 
 from .constants import (
     PIHOLE_AUTH_URL,
     PIHOLE_TEST_PASSWORD,
     TEST_CSRF_TOKEN,
+    TEST_DNS_STATUS_DOWN,
+    TEST_DNS_STATUS_UP,
+    TEST_HTTPS_PORT,
+    TEST_HTTPS_PORT_DISABLED,
     TEST_MESSAGE_CORRECT,
     TEST_MESSAGE_INCORRECT,
+    TEST_REQUEST_TIME,
     TEST_SID,
     TEST_VALIDITY_SECONDS,
     TEST_WRONG_PASSWORD,
 )
+
+
+class TestLoginInfo:
+    """Test the Pi-hole login info model."""
+
+    def test_valid_login_info_with_https(self):
+        """Should create login info with HTTPS enabled."""
+        info_data = {
+            "https_port": TEST_HTTPS_PORT,
+            "dns": TEST_DNS_STATUS_UP,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        info = LoginInfo(**info_data)
+
+        assert info.https_port == TEST_HTTPS_PORT
+        assert info.dns is TEST_DNS_STATUS_UP
+        assert info.took == TEST_REQUEST_TIME
+
+    def test_valid_login_info_without_https(self):
+        """Should create login info with HTTPS disabled."""
+        info_data = {
+            "https_port": TEST_HTTPS_PORT_DISABLED,
+            "dns": TEST_DNS_STATUS_UP,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        info = LoginInfo(**info_data)
+
+        assert info.https_port == TEST_HTTPS_PORT_DISABLED
+        assert info.dns is TEST_DNS_STATUS_UP
+        assert info.took == TEST_REQUEST_TIME
+
+    def test_login_info_with_dns_down(self):
+        """Should handle DNS server being down."""
+        info_data = {
+            "https_port": TEST_HTTPS_PORT,
+            "dns": TEST_DNS_STATUS_DOWN,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        info = LoginInfo(**info_data)
+
+        assert info.https_port == TEST_HTTPS_PORT
+        assert info.dns is TEST_DNS_STATUS_DOWN
+        assert info.took == TEST_REQUEST_TIME
+
+    def test_missing_required_fields(self):
+        """Should raise validation error for missing required fields."""
+        # Missing 'https_port' field
+        with pytest.raises(ValidationError) as exc_info:
+            LoginInfo(dns=True, took=0.1)
+
+        assert "https_port" in str(exc_info.value)
+
+        # Missing 'dns' field
+        with pytest.raises(ValidationError) as exc_info:
+            LoginInfo(https_port=443, took=0.1)
+
+        assert "dns" in str(exc_info.value)
+
+        # Missing 'took' field
+        with pytest.raises(ValidationError) as exc_info:
+            LoginInfo(https_port=443, dns=True)
+
+        assert "took" in str(exc_info.value)
+
+    def test_wrong_field_types(self):
+        """Should raise validation error for wrong field types."""
+        # 'https_port' should be integer
+        with pytest.raises(ValidationError):
+            LoginInfo(
+                https_port="not-an-integer",
+                dns=True,
+                took=0.1,
+            )
+
+        # 'dns' should be boolean
+        with pytest.raises(ValidationError):
+            LoginInfo(
+                https_port=443,
+                dns="not-a-boolean",
+                took=0.1,
+            )
+
+        # 'took' should be number
+        with pytest.raises(ValidationError):
+            LoginInfo(
+                https_port=443,
+                dns=True,
+                took="not-a-number",
+            )
+
+    def test_login_info_serialization(self):
+        """Should be able to serialize login info to dict."""
+        info = LoginInfo(
+            https_port=TEST_HTTPS_PORT,
+            dns=TEST_DNS_STATUS_UP,
+            took=TEST_REQUEST_TIME,
+        )
+
+        data = info.model_dump()
+
+        expected = {
+            "https_port": TEST_HTTPS_PORT,
+            "dns": TEST_DNS_STATUS_UP,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        assert data == expected
+
+    def test_login_info_with_zero_took_time(self):
+        """Should handle zero processing time."""
+        info_data = {
+            "https_port": TEST_HTTPS_PORT,
+            "dns": TEST_DNS_STATUS_UP,
+            "took": 0.0,
+        }
+
+        info = LoginInfo(**info_data)
+
+        assert info.took == 0.0
+
+    def test_login_info_with_negative_port(self):
+        """Should handle negative port numbers (though unusual)."""
+        info_data = {
+            "https_port": -1,
+            "dns": TEST_DNS_STATUS_UP,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        info = LoginInfo(**info_data)
+
+        assert info.https_port == -1
+
+    def test_login_info_with_large_port(self):
+        """Should handle large port numbers."""
+        info_data = {
+            "https_port": 65535,
+            "dns": TEST_DNS_STATUS_UP,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        info = LoginInfo(**info_data)
+
+        assert info.https_port == 65535
 
 
 class TestPiHoleAuthSession:

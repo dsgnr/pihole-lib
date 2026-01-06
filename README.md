@@ -43,6 +43,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Authentication** | Session-based authentication | Complete |
 | | Automatic session management | Complete |
 | | Context manager support | Complete |
+| **Information** | Login page information | Complete |
 | **Error Handling** | Comprehensive error handling | Complete |
 | | Specific exception types | Complete |
 | **Metrics** | Query statistics | Planned |
@@ -91,6 +92,31 @@ from pihole_lib import PiHoleClient
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"Connected with session: {client.get_session_id()}")
     # Session closed when exiting context
+```
+
+### Get login page information
+
+```python
+from pihole_lib import PiHoleClient, PiHoleInfo
+
+# Create a client
+client = PiHoleClient("http://192.168.1.100", password="your-password")
+
+# Use the info class with the client (no authentication required for login info)
+info = PiHoleInfo(client)
+login_info = info.get_login_info()
+
+print(f"HTTPS Port: {login_info.https_port}")  # 443 or 0 if disabled
+print(f"DNS Status: {login_info.dns}")         # True if DNS is running
+print(f"Request Time: {login_info.took}s")     # Processing time
+
+client.close()
+
+# Or use within client context manager
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    info = PiHoleInfo(client)
+    login_info = info.get_login_info()
+    print(f"HTTPS Port: {login_info.https_port}")
 ```
 
 ### Manual session control
@@ -219,6 +245,14 @@ The main class for interacting with your Pi-hole.
 - `get_session_id()` - Get the current session ID
 - `close()` - Close the session and clean up resources
 
+### PiHoleInfo
+
+The info class for accessing Pi-hole information endpoints that don't require authentication.
+
+**Methods:**
+- `PiHoleInfo(client)` - Create a new info client using an existing PiHoleClient
+- `get_login_info()` - Get login page information (HTTPS port, DNS status, processing time)
+
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:
 
@@ -240,6 +274,7 @@ with PiHoleClient(base_url, password) as client:
 
 - `PiHoleAuthSession` - Represents a Pi-hole authentication session
 - `AuthResponse` - Response data from Pi-hole authentication endpoint
+- `LoginInfo` - Login page information including HTTPS port, DNS status, and processing time
 
 ## Contributing
 

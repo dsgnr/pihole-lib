@@ -5,6 +5,24 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class LoginInfo(BaseModel):
+    """Pi-hole login page information.
+
+    Attributes:
+        https_port: HTTPS port of the Pi-hole webserver (0 if disabled).
+        dns: Whether the DNS server is up and running. False only in failed state.
+        took: Time in seconds it took to process the request.
+    """
+
+    https_port: int = Field(
+        ..., description="HTTPS port of the Pi-hole webserver (0 if disabled)"
+    )
+    dns: bool = Field(..., description="Whether the DNS server is up and running")
+    took: float = Field(
+        ..., description="Time in seconds it took to process the request"
+    )
+
+
 class PiHoleAuthSession(BaseModel):
     """Pi-hole authentication session data.
 

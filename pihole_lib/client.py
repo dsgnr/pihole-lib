@@ -5,11 +5,9 @@ from typing import Any, Optional
 import requests
 
 from .exceptions import (
-    PiHoleAPIError,
     PiHoleAuthenticationError,
-    PiHoleConnectionError,
-    PiHoleServerError,
 )
+from .utils import make_pihole_request
 
 
 class PiHoleClient:
@@ -90,50 +88,40 @@ class PiHoleClient:
 
         auth_url = f"{self.base_url}/api/auth"
 
-        try:
-            response = self._session.post(
-                auth_url, json={"password": self._password}, timeout=self.timeout
+        # First attempt
+        response = make_pihole_request(
+            self._session,
+            "POST",
+            auth_url,
+            endpoint_name="authentication",
+            json={"password": self._password},
+            timeout=self.timeout,
+        )
+
+        # Handle rate limiting with retry
+        if response.status_code == 429:
+            import time
+
+            time.sleep(1)
+            response = make_pihole_request(
+                self._session,
+                "POST",
+                auth_url,
+                endpoint_name="authentication",
+                json={"password": self._password},
+                timeout=self.timeout,
             )
 
-            # Handle different error responses from Pi-hole
-            status_errors = {
-                400: PiHoleAPIError("Bad request - missing parameter"),
-                401: PiHoleAuthenticationError("Invalid credentials"),
-                402: PiHoleAPIError("Request failed"),
-                403: PiHoleAuthenticationError("Access denied"),
-                404: PiHoleAPIError("Endpoint not found"),
-            }
+        data = response.json()
+        session = data.get("session", {})
 
-            if response.status_code in status_errors:
-                raise status_errors[response.status_code]
-            elif response.status_code == 429:
-                # Pi-hole is rate limiting requests - attempt retry after brief delay
-                import time
+        if not session.get("valid"):
+            raise PiHoleAuthenticationError("Login failed")
 
-                time.sleep(1)
-                response = self._session.post(
-                    auth_url, json={"password": self._password}, timeout=self.timeout
-                )
-                if response.status_code == 429:
-                    raise PiHoleAPIError("Too many requests")
-            elif response.status_code >= 500:
-                raise PiHoleServerError(f"Server error: {response.status_code}")
-            elif response.status_code != 200:
-                response.raise_for_status()
+        self._session_id = session.get("sid")
 
-            data = response.json()
-            session = data.get("session", {})
-
-            if not session.get("valid"):
-                raise PiHoleAuthenticationError("Login failed")
-
-            self._session_id = session.get("sid")
-
-            if not self._session_id:
-                raise PiHoleAuthenticationError("No session ID received")
-
-        except requests.RequestException as e:
-            raise PiHoleConnectionError(f"Connection failed: {e}") from e
+        if not self._session_id:
+            raise PiHoleAuthenticationError("No session ID received")
 
     def _delete_session(self) -> None:
         """Delete Pi-hole session."""
