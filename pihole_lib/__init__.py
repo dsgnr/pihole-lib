@@ -5,10 +5,15 @@ Handles authentication and session management.
 
 Examples:
     ```python
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, ListType
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, ListType
 
     # For authenticated operations
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
+        # Configuration management
+        config = PiHoleConfig(client)
+        current_config = config.get_config()
+        print(f"DNS upstreams: {current_config['dns']['upstreams']}")
+
         # Actions operations
         actions = PiHoleActions(client)
 
@@ -48,6 +53,7 @@ from .actions import PiHoleActions
 from .backup import PiHoleBackup
 from .base import BasePiHoleAPIClient
 from .client import PiHoleClient
+from .config import PiHoleConfig
 from .exceptions import (
     PiHoleAPIError,
     PiHoleAuthenticationError,
@@ -75,6 +81,7 @@ __all__ = [
     "PiHoleBackup",
     "PiHoleLists",
     "PiHoleActions",
+    "PiHoleConfig",
     "BasePiHoleAPIClient",
     "PiHoleAPIError",
     "PiHoleAuthenticationError",

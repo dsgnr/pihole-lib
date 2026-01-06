@@ -7,6 +7,7 @@ API_TELEPORTER = "/api/teleporter"
 API_LISTS = "/api/lists"
 API_ACTION_GRAVITY = "/api/action/gravity"
 API_ACTION_RESTART_DNS = "/api/action/restartdns"
+API_CONFIG = "/api/config"
 
 # HTTP Headers
 HEADER_SESSION_ID = "X-FTL-SID"

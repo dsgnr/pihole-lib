@@ -15,6 +15,7 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
   - [Get login page information](#get-login-page-information)
   - [Backup and restore operations](#backup-and-restore-operations)
   - [Domain lists management](#domain-lists-management)
+  - [Configuration management](#configuration-management)
   - [Actions and maintenance](#actions-and-maintenance)
   - [Manual session control](#manual-session-control)
   - [Error Handling](#error-handling)
@@ -73,6 +74,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | DNS settings | Planned |
 | | Web interface settings | Planned |
 | | Privacy settings | Planned |
+| | Get configuration | Complete |
 | **Actions** | Update gravity | Complete |
 | | Restart DNS | Complete |
 | | Flush logs | Planned |
@@ -212,6 +214,38 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         comment="Allow example.com"
     )
     print(f"Added allowlist, API returned {len(allow_lists)} lists")
+```
+
+### Configuration management
+
+```python
+from pihole_lib import PiHoleClient, PiHoleConfig
+
+# Manage Pi-hole configuration
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    config = PiHoleConfig(client)
+
+    # Get current configuration
+    current_config = config.get_config()
+
+    # Access DNS settings
+    dns_config = current_config['dns']
+    print(f"Upstream DNS servers: {dns_config['upstreams']}")
+    print(f"Query logging enabled: {dns_config['queryLogging']}")
+    print(f"DNS port: {dns_config['port']}")
+
+    # Access DHCP settings
+    dhcp_config = current_config['dhcp']
+    print(f"DHCP server active: {dhcp_config['active']}")
+
+    # Access web server settings
+    web_config = current_config['webserver']
+    print(f"Web interface domain: {web_config['domain']}")
+
+    # Access file locations
+    files_config = current_config['files']
+    print(f"Database location: {files_config['database']}")
+    print(f"Log file location: {files_config['log']['ftl']}")
 ```
 
 ### Actions and maintenance
@@ -394,6 +428,14 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 **List Types:**
 - `ListType.ALLOW` - Allow lists (domains that bypass blocking)
 - `ListType.BLOCK` - Block lists (domains that are blocked)
+
+### PiHoleConfig
+
+The config class for Pi-hole configuration management.
+
+**Methods:**
+- `PiHoleConfig(client)` - Create a new config client using an existing PiHoleClient
+- `get_config()` - Get the complete current configuration of your Pi-hole instance. Returns a dictionary with sections like 'dns', 'dhcp', 'webserver', 'files', 'misc', and 'debug'.
 
 ### PiHoleActions
 
