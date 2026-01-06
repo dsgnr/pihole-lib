@@ -43,43 +43,43 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 
 | Feature Category | Feature | Status |
 |------------------|---------|--------|
-| **Testing** | Integration tests against a live Pi-hole instance | Complete |
-| | Lint and type checking | Complete |
-| **Authentication** | Session-based authentication | Complete |
-| | Automatic session management | Complete |
-| | Context manager support | Complete |
-| **Information** | Login page information | Complete |
-| **Error Handling** | Comprehensive error handling | Complete |
-| | Specific exception types | Complete |
-| **Metrics** | Query statistics | Planned |
-| | Top clients/domains | Planned |
-| | Query types over time | Planned |
-| **DNS Control** | Enable/disable Pi-hole | Planned |
-| | Flush network table | Planned |
-| | Restart DNS resolver | Planned |
-| **Domain Management** | Add/remove domains | Planned |
-| | Exact/regex domain matching | Planned |
-| | Domain comments and descriptions | Planned |
-| **List Management** | Get domain lists | Complete |
-| | Filter lists by type (allow/block) | Complete |
-| | Filter lists by name | Complete |
-| | List metadata and statistics | Complete |
-| | Add lists | Complete |
-| | Remove lists | Planned |
-| | Regex list management | Planned |
-| | Import/export lists | Planned |
-| **FTL Information** | FTL version and status | Planned |
-| | Database statistics | Planned |
-| **Pi-hole Configuration** | Network settings | Planned |
-| | DNS settings | Planned |
-| | Web interface settings | Planned |
-| | Privacy settings | Planned |
-| | Get configuration | Complete |
-| **Actions** | Update gravity | Complete |
-| | Restart DNS | Complete |
-| | Flush logs | Planned |
-| **Teleporter** | Backup configuration | Complete |
-| | Restore from backup | Complete |
+| **Testing** | Integration tests against a live Pi-hole instance | ✅ |
+| | Lint and type checking | ✅ |
+| **Authentication** | Session-based authentication | ✅ |
+| | Automatic session management | ✅ |
+| | Context manager support | ✅ |
+| **Information** | Login page information | ✅ |
+| **Error Handling** | Comprehensive error handling | ✅ |
+| | Specific exception types | ✅ |
+| **Metrics** | Query statistics | 📋 |
+| | Top clients/domains | 📋 |
+| | Query types over time | 📋 |
+| **DNS Control** | Enable/disable Pi-hole | 📋 |
+| | Flush network table | 📋 |
+| | Restart DNS resolver | 📋 |
+| **Domain Management** | Add/remove domains | 📋 |
+| | Exact/regex domain matching | 📋 |
+| | Domain comments and descriptions | 📋 |
+| **List Management** | Get domain lists | ✅ |
+| | Filter lists by type (allow/block) | ✅ |
+| | Filter lists by name | ✅ |
+| | List metadata and statistics | ✅ |
+| | Add lists | ✅ |
+| | Remove lists | 📋 |
+| | Regex list management | 📋 |
+| | Import/export lists | 📋 |
+| **FTL Information** | FTL version and status | 📋 |
+| | Database statistics | 📋 |
+| **Pi-hole Configuration** | Network settings | 📋 |
+| | DNS settings | 📋 |
+| | Web interface settings | 📋 |
+| | Privacy settings | 📋 |
+| | Get configuration | ✅ |
+| **Actions** | Update gravity | ✅ |
+| | Restart DNS | ✅ |
+| | Flush logs | 📋 |
+| **Teleporter** | Backup configuration | ✅ |
+| | Restore from backup | ✅ |
 
 ## Supported Pi-hole Versions
 
