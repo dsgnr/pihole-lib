@@ -2,14 +2,16 @@
 
 from typing import TYPE_CHECKING
 
+from .base import BasePiHoleAPIClient
+from .constants import API_INFO_LOGIN
 from .models import LoginInfo
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
-    from .client import PiHoleClient
+    pass
 
 
-class PiHoleInfo:
+class PiHoleInfo(BasePiHoleAPIClient):
     """Pi-hole Info API client.
 
     Handles information endpoints that don't require authentication.
@@ -32,14 +34,6 @@ class PiHoleInfo:
         ```
     """
 
-    def __init__(self, client: "PiHoleClient") -> None:
-        """Initialize a Pi-hole info client.
-
-        Args:
-            client: PiHoleClient instance to use for requests.
-        """
-        self._client = client
-
     def get_login_info(self) -> LoginInfo:
         """Get login page related information.
 
@@ -58,7 +52,7 @@ class PiHoleInfo:
         response = make_pihole_request(
             self._client,
             "GET",
-            "/api/info/login",
+            API_INFO_LOGIN,
         )
 
         data = response.json()

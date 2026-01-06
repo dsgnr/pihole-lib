@@ -3,13 +3,15 @@
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
+from .base import BasePiHoleAPIClient
+from .constants import API_ACTION_GRAVITY
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
-    from .client import PiHoleClient
+    pass
 
 
-class PiHoleActions:
+class PiHoleActions(BasePiHoleAPIClient):
     """Pi-hole Actions API client.
 
     Handles action endpoints that perform operations on Pi-hole.
@@ -31,14 +33,6 @@ class PiHoleActions:
                 print(line.strip())
         ```
     """
-
-    def __init__(self, client: "PiHoleClient") -> None:
-        """Initialize a Pi-hole actions client.
-
-        Args:
-            client: PiHoleClient instance to use for requests.
-        """
-        self._client = client
 
     def update_gravity(self, color: bool = False) -> Iterator[str]:
         """Update Pi-hole's gravity database (adlists).
@@ -72,15 +66,13 @@ class PiHoleActions:
                 print(line.strip())
             ```
         """
-        params = {}
-        if color:
-            params["color"] = "true"
+        params = {"color": "true"} if color else None
 
         response = make_pihole_request(
             self._client,
             "POST",
-            "/api/action/gravity",
-            params=params if params else None,
+            API_ACTION_GRAVITY,
+            params=params,
             stream=True,
         )
 

@@ -5,6 +5,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 
 from pihole_lib import PiHoleBackup, PiHoleClient
+from pihole_lib.constants import API_TELEPORTER
 from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models import TeleporterImportOptions
 
@@ -74,9 +75,9 @@ class TestPiHoleBackupExport:
         mock_request.assert_called_once_with(client, "GET", "/api/teleporter")
 
     @patch("pihole_lib.backup.make_pihole_request")
-    @patch("builtins.open", new_callable=mock_open)
+    @patch("pathlib.Path.write_bytes")
     @patch("pathlib.Path.mkdir")
-    def test_export_backup_success(self, mock_mkdir, mock_file, mock_request):
+    def test_export_backup_success(self, mock_mkdir, mock_write_bytes, mock_request):
         """Should successfully export backup with timestamped filename."""
         client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
         backup_client = PiHoleBackup(client)
@@ -92,17 +93,16 @@ class TestPiHoleBackupExport:
         assert result.startswith("/tmp/pi-hole_pihole_teleporter_")
         assert result.endswith("_UTC.zip")
 
-        mock_request.assert_called_once_with(client, "GET", "/api/teleporter")
+        mock_request.assert_called_once_with(client, "GET", API_TELEPORTER)
 
         # Should create directory and write file
         mock_mkdir.assert_called_once()
-        mock_file.assert_called_once()
-        mock_file().write.assert_called_once_with(TEST_BACKUP_CONTENT)
+        mock_write_bytes.assert_called_once_with(TEST_BACKUP_CONTENT)
 
     @patch("pihole_lib.backup.make_pihole_request")
-    @patch("builtins.open", side_effect=OSError("Permission denied"))
+    @patch("pathlib.Path.write_bytes", side_effect=OSError("Permission denied"))
     @patch("pathlib.Path.mkdir")
-    def test_export_backup_file_error(self, mock_mkdir, mock_file, mock_request):
+    def test_export_backup_file_error(self, mock_mkdir, mock_write_bytes, mock_request):
         """Should raise PiHoleAPIError when file operations fail."""
         client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
         client._ensure_session()
@@ -136,7 +136,7 @@ class TestPiHoleBackupImport:
 
     @patch("pihole_lib.backup.make_pihole_request")
     @patch("pathlib.Path.exists", return_value=True)
-    @patch("builtins.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
+    @patch("pathlib.Path.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
     def test_import_backup_success(self, mock_file, mock_exists, mock_request):
         """Should successfully import backup."""
         client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
@@ -156,7 +156,7 @@ class TestPiHoleBackupImport:
         mock_request.assert_called_once_with(
             client,
             "POST",
-            "/api/teleporter",
+            API_TELEPORTER,
             files={
                 "file": (
                     "test.zip",
@@ -178,7 +178,7 @@ class TestPiHoleBackupImport:
 
     @patch("pihole_lib.backup.make_pihole_request")
     @patch("pathlib.Path.exists", return_value=True)
-    @patch("builtins.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
+    @patch("pathlib.Path.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
     def test_import_backup_with_options(self, mock_file, mock_exists, mock_request):
         """Should pass import options correctly."""
         client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)

@@ -4,9 +4,8 @@ from typing import Any
 
 import requests
 
-from .exceptions import (
-    PiHoleAuthenticationError,
-)
+from .constants import API_AUTH, DEFAULT_TIMEOUT, HEADER_SESSION_ID
+from .exceptions import PiHoleAuthenticationError
 from .utils import make_pihole_request
 
 
@@ -28,7 +27,7 @@ class PiHoleClient:
         self,
         base_url: str,
         password: str,
-        timeout: int = 30,
+        timeout: int = DEFAULT_TIMEOUT,
         verify_ssl: bool = True,
     ) -> None:
         """Initialize a Pi-hole client.
@@ -39,7 +38,7 @@ class PiHoleClient:
             timeout: Request timeout in seconds. Defaults to 30.
             verify_ssl: Whether to verify SSL certificates. Defaults to True.
         """
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")  # Remove trailing slash for consistency
         self._password = password
         self._session_id: str | None = None
         self.timeout = timeout
@@ -68,7 +67,7 @@ class PiHoleClient:
 
         # Update session headers with authentication if available
         if self._session_id and self._session:
-            self._session.headers.update({"X-FTL-SID": self._session_id})
+            self._session.headers.update({HEADER_SESSION_ID: self._session_id})
 
     def close(self) -> None:
         """Close session and clean up resources."""
@@ -94,7 +93,7 @@ class PiHoleClient:
         response = make_pihole_request(
             self,
             "POST",
-            "/api/auth",
+            API_AUTH,
             json={"password": self._password},
         )
 
@@ -106,7 +105,7 @@ class PiHoleClient:
             response = make_pihole_request(
                 self,
                 "POST",
-                "/api/auth",
+                API_AUTH,
                 json={"password": self._password},
             )
 
@@ -130,9 +129,11 @@ class PiHoleClient:
             return
 
         try:
-            auth_url = f"{self.base_url}/api/auth"
+            auth_url = f"{self.base_url}{API_AUTH}"
             self._session.delete(
-                auth_url, headers={"X-FTL-SID": self._session_id}, timeout=self.timeout
+                auth_url,
+                headers={HEADER_SESSION_ID: self._session_id},
+                timeout=self.timeout,
             )
         except Exception:
             # If logout fails, that's acceptable - cleanup continues regardless

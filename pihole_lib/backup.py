@@ -4,17 +4,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .exceptions import (
-    PiHoleAPIError,
-)
+from .base import BasePiHoleAPIClient
+from .constants import API_TELEPORTER, MIME_ZIP, ZIP_EXTENSION
+from .exceptions import PiHoleAPIError
 from .models import TeleporterImportOptions
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
-    from .client import PiHoleClient
+    pass
 
 
-class PiHoleBackup:
+class PiHoleBackup(BasePiHoleAPIClient):
     """Pi-hole Backup API client.
 
     Handles backup and restore operations using the Teleporter endpoint.
@@ -38,14 +38,6 @@ class PiHoleBackup:
         ```
     """
 
-    def __init__(self, client: "PiHoleClient") -> None:
-        """Initialize a Pi-hole backup client.
-
-        Args:
-            client: PiHoleClient instance to use for requests.
-        """
-        self._client = client
-
     def _generate_backup_filename(self) -> str:
         """Generate a timestamped backup filename.
 
@@ -53,7 +45,7 @@ class PiHoleBackup:
             Backup filename in format: pi-hole_pihole_teleporter_YYYY-MM-DD_HH-MM-SS_UTC.zip
         """
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        return f"pi-hole_pihole_teleporter_{timestamp}_UTC.zip"
+        return f"pi-hole_pihole_teleporter_{timestamp}_UTC{ZIP_EXTENSION}"
 
     def export_backup(self, backup_dir: str) -> str:
         """Export Pi-hole settings to a backup file.
@@ -77,7 +69,7 @@ class PiHoleBackup:
         response = make_pihole_request(
             self._client,
             "GET",
-            "/api/teleporter",
+            API_TELEPORTER,
         )
 
         # Generate timestamped filename and create full path
@@ -88,8 +80,7 @@ class PiHoleBackup:
             backup_filename = self._generate_backup_filename()
             backup_path = backup_dir_obj / backup_filename
 
-            with open(backup_path, "wb") as f:
-                f.write(response.content)
+            backup_path.write_bytes(response.content)
 
             return str(backup_path)
         except OSError as e:
@@ -123,7 +114,7 @@ class PiHoleBackup:
         file_path_obj = Path(file_path)
 
         # Check if file is a ZIP file (Pi-hole only accepts ZIP format)
-        if not file_path_obj.name.lower().endswith(".zip"):
+        if not file_path_obj.name.lower().endswith(ZIP_EXTENSION):
             raise PiHoleAPIError(
                 f"Invalid backup file format. Pi-hole only accepts ZIP files, "
                 f"got: {file_path_obj.name}"
@@ -133,18 +124,16 @@ class PiHoleBackup:
             raise PiHoleAPIError(f"Backup file not found: {file_path}")
 
         # Handle import options - send as JSON if provided
-        json_data = None
-        if import_options:
-            json_data = import_options.model_dump()
+        json_data = import_options.model_dump() if import_options else None
 
         # Prepare files for upload and make request
-        with open(file_path_obj, "rb") as f:
-            files = {"file": (file_path_obj.name, f, "application/zip")}
+        with file_path_obj.open("rb") as f:
+            files = {"file": (file_path_obj.name, f, MIME_ZIP)}
 
             response = make_pihole_request(
                 self._client,
                 "POST",
-                "/api/teleporter",
+                API_TELEPORTER,
                 files=files,
                 json=json_data,
             )

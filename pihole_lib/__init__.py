@@ -46,6 +46,7 @@ Examples:
 
 from .actions import PiHoleActions
 from .backup import PiHoleBackup
+from .base import BasePiHoleAPIClient
 from .client import PiHoleClient
 from .exceptions import (
     PiHoleAPIError,
@@ -74,6 +75,7 @@ __all__ = [
     "PiHoleBackup",
     "PiHoleLists",
     "PiHoleActions",
+    "BasePiHoleAPIClient",
     "PiHoleAPIError",
     "PiHoleAuthenticationError",
     "PiHoleConnectionError",

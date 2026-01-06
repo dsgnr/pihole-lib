@@ -2,14 +2,16 @@
 
 from typing import TYPE_CHECKING
 
+from .base import BasePiHoleAPIClient
+from .constants import API_LISTS, DEFAULT_GROUP_ID
 from .models import AddListRequest, ListType, PiHoleList
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
-    from .client import PiHoleClient
+    pass
 
 
-class PiHoleLists:
+class PiHoleLists(BasePiHoleAPIClient):
     """Pi-hole Lists API client.
 
     Handles domain list operations using the Lists endpoint.
@@ -34,14 +36,6 @@ class PiHoleLists:
             )
         ```
     """
-
-    def __init__(self, client: "PiHoleClient") -> None:
-        """Initialize a Pi-hole lists client.
-
-        Args:
-            client: PiHoleClient instance to use for requests.
-        """
-        self._client = client
 
     def get_lists(
         self,
@@ -78,19 +72,14 @@ class PiHoleLists:
             my_list = lists.get_lists(list_name="my_blocklist")
             ```
         """
-        endpoint = "/api/lists"
-        if list_name:
-            endpoint += f"/{list_name}"
-
-        params = {}
-        if list_type:
-            params["type"] = list_type.value
+        endpoint = f"{API_LISTS}/{list_name}" if list_name else API_LISTS
+        params = {"type": list_type.value} if list_type else None
 
         response = make_pihole_request(
             self._client,
             "GET",
             endpoint,
-            params=params if params else None,
+            params=params,
         )
 
         response_data = response.json()
@@ -140,14 +129,14 @@ class PiHoleLists:
         request_data = AddListRequest(
             address=address,
             comment=comment,
-            groups=groups or [0],
+            groups=groups or [DEFAULT_GROUP_ID],
             enabled=enabled,
         )
 
         response = make_pihole_request(
             self._client,
             "POST",
-            "/api/lists",
+            API_LISTS,
             params={"type": list_type.value},
             json=request_data.model_dump(exclude_none=True),
         )
@@ -155,6 +144,20 @@ class PiHoleLists:
         response_data = response.json()
 
         # Check for Pi-hole errors in the response
+        self._check_api_errors(response_data, address)
+
+        return [PiHoleList(**list_data) for list_data in response_data["lists"]]
+
+    def _check_api_errors(self, response_data: dict, address: str) -> None:
+        """Check for API errors in the response and raise appropriate exceptions.
+
+        Args:
+            response_data: The response data from the API.
+            address: The address that was being processed.
+
+        Raises:
+            PiHoleServerError: If Pi-hole reports an error.
+        """
         processed = response_data.get("processed")
         if processed and processed.get("errors"):
             errors = processed["errors"]
@@ -166,5 +169,3 @@ class PiHoleLists:
                     raise PiHoleServerError(
                         f"Failed to add list '{address}': {error_msg}"
                     )
-
-        return [PiHoleList(**list_data) for list_data in response_data["lists"]]
