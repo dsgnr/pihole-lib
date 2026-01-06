@@ -74,8 +74,8 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Web interface settings | Planned |
 | | Privacy settings | Planned |
 | **Actions** | Update gravity | Complete |
+| | Restart DNS | Complete |
 | | Flush logs | Planned |
-| | Restart DNS | Planned |
 | **Teleporter** | Backup configuration | Complete |
 | | Restore from backup | Complete |
 
@@ -232,6 +232,11 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print("Updating gravity with colored output...")
     for line in actions.update_gravity(color=True):
         print(line.strip())
+
+    # Restart DNS service
+    print("Restarting DNS service...")
+    success = actions.restart_dns()
+    print(f"DNS restart: {'success' if success else 'failed'}")
 ```
 
 ### Manual session control
@@ -397,6 +402,7 @@ The actions class for Pi-hole maintenance and administrative operations.
 **Methods:**
 - `PiHoleActions(client)` - Create a new actions client using an existing PiHoleClient
 - `update_gravity(color=False)` - Update Pi-hole's gravity database (adlists). Returns an iterator that yields lines of output as they're streamed from Pi-hole. Set `color=True` to include ANSI color escape codes in the output.
+- `restart_dns()` - Restart Pi-hole's DNS service (pihole-FTL). Returns True if successful, False otherwise.
 
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:

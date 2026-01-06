@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_ACTION_GRAVITY
+from .constants import API_ACTION_GRAVITY, API_ACTION_RESTART_DNS
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -31,6 +31,10 @@ class PiHoleActions(BasePiHoleAPIClient):
             # Update gravity with colored output
             for line in actions.update_gravity(color=True):
                 print(line.strip())
+
+            # Restart DNS service
+            success = actions.restart_dns()
+            print(f"DNS restart: {'success' if success else 'failed'}")
         ```
     """
 
@@ -80,3 +84,34 @@ class PiHoleActions(BasePiHoleAPIClient):
         for line in response.iter_lines(decode_unicode=True):
             if line:  # Skip empty lines
                 yield line
+
+    def restart_dns(self) -> bool:
+        """Restart Pi-hole's DNS service (pihole-FTL).
+
+        Returns:
+            True if the restart was successful, False otherwise.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            # Restart DNS service
+            success = actions.restart_dns()
+            if success:
+                print("DNS service restarted successfully")
+            else:
+                print("DNS restart failed")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "POST",
+            API_ACTION_RESTART_DNS,
+        )
+
+        result: dict[str, str | float] = response.json()
+        return result.get("status") == "success"

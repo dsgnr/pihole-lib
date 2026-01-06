@@ -213,3 +213,88 @@ class TestUpdateGravity:
             "  [✓] Done.",
         ]
         assert lines == expected_lines
+
+
+class TestRestartDns:
+    """Test restart_dns method."""
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_success(self, mock_request, actions_client):
+        """Test successful DNS restart."""
+        # Mock successful response
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "success", "took": 0.003}
+        mock_request.return_value = mock_response
+
+        # Call the method
+        result = actions_client.restart_dns()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            actions_client._client,
+            "POST",
+            "/api/action/restartdns",
+        )
+
+        # Verify the response
+        assert result is True
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_connection_error(self, mock_request, actions_client):
+        """Test DNS restart with connection error."""
+        mock_request.side_effect = PiHoleConnectionError("Connection failed")
+
+        with pytest.raises(PiHoleConnectionError, match="Connection failed"):
+            actions_client.restart_dns()
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_authentication_error(self, mock_request, actions_client):
+        """Test DNS restart with authentication error."""
+        mock_request.side_effect = PiHoleAuthenticationError("Invalid credentials")
+
+        with pytest.raises(PiHoleAuthenticationError, match="Invalid credentials"):
+            actions_client.restart_dns()
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_server_error(self, mock_request, actions_client):
+        """Test DNS restart with server error."""
+        mock_request.side_effect = PiHoleServerError("Server error: 500")
+
+        with pytest.raises(PiHoleServerError, match="Server error: 500"):
+            actions_client.restart_dns()
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_api_error(self, mock_request, actions_client):
+        """Test DNS restart with API error."""
+        mock_request.side_effect = PiHoleAPIError("Bad request")
+
+        with pytest.raises(PiHoleAPIError, match="Bad request"):
+            actions_client.restart_dns()
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_failure(self, mock_request, actions_client):
+        """Test DNS restart failure."""
+        # Mock failure response
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "error", "took": 0.001}
+        mock_request.return_value = mock_response
+
+        # Call the method
+        result = actions_client.restart_dns()
+
+        # Verify the response
+        assert result is False
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_restart_dns_missing_status(self, mock_request, actions_client):
+        """Test DNS restart with missing status field."""
+        # Mock response without status
+        mock_response = Mock()
+        mock_response.json.return_value = {"took": 0.001}
+        mock_request.return_value = mock_response
+
+        # Call the method
+        result = actions_client.restart_dns()
+
+        # Verify the response (should be False when status is missing)
+        assert result is False

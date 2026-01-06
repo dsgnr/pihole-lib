@@ -115,3 +115,38 @@ class TestPiHoleActionsIntegration:
             assert "DNS resolution is available" in output2
             assert "Done." in output1
             assert "Done." in output2
+
+    def test_restart_dns_basic(self, pihole_container):
+        """Test basic DNS restart against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            actions = PiHoleActions(client)
+
+            # Restart DNS service
+            result = actions.restart_dns()
+
+            # Verify response
+            assert isinstance(result, bool)
+            assert result is True  # Should be successful
+
+    def test_actions_combination(self, pihole_container):
+        """Test using multiple action methods together."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            actions = PiHoleActions(client)
+
+            # Restart DNS first
+            restart_result = actions.restart_dns()
+            assert restart_result is True
+
+            # Then update gravity (just get first few lines to avoid long wait)
+            gravity_lines = []
+            for i, line in enumerate(actions.update_gravity()):
+                gravity_lines.append(line)
+                if i >= 2:  # Just get first few lines
+                    break
+
+            assert len(gravity_lines) > 0
+            assert all(isinstance(line, str) for line in gravity_lines)
