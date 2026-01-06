@@ -5,7 +5,7 @@ Handles authentication and session management.
 
 Examples:
     ```python
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists
 
     # For authenticated operations
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -19,6 +19,11 @@ Examples:
         backup = PiHoleBackup(client)
         backup_file = backup.export_backup("/path/to/backups")  # Directory path
         print(f"Backup saved to: {backup_file}")  # Timestamped filename
+
+        # Lists operations
+        lists = PiHoleLists(client)
+        all_lists = lists.get_lists()
+        print(f"Found {len(all_lists.lists)} lists")
     ```
 """
 
@@ -31,10 +36,14 @@ from .exceptions import (
     PiHoleServerError,
 )
 from .info import PiHoleInfo
+from .lists import PiHoleLists
 from .models import (
     AuthResponse,
+    ListsResponse,
+    ListType,
     LoginInfo,
     PiHoleAuthSession,
+    PiHoleList,
     TeleporterGravityOptions,
     TeleporterImportOptions,
     TeleporterImportResult,
@@ -47,13 +56,17 @@ __all__ = [
     "PiHoleClient",
     "PiHoleInfo",
     "PiHoleBackup",
+    "PiHoleLists",
     "PiHoleAPIError",
     "PiHoleAuthenticationError",
     "PiHoleConnectionError",
     "PiHoleServerError",
     "AuthResponse",
+    "ListsResponse",
+    "ListType",
     "LoginInfo",
     "PiHoleAuthSession",
+    "PiHoleList",
     "TeleporterGravityOptions",
     "TeleporterImportOptions",
     "TeleporterImportResult",

@@ -55,8 +55,11 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Domain Management** | Add/remove domains | Planned |
 | | Exact/regex domain matching | Planned |
 | | Domain comments and descriptions | Planned |
-| **List Management** | Allowlist management | Planned |
-| | Blocklist management | Planned |
+| **List Management** | Get domain lists | Complete |
+| | Filter lists by type (allow/block) | Complete |
+| | Filter lists by name | Complete |
+| | List metadata and statistics | Complete |
+| | Add/remove lists | Planned |
 | | Regex list management | Planned |
 | | Import/export lists | Planned |
 | **FTL Information** | FTL version and status | Planned |
@@ -147,6 +150,38 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     result = backup.import_backup(backup_file, import_options)
     print(f"Imported {len(result.files)} files")
     print(f"Import took: {result.took}s")
+```
+
+### Domain lists management
+
+```python
+from pihole_lib import PiHoleClient, PiHoleLists, ListType
+
+# Manage domain lists (blocklists and allowlists)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    lists = PiHoleLists(client)
+
+    # Get all lists
+    all_lists = lists.get_lists()
+    print(f"Found {len(all_lists.lists)} total lists")
+
+    # Get only block lists
+    block_lists = lists.get_lists(list_type=ListType.BLOCK)
+    print(f"Found {len(block_lists.lists)} block lists")
+
+    # Get only allow lists
+    allow_lists = lists.get_lists(list_type=ListType.ALLOW)
+    print(f"Found {len(allow_lists.lists)} allow lists")
+
+    # Get specific list by name
+    specific_list = lists.get_lists(list_name="my_blocklist")
+    if specific_list.lists:
+        list_info = specific_list.lists[0]
+        print(f"List: {list_info.address}")
+        print(f"Type: {list_info.type.value}")
+        print(f"Enabled: {list_info.enabled}")
+        print(f"Domains: {list_info.number}")
+        print(f"Invalid domains: {list_info.invalid_domains}")
 ```
 
 ### Manual session control
@@ -292,6 +327,18 @@ The backup class for Pi-hole Teleporter operations (backup and restore).
 - `export_backup(backup_dir)` - Export Pi-hole configuration to a timestamped backup file in the specified directory
 - `import_backup(backup_path, import_options=None)` - Import/restore from a backup file
 
+### PiHoleLists
+
+The lists class for Pi-hole domain list management (blocklists and allowlists).
+
+**Methods:**
+- `PiHoleLists(client)` - Create a new lists client using an existing PiHoleClient
+- `get_lists(list_name=None, list_type=None)` - Get domain lists with optional filtering by name or type
+
+**List Types:**
+- `ListType.ALLOW` - Allow lists (domains that bypass blocking)
+- `ListType.BLOCK` - Block lists (domains that are blocked)
+
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:
 
@@ -317,6 +364,9 @@ with PiHoleClient(base_url, password) as client:
 - `TeleporterImportOptions` - Backup import options specifying which components to restore
 - `TeleporterGravityOptions` - Gravity database specific import options
 - `TeleporterImportResult` - Result of backup import operation with imported files and timing
+- `PiHoleList` - Represents a single Pi-hole domain list with metadata
+- `ListsResponse` - Response containing multiple domain lists and processing time
+- `ListType` - Enum for list types (ALLOW or BLOCK)
 
 ## Contributing
 

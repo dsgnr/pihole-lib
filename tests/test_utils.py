@@ -101,7 +101,12 @@ class TestMakePiHoleRequest:
         assert result is response
         client._ensure_session.assert_called_once()
         client._session.request.assert_called_once_with(
-            "GET", "http://test.com/api/test", json=None, files=None, timeout=30
+            "GET",
+            "http://test.com/api/test",
+            json=None,
+            files=None,
+            params=None,
+            timeout=30,
         )
 
     def test_connection_error(self):
@@ -135,7 +140,12 @@ class TestMakePiHoleRequest:
         make_pihole_request(client, "POST", "/api/test", files=test_files)
 
         client._session.request.assert_called_once_with(
-            "POST", "http://test.com/api/test", json=None, files=test_files, timeout=30
+            "POST",
+            "http://test.com/api/test",
+            json=None,
+            files=test_files,
+            params=None,
+            timeout=30,
         )
 
     def test_passes_json_data(self):
@@ -155,7 +165,12 @@ class TestMakePiHoleRequest:
         make_pihole_request(client, "POST", "/api/auth", json=test_json)
 
         client._session.request.assert_called_once_with(
-            "POST", "http://test.com/api/auth", json=test_json, files=None, timeout=30
+            "POST",
+            "http://test.com/api/auth",
+            json=test_json,
+            files=None,
+            params=None,
+            timeout=30,
         )
 
     def test_generates_endpoint_name_from_path(self):
@@ -192,5 +207,10 @@ class TestMakePiHoleRequest:
         make_pihole_request(client, "GET", "/api/test")
 
         client._session.request.assert_called_once_with(
-            "GET", "http://test.com/api/test", json=None, files=None, timeout=45
+            "GET",
+            "http://test.com/api/test",
+            json=None,
+            files=None,
+            params=None,
+            timeout=45,
         )

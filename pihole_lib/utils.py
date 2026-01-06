@@ -64,6 +64,7 @@ def make_pihole_request(
     endpoint: str,
     json: Optional[Dict[str, Any]] = None,
     files: Optional[Dict[str, Any]] = None,
+    params: Optional[Dict[str, Any]] = None,
 ) -> requests.Response:
     """Make a request to Pi-hole API with error handling.
 
@@ -73,6 +74,7 @@ def make_pihole_request(
         endpoint: The API endpoint path (e.g., "/api/info/login").
         json: Optional JSON data to send in the request body.
         files: Optional files to upload.
+        params: Optional query parameters to include in the URL.
 
     Returns:
         The HTTP response object.
@@ -93,6 +95,7 @@ def make_pihole_request(
             f"{client.base_url}{endpoint}",
             json=json,
             files=files,
+            params=params,
             timeout=client.timeout,
         )
         handle_pihole_response(response)

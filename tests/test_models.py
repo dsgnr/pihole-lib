@@ -5,8 +5,11 @@ from pydantic import ValidationError
 
 from pihole_lib.models import (
     AuthResponse,
+    ListsResponse,
+    ListType,
     LoginInfo,
     PiHoleAuthSession,
+    PiHoleList,
     TeleporterGravityOptions,
     TeleporterImportOptions,
     TeleporterImportResult,
@@ -805,3 +808,357 @@ class TestRealPiHoleResponseValidation:
             assert session_data["valid"] is False
 
         session.close()
+
+
+class TestListType:
+    """Test the ListType enum."""
+
+    def test_list_type_values(self):
+        """Should have correct enum values."""
+        assert ListType.ALLOW.value == "allow"
+        assert ListType.BLOCK.value == "block"
+
+    def test_list_type_from_string(self):
+        """Should be able to create from string values."""
+        allow_type = ListType("allow")
+        block_type = ListType("block")
+
+        assert allow_type == ListType.ALLOW
+        assert block_type == ListType.BLOCK
+
+    def test_invalid_list_type(self):
+        """Should raise error for invalid list type."""
+        with pytest.raises(ValueError):
+            ListType("invalid")
+
+
+class TestPiHoleList:
+    """Test the PiHoleList model."""
+
+    def test_valid_pihole_list(self):
+        """Should create PiHoleList with valid data."""
+        list_data = {
+            "address": "https://example.com/blocklist.txt",
+            "type": "block",
+            "comment": "Test blocklist",
+            "groups": [0, 1],
+            "enabled": True,
+            "id": 1,
+            "date_added": 1640995200,
+            "date_modified": 1640995200,
+            "date_updated": 1640995200,
+            "number": 1000,
+            "invalid_domains": 5,
+            "abp_entries": 0,
+            "status": 1,
+        }
+
+        pihole_list = PiHoleList(**list_data)
+
+        assert pihole_list.address == "https://example.com/blocklist.txt"
+        assert pihole_list.type == ListType.BLOCK
+        assert pihole_list.comment == "Test blocklist"
+        assert pihole_list.groups == [0, 1]
+        assert pihole_list.enabled is True
+        assert pihole_list.id == 1
+        assert pihole_list.date_added == 1640995200
+        assert pihole_list.date_modified == 1640995200
+        assert pihole_list.date_updated == 1640995200
+        assert pihole_list.number == 1000
+        assert pihole_list.invalid_domains == 5
+        assert pihole_list.abp_entries == 0
+        assert pihole_list.status == 1
+
+    def test_pihole_list_with_null_comment(self):
+        """Should handle null comment field."""
+        list_data = {
+            "address": "https://example.com/allowlist.txt",
+            "type": "allow",
+            "comment": None,
+            "groups": [0],
+            "enabled": True,
+            "id": 2,
+            "date_added": 1640995200,
+            "date_modified": 1640995200,
+            "date_updated": 1640995200,
+            "number": 500,
+            "invalid_domains": 0,
+            "abp_entries": 10,
+            "status": 1,
+        }
+
+        pihole_list = PiHoleList(**list_data)
+
+        assert pihole_list.comment is None
+        assert pihole_list.type == ListType.ALLOW
+
+    def test_pihole_list_default_enabled(self):
+        """Should default enabled to True."""
+        list_data = {
+            "address": "https://example.com/list.txt",
+            "type": "block",
+            "groups": [0],
+            "id": 3,
+            "date_added": 1640995200,
+            "date_modified": 1640995200,
+            "date_updated": 1640995200,
+            "number": 100,
+            "invalid_domains": 0,
+            "abp_entries": 0,
+            "status": 1,
+        }
+
+        pihole_list = PiHoleList(**list_data)
+
+        assert pihole_list.enabled is True
+
+    def test_pihole_list_missing_required_fields(self):
+        """Should raise validation error for missing required fields."""
+        # Missing address
+        with pytest.raises(ValidationError) as exc_info:
+            PiHoleList(
+                type="block",
+                groups=[0],
+                id=1,
+                date_added=1640995200,
+                date_modified=1640995200,
+                date_updated=1640995200,
+                number=100,
+                invalid_domains=0,
+                abp_entries=0,
+                status=1,
+            )
+
+        assert "address" in str(exc_info.value)
+
+        # Missing type
+        with pytest.raises(ValidationError) as exc_info:
+            PiHoleList(
+                address="https://example.com/list.txt",
+                groups=[0],
+                id=1,
+                date_added=1640995200,
+                date_modified=1640995200,
+                date_updated=1640995200,
+                number=100,
+                invalid_domains=0,
+                abp_entries=0,
+                status=1,
+            )
+
+        assert "type" in str(exc_info.value)
+
+    def test_pihole_list_invalid_type(self):
+        """Should raise validation error for invalid list type."""
+        with pytest.raises(ValidationError):
+            PiHoleList(
+                address="https://example.com/list.txt",
+                type="invalid_type",
+                groups=[0],
+                id=1,
+                date_added=1640995200,
+                date_modified=1640995200,
+                date_updated=1640995200,
+                number=100,
+                invalid_domains=0,
+                abp_entries=0,
+                status=1,
+            )
+
+    def test_pihole_list_serialization(self):
+        """Should be able to serialize PiHoleList to dict."""
+        pihole_list = PiHoleList(
+            address="https://example.com/blocklist.txt",
+            type=ListType.BLOCK,
+            comment="Test list",
+            groups=[0, 1],
+            enabled=True,
+            id=1,
+            date_added=1640995200,
+            date_modified=1640995200,
+            date_updated=1640995200,
+            number=1000,
+            invalid_domains=5,
+            abp_entries=0,
+            status=1,
+        )
+
+        data = pihole_list.model_dump()
+
+        expected = {
+            "address": "https://example.com/blocklist.txt",
+            "type": "block",
+            "comment": "Test list",
+            "groups": [0, 1],
+            "enabled": True,
+            "id": 1,
+            "date_added": 1640995200,
+            "date_modified": 1640995200,
+            "date_updated": 1640995200,
+            "number": 1000,
+            "invalid_domains": 5,
+            "abp_entries": 0,
+            "status": 1,
+        }
+
+        assert data == expected
+
+
+class TestListsResponse:
+    """Test the ListsResponse model."""
+
+    def test_valid_lists_response(self):
+        """Should create ListsResponse with valid data."""
+        response_data = {
+            "lists": [
+                {
+                    "address": "https://example.com/blocklist.txt",
+                    "type": "block",
+                    "comment": "Test blocklist",
+                    "groups": [0],
+                    "enabled": True,
+                    "id": 1,
+                    "date_added": 1640995200,
+                    "date_modified": 1640995200,
+                    "date_updated": 1640995200,
+                    "number": 1000,
+                    "invalid_domains": 5,
+                    "abp_entries": 0,
+                    "status": 1,
+                },
+                {
+                    "address": "https://example.com/allowlist.txt",
+                    "type": "allow",
+                    "comment": None,
+                    "groups": [0, 1],
+                    "enabled": False,
+                    "id": 2,
+                    "date_added": 1640995300,
+                    "date_modified": 1640995300,
+                    "date_updated": 1640995300,
+                    "number": 500,
+                    "invalid_domains": 0,
+                    "abp_entries": 10,
+                    "status": 0,
+                },
+            ],
+            "took": 0.123456,
+        }
+
+        lists_response = ListsResponse(**response_data)
+
+        assert len(lists_response.lists) == 2
+        assert lists_response.took == 0.123456
+
+        # Check first list
+        first_list = lists_response.lists[0]
+        assert isinstance(first_list, PiHoleList)
+        assert first_list.address == "https://example.com/blocklist.txt"
+        assert first_list.type == ListType.BLOCK
+        assert first_list.enabled is True
+
+        # Check second list
+        second_list = lists_response.lists[1]
+        assert isinstance(second_list, PiHoleList)
+        assert second_list.address == "https://example.com/allowlist.txt"
+        assert second_list.type == ListType.ALLOW
+        assert second_list.enabled is False
+        assert second_list.comment is None
+
+    def test_empty_lists_response(self):
+        """Should handle empty lists response."""
+        response_data = {
+            "lists": [],
+            "took": 0.05,
+        }
+
+        lists_response = ListsResponse(**response_data)
+
+        assert len(lists_response.lists) == 0
+        assert lists_response.took == 0.05
+
+    def test_lists_response_missing_fields(self):
+        """Should raise validation error for missing required fields."""
+        # Missing lists
+        with pytest.raises(ValidationError) as exc_info:
+            ListsResponse(took=0.1)
+
+        assert "lists" in str(exc_info.value)
+
+        # Missing took
+        with pytest.raises(ValidationError) as exc_info:
+            ListsResponse(lists=[])
+
+        assert "took" in str(exc_info.value)
+
+    def test_lists_response_invalid_list_data(self):
+        """Should raise validation error for invalid list data."""
+        response_data = {
+            "lists": [
+                {
+                    "address": "https://example.com/list.txt",
+                    "type": "invalid_type",  # Invalid type
+                    "groups": [0],
+                    "id": 1,
+                    "date_added": 1640995200,
+                    "date_modified": 1640995200,
+                    "date_updated": 1640995200,
+                    "number": 100,
+                    "invalid_domains": 0,
+                    "abp_entries": 0,
+                    "status": 1,
+                }
+            ],
+            "took": 0.1,
+        }
+
+        with pytest.raises(ValidationError):
+            ListsResponse(**response_data)
+
+    def test_lists_response_serialization(self):
+        """Should be able to serialize ListsResponse to dict."""
+        lists_response = ListsResponse(
+            lists=[
+                PiHoleList(
+                    address="https://example.com/list.txt",
+                    type=ListType.BLOCK,
+                    comment="Test",
+                    groups=[0],
+                    enabled=True,
+                    id=1,
+                    date_added=1640995200,
+                    date_modified=1640995200,
+                    date_updated=1640995200,
+                    number=100,
+                    invalid_domains=0,
+                    abp_entries=0,
+                    status=1,
+                )
+            ],
+            took=0.123,
+        )
+
+        data = lists_response.model_dump()
+
+        expected = {
+            "lists": [
+                {
+                    "address": "https://example.com/list.txt",
+                    "type": "block",
+                    "comment": "Test",
+                    "groups": [0],
+                    "enabled": True,
+                    "id": 1,
+                    "date_added": 1640995200,
+                    "date_modified": 1640995200,
+                    "date_updated": 1640995200,
+                    "number": 100,
+                    "invalid_domains": 0,
+                    "abp_entries": 0,
+                    "status": 1,
+                }
+            ],
+            "took": 0.123,
+        }
+
+        assert data == expected
