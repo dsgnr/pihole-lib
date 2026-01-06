@@ -5,7 +5,7 @@ Handles authentication and session management.
 
 Examples:
     ```python
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, ListType
 
     # For authenticated operations
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -22,8 +22,18 @@ Examples:
 
         # Lists operations
         lists = PiHoleLists(client)
+
+        # Get existing lists
         all_lists = lists.get_lists()
         print(f"Found {len(all_lists)} lists")
+
+        # Add a new blocklist
+        result_lists = lists.add_list(
+            address="https://hosts-file.net/ad_servers.txt",
+            list_type=ListType.BLOCK,
+            comment="Ad servers blocklist"
+        )
+        print(f"Added list")
     ```
 """
 
@@ -38,6 +48,7 @@ from .exceptions import (
 from .info import PiHoleInfo
 from .lists import PiHoleLists
 from .models import (
+    AddListRequest,
     ListType,
     LoginInfo,
     PiHoleAuthSession,
@@ -58,6 +69,7 @@ __all__ = [
     "PiHoleAuthenticationError",
     "PiHoleConnectionError",
     "PiHoleServerError",
+    "AddListRequest",
     "ListType",
     "LoginInfo",
     "PiHoleAuthSession",

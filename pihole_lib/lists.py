@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from .models import ListType, PiHoleList
+from .models import AddListRequest, ListType, PiHoleList
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -17,9 +17,8 @@ class PiHoleLists:
 
     Examples:
         ```python
-        from pihole_lib import PiHoleClient, PiHoleLists
+        from pihole_lib import PiHoleClient, PiHoleLists, ListType
 
-        # Create client and lists instance
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
             lists = PiHoleLists(client)
 
@@ -27,14 +26,12 @@ class PiHoleLists:
             all_lists = lists.get_lists()
             print(f"Found {len(all_lists)} lists")
 
-            # Get only block lists
-            block_lists = lists.get_lists(list_type=ListType.BLOCK)
-            print(f"Found {len(block_lists)} block lists")
-
-            # Get specific list
-            specific_list = lists.get_lists(list_name="my_list")
-            if specific_list:
-                print(f"List: {specific_list[0].address}")
+            # Add a new list
+            lists.add_list(
+                address="https://hosts-file.net/ad_servers.txt",
+                list_type=ListType.BLOCK,
+                comment="Ad servers"
+            )
         ```
     """
 
@@ -53,14 +50,12 @@ class PiHoleLists:
     ) -> list[PiHoleList]:
         """Get Pi-hole domain lists.
 
-        Retrieve domain lists configured in Pi-hole. Lists are collections of domains
-        that are blocked or allowed for ad filtering. Authentication is required.
+        Retrieve domain lists configured in Pi-hole. Lists are collections of domain names
+        that are blocked or allowed. Authentication is required.
 
         Args:
-            list_name: Optional specific list name to retrieve. If provided,
-                      only the list with this exact name will be returned.
+            list_name: Optional specific list name to retrieve.
             list_type: Optional list type filter ("allow" or "block").
-                      If provided, only lists of this type will be returned.
 
         Returns:
             List of PiHoleList objects.
@@ -83,12 +78,10 @@ class PiHoleLists:
             my_list = lists.get_lists(list_name="my_blocklist")
             ```
         """
-        # Build endpoint path
         endpoint = "/api/lists"
         if list_name:
             endpoint += f"/{list_name}"
 
-        # Build query parameters
         params = {}
         if list_type:
             params["type"] = list_type.value
@@ -101,5 +94,77 @@ class PiHoleLists:
         )
 
         response_data = response.json()
-        # Return the lists directly instead of wrapped in a response object
+        return [PiHoleList(**list_data) for list_data in response_data["lists"]]
+
+    def add_list(
+        self,
+        address: str,
+        list_type: ListType,
+        comment: str | None = None,
+        groups: list[int] | None = None,
+        enabled: bool = True,
+    ) -> list[PiHoleList]:
+        """Add a new domain list to Pi-hole.
+
+        Args:
+            address: Address of the list.
+            list_type: Type of list (ListType.ALLOW or ListType.BLOCK).
+            comment: Optional comment for this list.
+            groups: Group IDs to assign the list to (defaults to [0]).
+            enabled: Whether the list should be enabled (defaults to True).
+
+        Returns:
+            List of PiHoleList objects returned by the API.
+
+        Raises:
+            PiHoleServerError: If Pi-hole reports an error (e.g., duplicate list).
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+
+        Examples:
+            ```python
+            # Add a blocklist
+            lists.add_list(
+                address="https://example.com/domains.txt",
+                list_type=ListType.BLOCK,
+                comment="Ad servers"
+            )
+
+            # Add an allowlist
+            lists.add_list(
+                address="example.com",
+                list_type=ListType.ALLOW
+            )
+            ```
+        """
+        request_data = AddListRequest(
+            address=address,
+            comment=comment,
+            groups=groups or [0],
+            enabled=enabled,
+        )
+
+        response = make_pihole_request(
+            self._client,
+            "POST",
+            "/api/lists",
+            params={"type": list_type.value},
+            json=request_data.model_dump(exclude_none=True),
+        )
+
+        response_data = response.json()
+
+        # Check for Pi-hole errors in the response
+        processed = response_data.get("processed")
+        if processed and processed.get("errors"):
+            errors = processed["errors"]
+            for error in errors:
+                if error.get("item") == address:
+                    error_msg = error.get("error", "Unknown error")
+                    from .exceptions import PiHoleServerError
+
+                    raise PiHoleServerError(
+                        f"Failed to add list '{address}': {error_msg}"
+                    )
+
         return [PiHoleList(**list_data) for list_data in response_data["lists"]]

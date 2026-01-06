@@ -59,7 +59,8 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Filter lists by type (allow/block) | Complete |
 | | Filter lists by name | Complete |
 | | List metadata and statistics | Complete |
-| | Add/remove lists | Planned |
+| | Add lists | Complete |
+| | Remove lists | Planned |
 | | Regex list management | Planned |
 | | Import/export lists | Planned |
 | **FTL Information** | FTL version and status | Planned |
@@ -182,6 +183,24 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         print(f"Enabled: {list_info.enabled}")
         print(f"Domains: {list_info.number}")
         print(f"Invalid domains: {list_info.invalid_domains}")
+
+    # Add a new blocklist
+    new_lists = lists.add_list(
+        address="https://hosts-file.net/ad_servers.txt",
+        list_type=ListType.BLOCK,
+        comment="Ad servers blocklist",
+        groups=[0],
+        enabled=True
+    )
+    print(f"Added list, API returned {len(new_lists)} lists")
+
+    # Add an allowlist for a specific domain
+    allow_lists = lists.add_list(
+        address="example.com",
+        list_type=ListType.ALLOW,
+        comment="Allow example.com"
+    )
+    print(f"Added allowlist, API returned {len(allow_lists)} lists")
 ```
 
 ### Manual session control
@@ -334,6 +353,7 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 **Methods:**
 - `PiHoleLists(client)` - Create a new lists client using an existing PiHoleClient
 - `get_lists(list_name=None, list_type=None)` - Get domain lists with optional filtering by name or type
+- `add_list(address, list_type, comment=None, groups=None, enabled=True)` - Add a new domain list
 
 **List Types:**
 - `ListType.ALLOW` - Allow lists (domains that bypass blocking)

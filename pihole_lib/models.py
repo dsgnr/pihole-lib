@@ -115,6 +115,22 @@ class TeleporterImportOptions(BaseModel):
     )
 
 
+class AddListRequest(BaseModel):
+    """Request model for adding a new Pi-hole list.
+
+    Attributes:
+        address: Address of the list (URL, IP, MAC address, hostname, or interface).
+        comment: Optional user-provided comment for this list.
+        groups: Array of group IDs (defaults to [0] for default group).
+        enabled: Whether the list should be enabled (defaults to True).
+    """
+
+    address: str = Field(..., description="Address of the list")
+    comment: str | None = Field(None, description="Optional comment for this list")
+    groups: list[int] = Field(default=[0], description="Array of group IDs")
+    enabled: bool = Field(default=True, description="Whether the list is enabled")
+
+
 class PiHoleAuthSession(BaseModel):
     """Pi-hole authentication session data.
 
