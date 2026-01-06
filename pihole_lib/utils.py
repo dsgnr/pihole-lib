@@ -1,6 +1,6 @@
 """Utility functions for Pi-hole API interactions."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 import requests
 
@@ -37,7 +37,7 @@ def handle_pihole_response(response: requests.Response) -> None:
             raise PiHoleAuthenticationError("Access denied")
 
     # Handle common client errors (4xx)
-    client_error_messages: Dict[int, str] = {
+    client_error_messages: dict[int, str] = {
         400: "Bad request - missing parameter",
         402: "Request failed",
         404: "Endpoint not found",
@@ -62,9 +62,9 @@ def make_pihole_request(
     client: "PiHoleClient",
     method: str,
     endpoint: str,
-    json: Optional[Dict[str, Any]] = None,
-    files: Optional[Dict[str, Any]] = None,
-    params: Optional[Dict[str, Any]] = None,
+    json: dict[str, Any] | None = None,
+    files: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> requests.Response:
     """Make a request to Pi-hole API with error handling.
 

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from .exceptions import (
     PiHoleAPIError,
@@ -98,8 +98,8 @@ class PiHoleBackup:
     def import_backup(
         self,
         file_path: str,
-        import_options: Optional[TeleporterImportOptions] = None,
-    ) -> List[str]:
+        import_options: TeleporterImportOptions | None = None,
+    ) -> list[str]:
         """Import Pi-hole settings from a backup file.
 
         Upload a Pi-hole Teleporter archive to restore from it.
@@ -150,5 +150,5 @@ class PiHoleBackup:
             )
 
         response_data = response.json()
-        imported_files: List[str] = response_data["files"]
+        imported_files: list[str] = response_data["files"]
         return imported_files

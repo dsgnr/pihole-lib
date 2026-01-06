@@ -1,6 +1,6 @@
 """Pi-hole Lists API client."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from .models import ListType, PiHoleList
 from .utils import make_pihole_request
@@ -48,9 +48,9 @@ class PiHoleLists:
 
     def get_lists(
         self,
-        list_name: Optional[str] = None,
-        list_type: Optional[ListType] = None,
-    ) -> List[PiHoleList]:
+        list_name: str | None = None,
+        list_type: ListType | None = None,
+    ) -> list[PiHoleList]:
         """Get Pi-hole domain lists.
 
         Retrieve domain lists configured in Pi-hole. Lists are collections of domains

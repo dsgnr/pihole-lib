@@ -1,6 +1,6 @@
 """Pi-hole API client."""
 
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -41,10 +41,10 @@ class PiHoleClient:
         """
         self.base_url = base_url
         self._password = password
-        self._session_id: Optional[str] = None
+        self._session_id: str | None = None
         self.timeout = timeout
         self.verify_ssl = verify_ssl
-        self._session: Optional[requests.Session] = None
+        self._session: requests.Session | None = None
 
     def __enter__(self) -> "PiHoleClient":
         """Enter context manager and authenticate.
@@ -148,7 +148,7 @@ class PiHoleClient:
         """
         return self._session_id is not None
 
-    def get_session_id(self) -> Optional[str]:
+    def get_session_id(self) -> str | None:
         """Get current session ID.
 
         Returns:

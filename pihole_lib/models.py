@@ -1,7 +1,6 @@
 """Data models for Pi-hole API responses."""
 
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -34,10 +33,10 @@ class PiHoleList(BaseModel):
 
     address: str = Field(..., description="Address of the list")
     type: ListType = Field(..., description="Type of list")
-    comment: Optional[str] = Field(
+    comment: str | None = Field(
         None, description="User-provided free-text comment for this list"
     )
-    groups: List[int] = Field(..., description="Array of group IDs")
+    groups: list[int] = Field(..., description="Array of group IDs")
     enabled: bool = Field(True, description="Status of domain")
     id: int = Field(..., description="Database ID")
     date_added: int = Field(..., description="Unix timestamp of item addition")
@@ -133,4 +132,4 @@ class PiHoleAuthSession(BaseModel):
     sid: str = Field(..., description="Session ID token")
     csrf: str = Field(..., description="CSRF protection token")
     validity: int = Field(..., description="Session duration in seconds")
-    message: Optional[str] = Field(None, description="Optional message from Pi-hole")
+    message: str | None = Field(None, description="Optional message from Pi-hole")

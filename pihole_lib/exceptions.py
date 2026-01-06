@@ -1,7 +1,5 @@
 """Exceptions for Pi-hole API interactions."""
 
-from typing import Optional
-
 
 class PiHoleAPIError(Exception):
     """Base exception for Pi-hole API errors.
@@ -11,7 +9,7 @@ class PiHoleAPIError(Exception):
         status_code: HTTP status code if available.
     """
 
-    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
+    def __init__(self, message: str, status_code: int | None = None) -> None:
         """Initialize API error.
 
         Args:
