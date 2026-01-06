@@ -30,15 +30,18 @@ class PiHoleConfig(BasePiHoleAPIClient):
         ```
     """
 
-    def get_config(self) -> dict[str, Any]:
-        """Get current Pi-hole configuration.
+    def get_config(self, element: str | None = None) -> dict[str, Any]:
+        """Get Pi-hole configuration.
 
-        Retrieves the complete configuration of your Pi-hole instance,
-        including DNS settings, DHCP configuration, web server settings,
-        and various other options.
+        Retrieves the complete configuration or a specific subset of your Pi-hole instance.
+
+        Args:
+            element: Optional configuration element path (e.g., 'dns', 'dns/upstreams', 'dhcp').
+                    If None, returns the complete configuration.
 
         Returns:
-            Dictionary containing the complete Pi-hole configuration.
+            Dictionary containing the Pi-hole configuration.
+            If element is specified, returns only that subset.
             The structure includes sections like 'dns', 'dhcp', 'webserver',
             'files', 'misc', and 'debug'.
 
@@ -52,25 +55,33 @@ class PiHoleConfig(BasePiHoleAPIClient):
             ```python
             # Get full configuration
             config_data = config.get_config()
-
-            # Access DNS settings
             dns_config = config_data['dns']
             print(f"Upstream DNS servers: {dns_config['upstreams']}")
-            print(f"Query logging: {dns_config['queryLogging']}")
 
-            # Access DHCP settings
-            dhcp_config = config_data['dhcp']
-            print(f"DHCP enabled: {dhcp_config['active']}")
+            # Get only DNS configuration
+            dns_config = config.get_config('dns')
+            print(f"DNS settings: {dns_config['dns']}")
 
-            # Access web server settings
-            web_config = config_data['webserver']
-            print(f"Web domain: {web_config['domain']}")
+            # Get only upstream DNS servers
+            upstreams = config.get_config('dns/upstreams')
+            print(f"Upstream servers: {upstreams['dns']['upstreams']}")
+
+            # Get DHCP configuration
+            dhcp_config = config.get_config('dhcp')
+            print(f"DHCP active: {dhcp_config['dhcp']['active']}")
+
+            # Get web server configuration
+            web_config = config.get_config('webserver')
+            print(f"Web domain: {web_config['webserver']['domain']}")
             ```
         """
+        # Build the endpoint URL
+        endpoint = API_CONFIG if element is None else f"{API_CONFIG}/{element}"
+
         response = make_pihole_request(
             self._client,
             "GET",
-            API_CONFIG,
+            endpoint,
         )
 
         result: dict[str, Any] = response.json()

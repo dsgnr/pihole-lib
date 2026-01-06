@@ -246,6 +246,23 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     files_config = current_config['files']
     print(f"Database location: {files_config['database']}")
     print(f"Log file location: {files_config['log']['ftl']}")
+
+    # Get specific configuration elements (more efficient)
+    # Get only DNS configuration
+    dns_only = config.get_config('dns')
+    print(f"DNS upstreams: {dns_only['dns']['upstreams']}")
+
+    # Get only upstream DNS servers
+    upstreams_only = config.get_config('dns/upstreams')
+    print(f"Upstreams: {upstreams_only['dns']['upstreams']}")
+
+    # Get only DHCP configuration
+    dhcp_only = config.get_config('dhcp')
+    print(f"DHCP active: {dhcp_only['dhcp']['active']}")
+
+    # Get only webserver configuration
+    web_only = config.get_config('webserver')
+    print(f"Web domain: {web_only['webserver']['domain']}")
 ```
 
 ### Actions and maintenance
@@ -435,7 +452,7 @@ The config class for Pi-hole configuration management.
 
 **Methods:**
 - `PiHoleConfig(client)` - Create a new config client using an existing PiHoleClient
-- `get_config()` - Get the complete current configuration of your Pi-hole instance. Returns a dictionary with sections like 'dns', 'dhcp', 'webserver', 'files', 'misc', and 'debug'.
+- `get_config(element=None)` - Get the complete current configuration or a specific subset of your Pi-hole instance. If `element` is provided (e.g., 'dns', 'dns/upstreams', 'dhcp'), returns only that configuration subset. Returns a dictionary with sections like 'dns', 'dhcp', 'webserver', 'files', 'misc', and 'debug'.
 
 ### PiHoleActions
 

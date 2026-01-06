@@ -107,3 +107,103 @@ class TestPiHoleConfigIntegration:
 
             web_domain = config_data.get("webserver", {}).get("domain", "")
             assert isinstance(web_domain, str)
+
+
+class TestPiHoleConfigElementIntegration:
+    """Integration tests for PiHoleConfig element filtering."""
+
+    def test_get_config_dns_element(self, pihole_container):
+        """Test DNS element retrieval against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get DNS configuration only
+            dns_config = config.get_config("dns")
+
+            # Verify response structure
+            assert isinstance(dns_config, dict)
+            assert "dns" in dns_config
+
+            # Should only contain DNS section
+            dns_section = dns_config["dns"]
+            assert isinstance(dns_section, dict)
+            assert "upstreams" in dns_section
+            assert "queryLogging" in dns_section
+            assert "port" in dns_section
+
+    def test_get_config_dns_upstreams_element(self, pihole_container):
+        """Test DNS upstreams element retrieval against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get DNS upstreams only
+            upstreams_config = config.get_config("dns/upstreams")
+
+            # Verify response structure
+            assert isinstance(upstreams_config, dict)
+            assert "dns" in upstreams_config
+            assert "upstreams" in upstreams_config["dns"]
+
+            # Verify data type
+            upstreams = upstreams_config["dns"]["upstreams"]
+            assert isinstance(upstreams, list)
+
+    def test_get_config_dhcp_element(self, pihole_container):
+        """Test DHCP element retrieval against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get DHCP configuration only
+            dhcp_config = config.get_config("dhcp")
+
+            # Verify response structure
+            assert isinstance(dhcp_config, dict)
+            assert "dhcp" in dhcp_config
+
+            # Should only contain DHCP section
+            dhcp_section = dhcp_config["dhcp"]
+            assert isinstance(dhcp_section, dict)
+            assert "active" in dhcp_section
+
+    def test_get_config_webserver_element(self, pihole_container):
+        """Test webserver element retrieval against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get webserver configuration only
+            web_config = config.get_config("webserver")
+
+            # Verify response structure
+            assert isinstance(web_config, dict)
+            assert "webserver" in web_config
+
+            # Should only contain webserver section
+            web_section = web_config["webserver"]
+            assert isinstance(web_section, dict)
+            assert "domain" in web_section
+
+    def test_get_config_element_vs_full_consistency(self, pihole_container):
+        """Test that element retrieval matches full config data."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get full config and DNS element separately
+            full_config = config.get_config()
+            dns_element = config.get_config("dns")
+
+            # Verify DNS section matches
+            assert full_config["dns"] == dns_element["dns"]
+
+            # Get DHCP element and verify it matches
+            dhcp_element = config.get_config("dhcp")
+            assert full_config["dhcp"] == dhcp_element["dhcp"]
