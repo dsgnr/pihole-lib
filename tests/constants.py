@@ -51,3 +51,17 @@ TEST_HTTPS_PORT_DISABLED = 0
 TEST_DNS_STATUS_UP = True
 TEST_DNS_STATUS_DOWN = False
 TEST_REQUEST_TIME = 0.123456
+
+# Backup endpoint constants
+PIHOLE_TELEPORTER_ENDPOINT = "/api/teleporter"
+PIHOLE_TELEPORTER_URL = f"{PIHOLE_BASE_URL}{PIHOLE_TELEPORTER_ENDPOINT}"
+
+# Test backup data
+TEST_BACKUP_PATH = "/tmp/test_backup.zip"
+TEST_BACKUP_CONTENT = b"test backup content"
+TEST_IMPORTED_FILES = [
+    "etc/pihole/pihole.toml",
+    "etc/pihole/gravity.db->group",
+    "etc/pihole/gravity.db->adlist",
+    "etc/pihole/gravity.db->adlist_by_group",
+]

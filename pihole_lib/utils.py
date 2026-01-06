@@ -1,6 +1,6 @@
 """Utility functions for Pi-hole API interactions."""
 
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import requests
 
@@ -11,16 +11,15 @@ from .exceptions import (
     PiHoleServerError,
 )
 
+if TYPE_CHECKING:
+    from .client import PiHoleClient
 
-def handle_pihole_response(
-    response: requests.Response,
-    endpoint_name: Optional[str] = None,
-) -> None:
+
+def handle_pihole_response(response: requests.Response) -> None:
     """Handle Pi-hole API response and raise appropriate exceptions.
 
     Args:
         response: The HTTP response from Pi-hole API.
-        endpoint_name: Optional name of the endpoint for error messages.
 
     Raises:
         PiHoleAuthenticationError: Authentication failed or access denied.
@@ -29,9 +28,6 @@ def handle_pihole_response(
     """
     if response.status_code == 200:
         return  # Success, no error handling needed
-
-    # Build error message prefix
-    endpoint_prefix = f"{endpoint_name} " if endpoint_name else ""
 
     # Handle authentication-related errors (common in Pi-hole)
     if response.status_code in (401, 403):
@@ -44,7 +40,7 @@ def handle_pihole_response(
     client_error_messages: Dict[int, str] = {
         400: "Bad request - missing parameter",
         402: "Request failed",
-        404: f"{endpoint_prefix}endpoint not found",
+        404: "Endpoint not found",
         429: "Too many requests - rate limited",
     }
 
@@ -63,20 +59,20 @@ def handle_pihole_response(
 
 
 def make_pihole_request(
-    session: requests.Session,
+    client: "PiHoleClient",
     method: str,
-    url: str,
-    endpoint_name: Optional[str] = None,
-    **kwargs: Any,
+    endpoint: str,
+    json: Optional[Dict[str, Any]] = None,
+    files: Optional[Dict[str, Any]] = None,
 ) -> requests.Response:
     """Make a request to Pi-hole API with error handling.
 
     Args:
-        session: The requests session to use.
+        client: The PiHoleClient instance to use for the request.
         method: HTTP method (GET, POST, etc.).
-        url: The full URL to request.
-        endpoint_name: Optional name of the endpoint for error messages.
-        **kwargs: Additional arguments to pass to the request method.
+        endpoint: The API endpoint path (e.g., "/api/info/login").
+        json: Optional JSON data to send in the request body.
+        files: Optional files to upload.
 
     Returns:
         The HTTP response object.
@@ -87,9 +83,19 @@ def make_pihole_request(
         PiHoleServerError: Server error (5xx status codes).
         PiHoleAPIError: Other API errors (4xx status codes).
     """
+    # Ensure the client has a session
+    client._ensure_session()
+    assert client._session is not None
+
     try:
-        response = session.request(method, url, **kwargs)
-        handle_pihole_response(response, endpoint_name)
+        response = client._session.request(
+            method,
+            f"{client.base_url}{endpoint}",
+            json=json,
+            files=files,
+            timeout=client.timeout,
+        )
+        handle_pihole_response(response)
         return response
     except requests.RequestException as e:
         raise PiHoleConnectionError(f"Connection failed: {e}") from e

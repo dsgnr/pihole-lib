@@ -68,8 +68,8 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Actions** | Update gravity | Planned |
 | | Flush logs | Planned |
 | | Restart DNS | Planned |
-| **Teleporter** | Backup configuration | Planned |
-| | Restore from backup | Planned |
+| **Teleporter** | Backup configuration | Complete |
+| | Restore from backup | Complete |
 
 ## Supported Pi-hole Versions
 
@@ -117,6 +117,36 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     info = PiHoleInfo(client)
     login_info = info.get_login_info()
     print(f"HTTPS Port: {login_info.https_port}")
+```
+
+### Backup and restore operations
+
+```python
+from pihole_lib import PiHoleClient, PiHoleBackup, TeleporterImportOptions
+
+# Backup and restore with authentication
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    backup = PiHoleBackup(client)
+
+    # Export current Pi-hole configuration (filename auto-generated with timestamp)
+    backup_file = backup.export_backup("/path/to/backups")
+    print(f"Backup created: {backup_file}")
+    # Example output: /path/to/backups/pi-hole_pihole_teleporter_2024-01-15_14-30-25_UTC.zip
+
+    # Import/restore from backup with custom options
+    import_options = TeleporterImportOptions(
+        config=True,           # Import configuration files
+        dhcp_leases=False,     # Skip DHCP leases
+        gravity=TeleporterGravityOptions(
+            group=True,        # Import groups
+            adlist=True,       # Import adlists
+            client=False       # Skip clients
+        )
+    )
+
+    result = backup.import_backup(backup_file, import_options)
+    print(f"Imported {len(result.files)} files")
+    print(f"Import took: {result.took}s")
 ```
 
 ### Manual session control
@@ -253,6 +283,15 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `PiHoleInfo(client)` - Create a new info client using an existing PiHoleClient
 - `get_login_info()` - Get login page information (HTTPS port, DNS status, processing time)
 
+### PiHoleBackup
+
+The backup class for Pi-hole Teleporter operations (backup and restore).
+
+**Methods:**
+- `PiHoleBackup(client)` - Create a new backup client using an existing PiHoleClient
+- `export_backup(backup_dir)` - Export Pi-hole configuration to a timestamped backup file in the specified directory
+- `import_backup(backup_path, import_options=None)` - Import/restore from a backup file
+
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:
 
@@ -275,6 +314,9 @@ with PiHoleClient(base_url, password) as client:
 - `PiHoleAuthSession` - Represents a Pi-hole authentication session
 - `AuthResponse` - Response data from Pi-hole authentication endpoint
 - `LoginInfo` - Login page information including HTTPS port, DNS status, and processing time
+- `TeleporterImportOptions` - Backup import options specifying which components to restore
+- `TeleporterGravityOptions` - Gravity database specific import options
+- `TeleporterImportResult` - Result of backup import operation with imported files and timing
 
 ## Contributing
 

@@ -23,6 +23,87 @@ from .constants import (
 )
 
 
+def is_dns_ready(client) -> bool:
+    """Check if Pi-hole DNS service is ready.
+
+    Args:
+        client: PiHoleClient instance to check.
+
+    Returns:
+        True if DNS service is up and running, False otherwise.
+    """
+    try:
+        from pihole_lib import PiHoleInfo
+
+        info = PiHoleInfo(client)
+        login_info = info.get_login_info()
+        return login_info.dns
+    except Exception:
+        return False
+
+
+def wait_for_pihole_restart(client, timeout: int = 120) -> None:
+    """Wait for Pi-hole to restart after backup import.
+
+    Args:
+        client: PiHoleClient instance to check.
+        timeout: Maximum time to wait in seconds.
+
+    Raises:
+        Exception: If Pi-hole doesn't come back up within timeout.
+    """
+    from pihole_lib import PiHoleClient
+
+    from .constants import PIHOLE_BASE_URL
+
+    # Wait longer for the restart to begin
+    time.sleep(5)
+
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            # Create a new client since the old session is invalid after restart
+            temp_client = PiHoleClient(
+                base_url=PIHOLE_BASE_URL,
+                password=PIHOLE_TEST_PASSWORD,
+                timeout=10,  # Longer timeout for readiness check
+                verify_ssl=False,
+            )
+
+            if is_dns_ready(temp_client):
+                # Pi-hole is back up and DNS is ready
+                temp_client.close()
+
+                # Invalidate the original client's session since Pi-hole restarted
+                client._session_id = None
+                if client._session:
+                    client._session.close()
+                    client._session = None
+
+                # Give it a bit more time to fully stabilize
+                time.sleep(3)
+                return
+
+            temp_client.close()
+
+        except Exception:
+            # Expected during restart
+            pass
+
+        time.sleep(3)  # Wait longer between checks
+
+    raise Exception(f"Pi-hole did not restart within {timeout} seconds")
+
+
+@pytest.fixture
+def pihole_restart_isolation(pihole_container):
+    """Ensure proper isolation between tests that cause Pi-hole restarts."""
+    yield
+    # After test completion, wait a bit to ensure Pi-hole is stable
+    # before the next test runs
+    time.sleep(5)
+
+
 @pytest.fixture(scope="session")
 def docker_client():
     """Get a Docker client for tests."""
@@ -96,8 +177,31 @@ def pihole_container(docker_client):
                     if auth_response.status_code == HTTP_OK:
                         auth_data = auth_response.json()
                         if auth_data.get("session", {}).get("valid"):
-                            api_ready = True
-                            break
+                            # Also check if DNS service is ready
+                            try:
+                                from pihole_lib import PiHoleClient
+
+                                from .constants import PIHOLE_BASE_URL
+
+                                # Create a temporary client to check DNS status
+                                temp_client = PiHoleClient(
+                                    base_url=PIHOLE_BASE_URL,
+                                    password=PIHOLE_TEST_PASSWORD,
+                                    verify_ssl=False,
+                                    timeout=5,  # Short timeout for readiness check
+                                )
+
+                                # Check if DNS is ready
+                                if is_dns_ready(temp_client):
+                                    api_ready = True
+                                    temp_client.close()
+                                    break
+                                else:
+                                    temp_client.close()
+                                    print("DNS not ready yet, waiting...")
+                            except Exception as e:
+                                print(f"DNS check failed: {e}")
+                                pass
                 except Exception:
                     pass
 

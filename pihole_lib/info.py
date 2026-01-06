@@ -55,18 +55,10 @@ class PiHoleInfo:
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
         """
-        # Ensure the client has a session
-        self._client._ensure_session()
-        assert self._client._session is not None
-
-        info_url = f"{self._client.base_url}/api/info/login"
-
         response = make_pihole_request(
-            self._client._session,
+            self._client,
             "GET",
-            info_url,
-            endpoint_name="login info",
-            timeout=self._client.timeout,
+            "/api/info/login",
         )
 
         data = response.json()

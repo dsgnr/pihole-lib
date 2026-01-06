@@ -3,7 +3,14 @@
 import pytest
 from pydantic import ValidationError
 
-from pihole_lib.models import AuthResponse, LoginInfo, PiHoleAuthSession
+from pihole_lib.models import (
+    AuthResponse,
+    LoginInfo,
+    PiHoleAuthSession,
+    TeleporterGravityOptions,
+    TeleporterImportOptions,
+    TeleporterImportResult,
+)
 
 from .constants import (
     PIHOLE_AUTH_URL,
@@ -13,6 +20,7 @@ from .constants import (
     TEST_DNS_STATUS_UP,
     TEST_HTTPS_PORT,
     TEST_HTTPS_PORT_DISABLED,
+    TEST_IMPORTED_FILES,
     TEST_MESSAGE_CORRECT,
     TEST_MESSAGE_INCORRECT,
     TEST_REQUEST_TIME,
@@ -20,6 +28,154 @@ from .constants import (
     TEST_VALIDITY_SECONDS,
     TEST_WRONG_PASSWORD,
 )
+
+
+class TestTeleporterGravityOptions:
+    """Test the teleporter gravity options model."""
+
+    def test_default_values(self):
+        """Should create with all options enabled by default."""
+        options = TeleporterGravityOptions()
+
+        assert options.group is True
+        assert options.adlist is True
+        assert options.adlist_by_group is True
+        assert options.domainlist is True
+        assert options.domainlist_by_group is True
+        assert options.client is True
+        assert options.client_by_group is True
+
+    def test_custom_values(self):
+        """Should accept custom values for all options."""
+        options = TeleporterGravityOptions(
+            group=False,
+            adlist=True,
+            adlist_by_group=False,
+            domainlist=True,
+            domainlist_by_group=False,
+            client=True,
+            client_by_group=False,
+        )
+
+        assert options.group is False
+        assert options.adlist is True
+        assert options.adlist_by_group is False
+        assert options.domainlist is True
+        assert options.domainlist_by_group is False
+        assert options.client is True
+        assert options.client_by_group is False
+
+    def test_serialization(self):
+        """Should serialize to dict correctly."""
+        options = TeleporterGravityOptions(group=False, adlist=True)
+        data = options.model_dump()
+
+        expected = {
+            "group": False,
+            "adlist": True,
+            "adlist_by_group": True,
+            "domainlist": True,
+            "domainlist_by_group": True,
+            "client": True,
+            "client_by_group": True,
+        }
+
+        assert data == expected
+
+
+class TestTeleporterImportOptions:
+    """Test the teleporter import options model."""
+
+    def test_default_values(self):
+        """Should create with all options enabled by default."""
+        options = TeleporterImportOptions()
+
+        assert options.config is True
+        assert options.dhcp_leases is True
+        assert isinstance(options.gravity, TeleporterGravityOptions)
+        assert options.gravity.group is True
+
+    def test_custom_values(self):
+        """Should accept custom values."""
+        gravity_options = TeleporterGravityOptions(group=False, adlist=True)
+        options = TeleporterImportOptions(
+            config=False,
+            dhcp_leases=True,
+            gravity=gravity_options,
+        )
+
+        assert options.config is False
+        assert options.dhcp_leases is True
+        assert options.gravity.group is False
+        assert options.gravity.adlist is True
+
+    def test_nested_serialization(self):
+        """Should serialize nested gravity options correctly."""
+        options = TeleporterImportOptions(config=False)
+        data = options.model_dump()
+
+        assert "config" in data
+        assert "dhcp_leases" in data
+        assert "gravity" in data
+        assert isinstance(data["gravity"], dict)
+        assert "group" in data["gravity"]
+
+
+class TestTeleporterImportResult:
+    """Test the teleporter import result model."""
+
+    def test_valid_result(self):
+        """Should create result with valid data."""
+        result = TeleporterImportResult(
+            files=TEST_IMPORTED_FILES,
+            took=TEST_REQUEST_TIME,
+        )
+
+        assert result.files == TEST_IMPORTED_FILES
+        assert result.took == TEST_REQUEST_TIME
+
+    def test_empty_files_list(self):
+        """Should handle empty files list."""
+        result = TeleporterImportResult(files=[], took=0.1)
+
+        assert result.files == []
+        assert result.took == 0.1
+
+    def test_missing_required_fields(self):
+        """Should raise validation error for missing required fields."""
+        with pytest.raises(ValidationError) as exc_info:
+            TeleporterImportResult(took=0.1)
+
+        assert "files" in str(exc_info.value)
+
+        with pytest.raises(ValidationError) as exc_info:
+            TeleporterImportResult(files=["test"])
+
+        assert "took" in str(exc_info.value)
+
+    def test_wrong_field_types(self):
+        """Should raise validation error for wrong field types."""
+        with pytest.raises(ValidationError):
+            TeleporterImportResult(files="not-a-list", took=0.1)
+
+        with pytest.raises(ValidationError):
+            TeleporterImportResult(files=["test"], took="not-a-number")
+
+    def test_serialization(self):
+        """Should serialize to dict correctly."""
+        result = TeleporterImportResult(
+            files=TEST_IMPORTED_FILES,
+            took=TEST_REQUEST_TIME,
+        )
+
+        data = result.model_dump()
+
+        expected = {
+            "files": TEST_IMPORTED_FILES,
+            "took": TEST_REQUEST_TIME,
+        }
+
+        assert data == expected
 
 
 class TestLoginInfo:

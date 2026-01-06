@@ -66,6 +66,10 @@ class PiHoleClient:
             self._session = requests.Session()
             self._session.verify = self.verify_ssl
 
+        # Update session headers with authentication if available
+        if self._session_id and self._session:
+            self._session.headers.update({"X-FTL-SID": self._session_id})
+
     def close(self) -> None:
         """Close session and clean up resources."""
         if self._session_id:
@@ -86,16 +90,12 @@ class PiHoleClient:
         self._ensure_session()
         assert self._session is not None
 
-        auth_url = f"{self.base_url}/api/auth"
-
         # First attempt
         response = make_pihole_request(
-            self._session,
+            self,
             "POST",
-            auth_url,
-            endpoint_name="authentication",
+            "/api/auth",
             json={"password": self._password},
-            timeout=self.timeout,
         )
 
         # Handle rate limiting with retry
@@ -104,12 +104,10 @@ class PiHoleClient:
 
             time.sleep(1)
             response = make_pihole_request(
-                self._session,
+                self,
                 "POST",
-                auth_url,
-                endpoint_name="authentication",
+                "/api/auth",
                 json={"password": self._password},
-                timeout=self.timeout,
             )
 
         data = response.json()
@@ -122,6 +120,9 @@ class PiHoleClient:
 
         if not self._session_id:
             raise PiHoleAuthenticationError("No session ID received")
+
+        # Update session headers with the new authentication
+        self._ensure_session()
 
     def _delete_session(self) -> None:
         """Delete Pi-hole session."""

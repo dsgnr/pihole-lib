@@ -1,6 +1,6 @@
 """Tests for utility functions."""
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
@@ -44,7 +44,7 @@ class TestHandlePiHoleResponse:
         """Should raise appropriate errors for 4xx status codes."""
         test_cases = [
             (400, PiHoleAPIError, "Bad request"),
-            (404, PiHoleAPIError, "endpoint not found"),
+            (404, PiHoleAPIError, "Endpoint not found"),
             (429, PiHoleAPIError, "Too many requests"),
         ]
 
@@ -63,13 +63,13 @@ class TestHandlePiHoleResponse:
         with pytest.raises(PiHoleServerError, match="Server error: 500"):
             handle_pihole_response(response)
 
-    def test_endpoint_name_in_error(self):
-        """Should include endpoint name in error messages."""
+    def test_no_endpoint_name_in_error(self):
+        """Should handle errors without endpoint names."""
         response = Mock()
         response.status_code = 404
 
-        with pytest.raises(PiHoleAPIError, match="test endpoint not found"):
-            handle_pihole_response(response, endpoint_name="test")
+        with pytest.raises(PiHoleAPIError, match="Endpoint not found"):
+            handle_pihole_response(response)
 
     def test_other_http_errors(self):
         """Should handle other HTTP errors gracefully."""
@@ -86,35 +86,111 @@ class TestMakePiHoleRequest:
 
     def test_successful_request(self):
         """Should return response for successful requests."""
-        session = Mock()
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client._session = Mock()
+        client._ensure_session = Mock()
+
         response = Mock()
         response.status_code = 200
-        session.request.return_value = response
+        client._session.request.return_value = response
 
-        result = make_pihole_request(session, "GET", "http://test.com")
+        result = make_pihole_request(client, "GET", "/api/test")
 
         assert result is response
-        session.request.assert_called_once_with("GET", "http://test.com")
+        client._ensure_session.assert_called_once()
+        client._session.request.assert_called_once_with(
+            "GET", "http://test.com/api/test", json=None, files=None, timeout=30
+        )
 
     def test_connection_error(self):
         """Should raise PiHoleConnectionError for connection issues."""
-        session = Mock()
-        session.request.side_effect = requests.ConnectionError("Connection failed")
-
-        with pytest.raises(PiHoleConnectionError, match="Connection failed"):
-            make_pihole_request(session, "GET", "http://test.com")
-
-    def test_passes_kwargs(self):
-        """Should pass additional kwargs to the request method."""
-        session = Mock()
-        response = Mock()
-        response.status_code = 200
-        session.request.return_value = response
-
-        make_pihole_request(
-            session, "POST", "http://test.com", json={"test": "data"}, timeout=30
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client._session = Mock()
+        client._ensure_session = Mock()
+        client._session.request.side_effect = requests.ConnectionError(
+            "Connection failed"
         )
 
-        session.request.assert_called_once_with(
-            "POST", "http://test.com", json={"test": "data"}, timeout=30
+        with pytest.raises(PiHoleConnectionError, match="Connection failed"):
+            make_pihole_request(client, "GET", "/api/test")
+
+    def test_passes_data_and_files(self):
+        """Should pass files to the request method."""
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client._session = Mock()
+        client._ensure_session = Mock()
+
+        response = Mock()
+        response.status_code = 200
+        client._session.request.return_value = response
+
+        test_files = {"file": ("test.txt", b"content", "text/plain")}
+
+        make_pihole_request(client, "POST", "/api/test", files=test_files)
+
+        client._session.request.assert_called_once_with(
+            "POST", "http://test.com/api/test", json=None, files=test_files, timeout=30
+        )
+
+    def test_passes_json_data(self):
+        """Should pass JSON data to the request method."""
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client._session = Mock()
+        client._ensure_session = Mock()
+
+        response = Mock()
+        response.status_code = 200
+        client._session.request.return_value = response
+
+        test_json = {"password": "secret"}
+
+        make_pihole_request(client, "POST", "/api/auth", json=test_json)
+
+        client._session.request.assert_called_once_with(
+            "POST", "http://test.com/api/auth", json=test_json, files=None, timeout=30
+        )
+
+    def test_generates_endpoint_name_from_path(self):
+        """Should handle responses without endpoint names."""
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client._session = Mock()
+        client._ensure_session = Mock()
+
+        # Mock handle_pihole_response to capture that no endpoint_name is passed
+        with patch("pihole_lib.utils.handle_pihole_response") as mock_handle:
+            response = Mock()
+            response.status_code = 200
+            client._session.request.return_value = response
+
+            make_pihole_request(client, "GET", "/api/info/login")
+
+            # Verify handle_pihole_response was called without endpoint name
+            mock_handle.assert_called_once_with(response)
+
+    def test_uses_client_timeout_by_default(self):
+        """Should use client timeout when not specified."""
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 45
+        client._session = Mock()
+        client._ensure_session = Mock()
+
+        response = Mock()
+        response.status_code = 200
+        client._session.request.return_value = response
+
+        make_pihole_request(client, "GET", "/api/test")
+
+        client._session.request.assert_called_once_with(
+            "GET", "http://test.com/api/test", json=None, files=None, timeout=45
         )
