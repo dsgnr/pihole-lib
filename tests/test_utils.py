@@ -107,6 +107,7 @@ class TestMakePiHoleRequest:
             files=None,
             params=None,
             timeout=30,
+            stream=False,
         )
 
     def test_connection_error(self):
@@ -146,6 +147,7 @@ class TestMakePiHoleRequest:
             files=test_files,
             params=None,
             timeout=30,
+            stream=False,
         )
 
     def test_passes_json_data(self):
@@ -171,6 +173,7 @@ class TestMakePiHoleRequest:
             files=None,
             params=None,
             timeout=30,
+            stream=False,
         )
 
     def test_generates_endpoint_name_from_path(self):
@@ -213,4 +216,5 @@ class TestMakePiHoleRequest:
             files=None,
             params=None,
             timeout=45,
+            stream=False,
         )

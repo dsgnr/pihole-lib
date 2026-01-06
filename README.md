@@ -12,6 +12,10 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
 - [Installation](#installation)
 - [Usage](#usage)
   - [Connect to your Pi-hole](#connect-to-your-pi-hole)
+  - [Get login page information](#get-login-page-information)
+  - [Backup and restore operations](#backup-and-restore-operations)
+  - [Domain lists management](#domain-lists-management)
+  - [Actions and maintenance](#actions-and-maintenance)
   - [Manual session control](#manual-session-control)
   - [Error Handling](#error-handling)
   - [Configuration Options](#configuration-options)
@@ -69,7 +73,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | DNS settings | Planned |
 | | Web interface settings | Planned |
 | | Privacy settings | Planned |
-| **Actions** | Update gravity | Planned |
+| **Actions** | Update gravity | Complete |
 | | Flush logs | Planned |
 | | Restart DNS | Planned |
 | **Teleporter** | Backup configuration | Complete |
@@ -95,6 +99,13 @@ from pihole_lib import PiHoleClient
 # Connect to your Pi-hole
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"Connected with session: {client.get_session_id()}")
+
+    # Update gravity database
+    from pihole_lib import PiHoleActions
+    actions = PiHoleActions(client)
+    for line in actions.update_gravity():
+        print(line.strip())
+
     # Session closed when exiting context
 ```
 
@@ -201,6 +212,26 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         comment="Allow example.com"
     )
     print(f"Added allowlist, API returned {len(allow_lists)} lists")
+```
+
+### Actions and maintenance
+
+```python
+from pihole_lib import PiHoleClient, PiHoleActions
+
+# Perform Pi-hole maintenance actions
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    actions = PiHoleActions(client)
+
+    # Update gravity database (download and process all adlists)
+    print("Updating gravity database...")
+    for line in actions.update_gravity():
+        print(line.strip())
+
+    # Update gravity with colored output (useful for terminal display)
+    print("Updating gravity with colored output...")
+    for line in actions.update_gravity(color=True):
+        print(line.strip())
 ```
 
 ### Manual session control
@@ -358,6 +389,14 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 **List Types:**
 - `ListType.ALLOW` - Allow lists (domains that bypass blocking)
 - `ListType.BLOCK` - Block lists (domains that are blocked)
+
+### PiHoleActions
+
+The actions class for Pi-hole maintenance and administrative operations.
+
+**Methods:**
+- `PiHoleActions(client)` - Create a new actions client using an existing PiHoleClient
+- `update_gravity(color=False)` - Update Pi-hole's gravity database (adlists). Returns an iterator that yields lines of output as they're streamed from Pi-hole. Set `color=True` to include ANSI color escape codes in the output.
 
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:

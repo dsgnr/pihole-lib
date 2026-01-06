@@ -5,10 +5,17 @@ Handles authentication and session management.
 
 Examples:
     ```python
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, ListType
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, ListType
 
     # For authenticated operations
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
+        # Actions operations
+        actions = PiHoleActions(client)
+
+        # Update gravity database (adlists)
+        for line in actions.update_gravity():
+            print(line.strip())
+
         # Client is authenticated and ready for API operations
 
         # Get system information
@@ -37,6 +44,7 @@ Examples:
     ```
 """
 
+from .actions import PiHoleActions
 from .backup import PiHoleBackup
 from .client import PiHoleClient
 from .exceptions import (
@@ -65,6 +73,7 @@ __all__ = [
     "PiHoleInfo",
     "PiHoleBackup",
     "PiHoleLists",
+    "PiHoleActions",
     "PiHoleAPIError",
     "PiHoleAuthenticationError",
     "PiHoleConnectionError",

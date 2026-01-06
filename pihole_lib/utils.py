@@ -65,6 +65,7 @@ def make_pihole_request(
     json: dict[str, Any] | None = None,
     files: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
+    stream: bool = False,
 ) -> requests.Response:
     """Make a request to Pi-hole API with error handling.
 
@@ -75,6 +76,7 @@ def make_pihole_request(
         json: Optional JSON data to send in the request body.
         files: Optional files to upload.
         params: Optional query parameters to include in the URL.
+        stream: Whether to stream the response. Defaults to False.
 
     Returns:
         The HTTP response object.
@@ -97,6 +99,7 @@ def make_pihole_request(
             files=files,
             params=params,
             timeout=client.timeout,
+            stream=stream,
         )
         handle_pihole_response(response)
         return response
