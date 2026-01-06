@@ -7,7 +7,7 @@ import pytest
 
 from pihole_lib import PiHoleBackup, PiHoleClient
 from pihole_lib.exceptions import PiHoleAPIError, PiHoleConnectionError
-from pihole_lib.models import TeleporterImportOptions, TeleporterImportResult
+from pihole_lib.models import TeleporterImportOptions
 
 from .constants import (
     CONNECTION_FAILED_MESSAGE,
@@ -139,10 +139,9 @@ class TestPiHoleBackupImport:
 
                     result = backup_client.import_backup(export_result, import_options)
 
-                    assert isinstance(result, TeleporterImportResult)
-                    assert isinstance(result.files, list)
-                    assert isinstance(result.took, (int, float))
-                    assert result.took >= 0
+                    assert isinstance(result, list)
+                    assert len(result) > 0  # Should have imported some files
+                    assert all(isinstance(file, str) for file in result)
 
                     # Wait for Pi-hole to restart after import
                     wait_for_pihole_restart(client)
@@ -175,10 +174,8 @@ class TestPiHoleBackupWorkflows:
 
                     # Step 2: Import the same backup (should work)
                     import_result = backup_client.import_backup(export_result)
-                    assert isinstance(import_result, TeleporterImportResult)
-                    assert (
-                        len(import_result.files) > 0
-                    )  # Should have processed something
+                    assert isinstance(import_result, list)
+                    assert len(import_result) > 0  # Should have processed something
 
                     # Wait for Pi-hole to restart after import
                     wait_for_pihole_restart(client)

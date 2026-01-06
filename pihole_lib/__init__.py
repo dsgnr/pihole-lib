@@ -23,7 +23,7 @@ Examples:
         # Lists operations
         lists = PiHoleLists(client)
         all_lists = lists.get_lists()
-        print(f"Found {len(all_lists.lists)} lists")
+        print(f"Found {len(all_lists)} lists")
     ```
 """
 
@@ -38,15 +38,12 @@ from .exceptions import (
 from .info import PiHoleInfo
 from .lists import PiHoleLists
 from .models import (
-    AuthResponse,
-    ListsResponse,
     ListType,
     LoginInfo,
     PiHoleAuthSession,
     PiHoleList,
     TeleporterGravityOptions,
     TeleporterImportOptions,
-    TeleporterImportResult,
 )
 
 __version__ = "0.1.0"
@@ -61,13 +58,10 @@ __all__ = [
     "PiHoleAuthenticationError",
     "PiHoleConnectionError",
     "PiHoleServerError",
-    "AuthResponse",
-    "ListsResponse",
     "ListType",
     "LoginInfo",
     "PiHoleAuthSession",
     "PiHoleList",
     "TeleporterGravityOptions",
     "TeleporterImportOptions",
-    "TeleporterImportResult",
 ]

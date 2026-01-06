@@ -2,12 +2,12 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from .exceptions import (
     PiHoleAPIError,
 )
-from .models import TeleporterImportOptions, TeleporterImportResult
+from .models import TeleporterImportOptions
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -33,8 +33,8 @@ class PiHoleBackup:
             print(f"Backup saved to: {backup_file}")
 
             # Import backup (Pi-hole only accepts ZIP files)
-            result = backup.import_backup("/path/to/backup.zip")
-            print(f"Imported {len(result.files)} files in {result.took}s")
+            imported_files = backup.import_backup("/path/to/backup.zip")
+            print(f"Imported {len(imported_files)} files")
         ```
     """
 
@@ -99,7 +99,7 @@ class PiHoleBackup:
         self,
         file_path: str,
         import_options: Optional[TeleporterImportOptions] = None,
-    ) -> TeleporterImportResult:
+    ) -> List[str]:
         """Import Pi-hole settings from a backup file.
 
         Upload a Pi-hole Teleporter archive to restore from it.
@@ -112,7 +112,7 @@ class PiHoleBackup:
                           If None, all items will be restored.
 
         Returns:
-            TeleporterImportResult containing imported files and processing time.
+            List of imported backup files/components.
 
         Raises:
             PiHoleConnectionError: Connection failed.
@@ -150,4 +150,5 @@ class PiHoleBackup:
             )
 
         response_data = response.json()
-        return TeleporterImportResult(**response_data)
+        imported_files: List[str] = response_data["files"]
+        return imported_files

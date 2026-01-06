@@ -1,8 +1,8 @@
 """Pi-hole Lists API client."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from .models import ListsResponse, ListType
+from .models import ListType, PiHoleList
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -25,16 +25,16 @@ class PiHoleLists:
 
             # Get all lists
             all_lists = lists.get_lists()
-            print(f"Found {len(all_lists.lists)} lists")
+            print(f"Found {len(all_lists)} lists")
 
             # Get only block lists
             block_lists = lists.get_lists(list_type=ListType.BLOCK)
-            print(f"Found {len(block_lists.lists)} block lists")
+            print(f"Found {len(block_lists)} block lists")
 
             # Get specific list
             specific_list = lists.get_lists(list_name="my_list")
-            if specific_list.lists:
-                print(f"List: {specific_list.lists[0].address}")
+            if specific_list:
+                print(f"List: {specific_list[0].address}")
         ```
     """
 
@@ -50,7 +50,7 @@ class PiHoleLists:
         self,
         list_name: Optional[str] = None,
         list_type: Optional[ListType] = None,
-    ) -> ListsResponse:
+    ) -> List[PiHoleList]:
         """Get Pi-hole domain lists.
 
         Retrieve domain lists configured in Pi-hole. Lists are collections of domains
@@ -63,7 +63,7 @@ class PiHoleLists:
                       If provided, only lists of this type will be returned.
 
         Returns:
-            ListsResponse containing the lists and processing time.
+            List of PiHoleList objects.
 
         Raises:
             PiHoleConnectionError: Connection failed.
@@ -101,4 +101,5 @@ class PiHoleLists:
         )
 
         response_data = response.json()
-        return ListsResponse(**response_data)
+        # Return the lists directly instead of wrapped in a response object
+        return [PiHoleList(**list_data) for list_data in response_data["lists"]]

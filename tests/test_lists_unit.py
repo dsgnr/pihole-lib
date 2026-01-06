@@ -3,11 +3,10 @@
 from unittest.mock import Mock, patch
 
 from pihole_lib import PiHoleClient, PiHoleLists
-from pihole_lib.models import ListsResponse, ListType, PiHoleList
+from pihole_lib.models import ListType, PiHoleList
 
 from .constants import (
     TEST_LOCALHOST_URL,
-    TEST_REQUEST_TIME,
     TEST_SECRET_PASSWORD,
 )
 
@@ -47,7 +46,6 @@ class TestPiHoleListsGetLists:
             mock_response = Mock()
             mock_response.json.return_value = {
                 "lists": [],
-                "took": TEST_REQUEST_TIME,
             }
             mock_request.return_value = mock_response
 
@@ -87,17 +85,15 @@ class TestPiHoleListsGetLists:
                     "status": 1,
                 }
             ],
-            "took": TEST_REQUEST_TIME,
         }
         mock_request.return_value = mock_response
 
         result = lists_client.get_lists()
 
-        assert isinstance(result, ListsResponse)
-        assert len(result.lists) == 1
-        assert result.took == TEST_REQUEST_TIME
+        assert isinstance(result, list)
+        assert len(result) == 1
 
-        list_item = result.lists[0]
+        list_item = result[0]
         assert isinstance(list_item, PiHoleList)
         assert list_item.address == "https://example.com/blocklist.txt"
         assert list_item.type == ListType.BLOCK
@@ -121,13 +117,12 @@ class TestPiHoleListsGetLists:
         mock_response = Mock()
         mock_response.json.return_value = {
             "lists": [],
-            "took": TEST_REQUEST_TIME,
         }
         mock_request.return_value = mock_response
 
         result = lists_client.get_lists(list_type=ListType.ALLOW)
 
-        assert isinstance(result, ListsResponse)
+        assert isinstance(result, list)
         mock_request.assert_called_once_with(
             client,
             "GET",
@@ -144,13 +139,12 @@ class TestPiHoleListsGetLists:
         mock_response = Mock()
         mock_response.json.return_value = {
             "lists": [],
-            "took": TEST_REQUEST_TIME,
         }
         mock_request.return_value = mock_response
 
         result = lists_client.get_lists(list_name="my_list")
 
-        assert isinstance(result, ListsResponse)
+        assert isinstance(result, list)
         mock_request.assert_called_once_with(
             client,
             "GET",
@@ -167,13 +161,12 @@ class TestPiHoleListsGetLists:
         mock_response = Mock()
         mock_response.json.return_value = {
             "lists": [],
-            "took": TEST_REQUEST_TIME,
         }
         mock_request.return_value = mock_response
 
         result = lists_client.get_lists(list_name="my_list", list_type=ListType.BLOCK)
 
-        assert isinstance(result, ListsResponse)
+        assert isinstance(result, list)
         mock_request.assert_called_once_with(
             client,
             "GET",

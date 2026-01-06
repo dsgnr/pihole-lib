@@ -111,7 +111,6 @@ login_info = info.get_login_info()
 
 print(f"HTTPS Port: {login_info.https_port}")  # 443 or 0 if disabled
 print(f"DNS Status: {login_info.dns}")         # True if DNS is running
-print(f"Request Time: {login_info.took}s")     # Processing time
 
 client.close()
 
@@ -148,8 +147,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     )
 
     result = backup.import_backup(backup_file, import_options)
-    print(f"Imported {len(result.files)} files")
-    print(f"Import took: {result.took}s")
+    print(f"Imported {len(result)} files")
+    for file in result:
+        print(f"  - {file}")
 ```
 
 ### Domain lists management
@@ -163,20 +163,20 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     # Get all lists
     all_lists = lists.get_lists()
-    print(f"Found {len(all_lists.lists)} total lists")
+    print(f"Found {len(all_lists)} total lists")
 
     # Get only block lists
     block_lists = lists.get_lists(list_type=ListType.BLOCK)
-    print(f"Found {len(block_lists.lists)} block lists")
+    print(f"Found {len(block_lists)} block lists")
 
     # Get only allow lists
     allow_lists = lists.get_lists(list_type=ListType.ALLOW)
-    print(f"Found {len(allow_lists.lists)} allow lists")
+    print(f"Found {len(allow_lists)} allow lists")
 
     # Get specific list by name
     specific_list = lists.get_lists(list_name="my_blocklist")
-    if specific_list.lists:
-        list_info = specific_list.lists[0]
+    if specific_list:
+        list_info = specific_list[0]
         print(f"List: {list_info.address}")
         print(f"Type: {list_info.type.value}")
         print(f"Enabled: {list_info.enabled}")
@@ -359,13 +359,10 @@ with PiHoleClient(base_url, password) as client:
 ### Data Models
 
 - `PiHoleAuthSession` - Represents a Pi-hole authentication session
-- `AuthResponse` - Response data from Pi-hole authentication endpoint
-- `LoginInfo` - Login page information including HTTPS port, DNS status, and processing time
+- `LoginInfo` - Login page information including HTTPS port and DNS status
 - `TeleporterImportOptions` - Backup import options specifying which components to restore
 - `TeleporterGravityOptions` - Gravity database specific import options
-- `TeleporterImportResult` - Result of backup import operation with imported files and timing
 - `PiHoleList` - Represents a single Pi-hole domain list with metadata
-- `ListsResponse` - Response containing multiple domain lists and processing time
 - `ListType` - Enum for list types (ALLOW or BLOCK)
 
 ## Contributing

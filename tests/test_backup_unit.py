@@ -6,13 +6,12 @@ import pytest
 
 from pihole_lib import PiHoleBackup, PiHoleClient
 from pihole_lib.exceptions import PiHoleAPIError
-from pihole_lib.models import TeleporterImportOptions, TeleporterImportResult
+from pihole_lib.models import TeleporterImportOptions
 
 from .constants import (
     TEST_BACKUP_CONTENT,
     TEST_IMPORTED_FILES,
     TEST_LOCALHOST_URL,
-    TEST_REQUEST_TIME,
     TEST_SECRET_PASSWORD,
 )
 
@@ -147,15 +146,13 @@ class TestPiHoleBackupImport:
         mock_response = Mock()
         mock_response.json.return_value = {
             "files": TEST_IMPORTED_FILES,
-            "took": TEST_REQUEST_TIME,
         }
         mock_request.return_value = mock_response
 
         result = backup_client.import_backup("/tmp/test.zip")
 
-        assert isinstance(result, TeleporterImportResult)
-        assert result.files == TEST_IMPORTED_FILES
-        assert result.took == TEST_REQUEST_TIME
+        assert isinstance(result, list)
+        assert result == TEST_IMPORTED_FILES
         mock_request.assert_called_once_with(
             client,
             "POST",
@@ -190,14 +187,14 @@ class TestPiHoleBackupImport:
         mock_response = Mock()
         mock_response.json.return_value = {
             "files": TEST_IMPORTED_FILES,
-            "took": TEST_REQUEST_TIME,
         }
         mock_request.return_value = mock_response
 
         import_options = TeleporterImportOptions(config=False, dhcp_leases=True)
         result = backup_client.import_backup("/tmp/test.zip", import_options)
 
-        assert isinstance(result, TeleporterImportResult)
+        assert isinstance(result, list)
+        assert result == TEST_IMPORTED_FILES
         # Verify that make_pihole_request was called with JSON containing the options
         call_args = mock_request.call_args
         json_data = call_args[1]["json"]

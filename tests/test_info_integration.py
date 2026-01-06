@@ -30,8 +30,6 @@ class TestPiHoleInfoLoginInfo:
         assert isinstance(login_info.https_port, int)
         assert login_info.https_port >= 0  # Should be 0 or positive
         assert isinstance(login_info.dns, bool)
-        assert isinstance(login_info.took, (int, float))
-        assert login_info.took >= 0  # Processing time should be non-negative
 
         client.close()
 
@@ -63,9 +61,6 @@ class TestPiHoleInfoLoginInfo:
         # Should get consistent results
         assert info1.https_port == info2.https_port
         assert info1.dns == info2.dns
-        # Processing times may differ slightly
-        assert isinstance(info1.took, (int, float))
-        assert isinstance(info2.took, (int, float))
 
         client.close()
 

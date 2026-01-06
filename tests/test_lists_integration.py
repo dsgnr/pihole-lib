@@ -4,7 +4,7 @@ import pytest
 
 from pihole_lib import PiHoleClient, PiHoleLists
 from pihole_lib.exceptions import PiHoleConnectionError
-from pihole_lib.models import ListsResponse, ListType
+from pihole_lib.models import ListType
 
 from .constants import (
     CONNECTION_FAILED_MESSAGE,
@@ -26,14 +26,11 @@ class TestPiHoleListsGetLists:
 
             result = lists_client.get_lists()
 
-            assert isinstance(result, ListsResponse)
-            assert isinstance(result.lists, list)
-            assert isinstance(result.took, (int, float))
-            assert result.took >= 0
+            assert isinstance(result, list)
 
             # Pi-hole should have at least some default lists
             # Note: The exact number depends on Pi-hole configuration
-            print(f"Found {len(result.lists)} lists")
+            print(f"Found {len(result)} lists")
 
     def test_get_lists_with_type_filter(self, pihole_container):
         """Should filter lists by type."""
@@ -46,19 +43,17 @@ class TestPiHoleListsGetLists:
             allow_lists = lists_client.get_lists(list_type=ListType.ALLOW)
             block_lists = lists_client.get_lists(list_type=ListType.BLOCK)
 
-            assert isinstance(allow_lists, ListsResponse)
-            assert isinstance(block_lists, ListsResponse)
+            assert isinstance(allow_lists, list)
+            assert isinstance(block_lists, list)
 
             # Verify all returned lists have the correct type
-            for list_item in allow_lists.lists:
+            for list_item in allow_lists:
                 assert list_item.type == ListType.ALLOW
 
-            for list_item in block_lists.lists:
+            for list_item in block_lists:
                 assert list_item.type == ListType.BLOCK
 
-            print(
-                f"Allow lists: {len(allow_lists.lists)}, Block lists: {len(block_lists.lists)}"
-            )
+            print(f"Allow lists: {len(allow_lists)}, Block lists: {len(block_lists)}")
 
     def test_get_lists_connection_error(self):
         """Network errors should raise connection error."""
@@ -84,10 +79,10 @@ class TestPiHoleListsGetLists:
             # Request a list that doesn't exist
             result = lists_client.get_lists(list_name="nonexistent_list_12345")
 
-            assert isinstance(result, ListsResponse)
+            assert isinstance(result, list)
             # Should return empty list or handle gracefully
             # The exact behavior depends on Pi-hole implementation
-            print(f"Result for nonexistent list: {len(result.lists)} lists")
+            print(f"Result for nonexistent list: {len(result)} lists")
 
 
 class TestPiHoleListsWorkflows:
@@ -108,8 +103,8 @@ class TestPiHoleListsWorkflows:
             result2 = lists_client.get_lists(list_type=ListType.BLOCK)
             second_session = client._session
 
-            assert isinstance(result1, ListsResponse)
-            assert isinstance(result2, ListsResponse)
+            assert isinstance(result1, list)
+            assert isinstance(result2, list)
             assert first_session is second_session
 
     def test_multiple_list_operations(self, pihole_container):
@@ -127,15 +122,15 @@ class TestPiHoleListsWorkflows:
             block_lists = lists_client.get_lists(list_type=ListType.BLOCK)
 
             # All operations should succeed
-            assert isinstance(all_lists, ListsResponse)
-            assert isinstance(allow_lists, ListsResponse)
-            assert isinstance(block_lists, ListsResponse)
+            assert isinstance(all_lists, list)
+            assert isinstance(allow_lists, list)
+            assert isinstance(block_lists, list)
 
             # The sum of filtered lists should not exceed total lists
             # (some lists might not be returned due to permissions or other factors)
-            total_filtered = len(allow_lists.lists) + len(block_lists.lists)
+            total_filtered = len(allow_lists) + len(block_lists)
             print(
-                f"All: {len(all_lists.lists)}, Allow: {len(allow_lists.lists)}, Block: {len(block_lists.lists)}"
+                f"All: {len(all_lists)}, Allow: {len(allow_lists)}, Block: {len(block_lists)}"
             )
             print(f"Total filtered: {total_filtered}")
 
@@ -148,10 +143,10 @@ class TestPiHoleListsWorkflows:
 
             result = lists_client.get_lists()
 
-            assert isinstance(result, ListsResponse)
+            assert isinstance(result, list)
 
             # Check each list has the expected structure
-            for list_item in result.lists:
+            for list_item in result:
                 assert hasattr(list_item, "address")
                 assert hasattr(list_item, "type")
                 assert hasattr(list_item, "enabled")

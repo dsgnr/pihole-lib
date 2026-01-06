@@ -55,36 +55,18 @@ class PiHoleList(BaseModel):
     status: int = Field(..., description="List status")
 
 
-class ListsResponse(BaseModel):
-    """Pi-hole lists API response.
-
-    Attributes:
-        lists: Array of Pi-hole lists.
-        took: Time in seconds it took to process the request.
-    """
-
-    lists: List[PiHoleList] = Field(..., description="Array of Pi-hole lists")
-    took: float = Field(
-        ..., description="Time in seconds it took to process the request"
-    )
-
-
 class LoginInfo(BaseModel):
     """Pi-hole login page information.
 
     Attributes:
         https_port: HTTPS port of the Pi-hole webserver (0 if disabled).
         dns: Whether the DNS server is up and running. False only in failed state.
-        took: Time in seconds it took to process the request.
     """
 
     https_port: int = Field(
         ..., description="HTTPS port of the Pi-hole webserver (0 if disabled)"
     )
     dns: bool = Field(..., description="Whether the DNS server is up and running")
-    took: float = Field(
-        ..., description="Time in seconds it took to process the request"
-    )
 
 
 class TeleporterGravityOptions(BaseModel):
@@ -134,22 +116,6 @@ class TeleporterImportOptions(BaseModel):
     )
 
 
-class TeleporterImportResult(BaseModel):
-    """Pi-hole Teleporter import result.
-
-    Attributes:
-        files: List of imported backup files/components.
-        took: Time in seconds it took to process the request.
-    """
-
-    files: List[str] = Field(
-        ..., description="List of imported backup files/components"
-    )
-    took: float = Field(
-        ..., description="Time in seconds it took to process the request"
-    )
-
-
 class PiHoleAuthSession(BaseModel):
     """Pi-hole authentication session data.
 
@@ -168,15 +134,3 @@ class PiHoleAuthSession(BaseModel):
     csrf: str = Field(..., description="CSRF protection token")
     validity: int = Field(..., description="Session duration in seconds")
     message: Optional[str] = Field(None, description="Optional message from Pi-hole")
-
-
-class AuthResponse(BaseModel):
-    """Pi-hole authentication response.
-
-    Attributes:
-        session: Authentication session data.
-        took: Request processing time in seconds.
-    """
-
-    session: PiHoleAuthSession = Field(..., description="Authentication session data")
-    took: float = Field(..., description="Request processing time in seconds")

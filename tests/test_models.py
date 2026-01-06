@@ -4,15 +4,12 @@ import pytest
 from pydantic import ValidationError
 
 from pihole_lib.models import (
-    AuthResponse,
-    ListsResponse,
     ListType,
     LoginInfo,
     PiHoleAuthSession,
     PiHoleList,
     TeleporterGravityOptions,
     TeleporterImportOptions,
-    TeleporterImportResult,
 )
 
 from .constants import (
@@ -23,10 +20,8 @@ from .constants import (
     TEST_DNS_STATUS_UP,
     TEST_HTTPS_PORT,
     TEST_HTTPS_PORT_DISABLED,
-    TEST_IMPORTED_FILES,
     TEST_MESSAGE_CORRECT,
     TEST_MESSAGE_INCORRECT,
-    TEST_REQUEST_TIME,
     TEST_SID,
     TEST_VALIDITY_SECONDS,
     TEST_WRONG_PASSWORD,
@@ -124,63 +119,6 @@ class TestTeleporterImportOptions:
         assert "group" in data["gravity"]
 
 
-class TestTeleporterImportResult:
-    """Test the teleporter import result model."""
-
-    def test_valid_result(self):
-        """Should create result with valid data."""
-        result = TeleporterImportResult(
-            files=TEST_IMPORTED_FILES,
-            took=TEST_REQUEST_TIME,
-        )
-
-        assert result.files == TEST_IMPORTED_FILES
-        assert result.took == TEST_REQUEST_TIME
-
-    def test_empty_files_list(self):
-        """Should handle empty files list."""
-        result = TeleporterImportResult(files=[], took=0.1)
-
-        assert result.files == []
-        assert result.took == 0.1
-
-    def test_missing_required_fields(self):
-        """Should raise validation error for missing required fields."""
-        with pytest.raises(ValidationError) as exc_info:
-            TeleporterImportResult(took=0.1)
-
-        assert "files" in str(exc_info.value)
-
-        with pytest.raises(ValidationError) as exc_info:
-            TeleporterImportResult(files=["test"])
-
-        assert "took" in str(exc_info.value)
-
-    def test_wrong_field_types(self):
-        """Should raise validation error for wrong field types."""
-        with pytest.raises(ValidationError):
-            TeleporterImportResult(files="not-a-list", took=0.1)
-
-        with pytest.raises(ValidationError):
-            TeleporterImportResult(files=["test"], took="not-a-number")
-
-    def test_serialization(self):
-        """Should serialize to dict correctly."""
-        result = TeleporterImportResult(
-            files=TEST_IMPORTED_FILES,
-            took=TEST_REQUEST_TIME,
-        )
-
-        data = result.model_dump()
-
-        expected = {
-            "files": TEST_IMPORTED_FILES,
-            "took": TEST_REQUEST_TIME,
-        }
-
-        assert data == expected
-
-
 class TestLoginInfo:
     """Test the Pi-hole login info model."""
 
@@ -189,62 +127,50 @@ class TestLoginInfo:
         info_data = {
             "https_port": TEST_HTTPS_PORT,
             "dns": TEST_DNS_STATUS_UP,
-            "took": TEST_REQUEST_TIME,
         }
 
         info = LoginInfo(**info_data)
 
         assert info.https_port == TEST_HTTPS_PORT
         assert info.dns is TEST_DNS_STATUS_UP
-        assert info.took == TEST_REQUEST_TIME
 
     def test_valid_login_info_without_https(self):
         """Should create login info with HTTPS disabled."""
         info_data = {
             "https_port": TEST_HTTPS_PORT_DISABLED,
             "dns": TEST_DNS_STATUS_UP,
-            "took": TEST_REQUEST_TIME,
         }
 
         info = LoginInfo(**info_data)
 
         assert info.https_port == TEST_HTTPS_PORT_DISABLED
         assert info.dns is TEST_DNS_STATUS_UP
-        assert info.took == TEST_REQUEST_TIME
 
     def test_login_info_with_dns_down(self):
         """Should handle DNS server being down."""
         info_data = {
             "https_port": TEST_HTTPS_PORT,
             "dns": TEST_DNS_STATUS_DOWN,
-            "took": TEST_REQUEST_TIME,
         }
 
         info = LoginInfo(**info_data)
 
         assert info.https_port == TEST_HTTPS_PORT
         assert info.dns is TEST_DNS_STATUS_DOWN
-        assert info.took == TEST_REQUEST_TIME
 
     def test_missing_required_fields(self):
         """Should raise validation error for missing required fields."""
         # Missing 'https_port' field
         with pytest.raises(ValidationError) as exc_info:
-            LoginInfo(dns=True, took=0.1)
+            LoginInfo(dns=True)
 
         assert "https_port" in str(exc_info.value)
 
         # Missing 'dns' field
         with pytest.raises(ValidationError) as exc_info:
-            LoginInfo(https_port=443, took=0.1)
+            LoginInfo(https_port=443)
 
         assert "dns" in str(exc_info.value)
-
-        # Missing 'took' field
-        with pytest.raises(ValidationError) as exc_info:
-            LoginInfo(https_port=443, dns=True)
-
-        assert "took" in str(exc_info.value)
 
     def test_wrong_field_types(self):
         """Should raise validation error for wrong field types."""
@@ -253,7 +179,6 @@ class TestLoginInfo:
             LoginInfo(
                 https_port="not-an-integer",
                 dns=True,
-                took=0.1,
             )
 
         # 'dns' should be boolean
@@ -261,15 +186,6 @@ class TestLoginInfo:
             LoginInfo(
                 https_port=443,
                 dns="not-a-boolean",
-                took=0.1,
-            )
-
-        # 'took' should be number
-        with pytest.raises(ValidationError):
-            LoginInfo(
-                https_port=443,
-                dns=True,
-                took="not-a-number",
             )
 
     def test_login_info_serialization(self):
@@ -277,7 +193,6 @@ class TestLoginInfo:
         info = LoginInfo(
             https_port=TEST_HTTPS_PORT,
             dns=TEST_DNS_STATUS_UP,
-            took=TEST_REQUEST_TIME,
         )
 
         data = info.model_dump()
@@ -285,29 +200,15 @@ class TestLoginInfo:
         expected = {
             "https_port": TEST_HTTPS_PORT,
             "dns": TEST_DNS_STATUS_UP,
-            "took": TEST_REQUEST_TIME,
         }
 
         assert data == expected
-
-    def test_login_info_with_zero_took_time(self):
-        """Should handle zero processing time."""
-        info_data = {
-            "https_port": TEST_HTTPS_PORT,
-            "dns": TEST_DNS_STATUS_UP,
-            "took": 0.0,
-        }
-
-        info = LoginInfo(**info_data)
-
-        assert info.took == 0.0
 
     def test_login_info_with_negative_port(self):
         """Should handle negative port numbers (though unusual)."""
         info_data = {
             "https_port": -1,
             "dns": TEST_DNS_STATUS_UP,
-            "took": TEST_REQUEST_TIME,
         }
 
         info = LoginInfo(**info_data)
@@ -319,7 +220,6 @@ class TestLoginInfo:
         info_data = {
             "https_port": 65535,
             "dns": TEST_DNS_STATUS_UP,
-            "took": TEST_REQUEST_TIME,
         }
 
         info = LoginInfo(**info_data)
@@ -463,183 +363,34 @@ class TestPiHoleAuthSession:
         assert data == expected
 
 
-class TestAuthResponse:
-    """Test the authentication response model."""
-
-    def test_valid_auth_response(self):
-        """Should create auth response with valid data."""
-        response_data = {
-            "session": {
-                "valid": True,
-                "totp": False,
-                "sid": TEST_SID,
-                "csrf": TEST_CSRF_TOKEN,
-                "validity": TEST_VALIDITY_SECONDS,
-                "message": TEST_MESSAGE_CORRECT,
-            },
-            "took": 0.123456,
-        }
-
-        response = AuthResponse(**response_data)
-
-        assert isinstance(response.session, PiHoleAuthSession)
-        assert response.session.valid is True
-        assert response.session.sid == TEST_SID
-        assert response.took == 0.123456
-
-    def test_auth_response_with_invalid_session(self):
-        """Should handle auth response with invalid session."""
-        response_data = {
-            "session": {
-                "valid": False,
-                "totp": False,
-                "sid": "",
-                "csrf": "",
-                "validity": 0,
-                "message": TEST_MESSAGE_INCORRECT,
-            },
-            "took": 0.05,
-        }
-
-        response = AuthResponse(**response_data)
-
-        assert response.session.valid is False
-        assert response.session.message == TEST_MESSAGE_INCORRECT
-        assert response.took == 0.05
-
-    def test_missing_session_field(self):
-        """Should raise validation error for missing session."""
-        with pytest.raises(ValidationError) as exc_info:
-            AuthResponse(took=0.1)
-
-        assert "session" in str(exc_info.value)
-
-    def test_missing_took_field(self):
-        """Should raise validation error for missing took field."""
-        with pytest.raises(ValidationError) as exc_info:
-            AuthResponse(
-                session={
-                    "valid": True,
-                    "totp": False,
-                    "sid": "abc123",
-                    "csrf": TEST_CSRF_TOKEN,
-                    "validity": TEST_VALIDITY_SECONDS,
-                }
-            )
-
-        assert "took" in str(exc_info.value)
-
-    def test_invalid_session_data(self):
-        """Should raise validation error for invalid session data."""
-        with pytest.raises(ValidationError):
-            AuthResponse(
-                session={
-                    "valid": True,
-                    # Missing required fields
-                },
-                took=0.1,
-            )
-
-    def test_wrong_took_type(self):
-        """Should raise validation error for wrong took type."""
-        with pytest.raises(ValidationError):
-            AuthResponse(
-                session={
-                    "valid": True,
-                    "totp": False,
-                    "sid": "abc123",
-                    "csrf": TEST_CSRF_TOKEN,
-                    "validity": TEST_VALIDITY_SECONDS,
-                },
-                took={"not": "a number"},  # Dict won't coerce to float
-            )
-
-    def test_auth_response_serialization(self):
-        """Should be able to serialize auth response to dict."""
-        response = AuthResponse(
-            session=PiHoleAuthSession(
-                valid=True,
-                totp=False,
-                sid=TEST_SID,
-                csrf=TEST_CSRF_TOKEN,
-                validity=TEST_VALIDITY_SECONDS,
-                message=TEST_MESSAGE_CORRECT,
-            ),
-            took=0.123456,
-        )
-
-        data = response.model_dump()
-
-        expected = {
-            "session": {
-                "valid": True,
-                "totp": False,
-                "sid": TEST_SID,
-                "csrf": TEST_CSRF_TOKEN,
-                "validity": TEST_VALIDITY_SECONDS,
-                "message": TEST_MESSAGE_CORRECT,
-            },
-            "took": 0.123456,
-        }
-
-        assert data == expected
-
-    def test_auth_response_from_json_string(self):
-        """Should be able to create from JSON string (like from API)."""
-        json_data = {
-            "session": {
-                "valid": True,
-                "totp": False,
-                "sid": "yD/2B4DG4t2sQxz8kchd5w=",
-                "csrf": "dLTdh5aOBC0BIiHJ01f9/w=",
-                "validity": TEST_VALIDITY_SECONDS,
-                "message": TEST_MESSAGE_CORRECT,
-            },
-            "took": 0.14328932762146,
-        }
-
-        response = AuthResponse(**json_data)
-
-        assert response.session.valid is True
-        assert response.session.sid == "yD/2B4DG4t2sQxz8kchd5w="
-        assert response.session.csrf == "dLTdh5aOBC0BIiHJ01f9/w="
-        assert response.took == 0.14328932762146
-
-
 class TestModelIntegration:
     """Test how models work together."""
 
     def test_nested_model_validation(self):
         """Should validate nested models properly."""
         # Valid nested data should work
-        valid_data = {
-            "session": {
-                "valid": True,
-                "totp": False,
-                "sid": "abc123",
-                "csrf": TEST_CSRF_TOKEN,
-                "validity": TEST_VALIDITY_SECONDS,
-            },
-            "took": 0.1,
+        session_data = {
+            "valid": True,
+            "totp": False,
+            "sid": "abc123",
+            "csrf": TEST_CSRF_TOKEN,
+            "validity": TEST_VALIDITY_SECONDS,
         }
 
-        response = AuthResponse(**valid_data)
-        assert isinstance(response.session, PiHoleAuthSession)
+        session = PiHoleAuthSession(**session_data)
+        assert isinstance(session, PiHoleAuthSession)
 
         # Invalid nested data should fail
         invalid_data = {
-            "session": {
-                "valid": "not-a-boolean",  # Invalid type
-                "totp": False,
-                "sid": "abc123",
-                "csrf": TEST_CSRF_TOKEN,
-                "validity": TEST_VALIDITY_SECONDS,
-            },
-            "took": 0.1,
+            "valid": "not-a-boolean",  # Invalid type
+            "totp": False,
+            "sid": "abc123",
+            "csrf": TEST_CSRF_TOKEN,
+            "validity": TEST_VALIDITY_SECONDS,
         }
 
         with pytest.raises(ValidationError):
-            AuthResponse(**invalid_data)
+            PiHoleAuthSession(**invalid_data)
 
     def test_model_field_descriptions(self):
         """Should have proper field descriptions for documentation."""
@@ -648,29 +399,22 @@ class TestModelIntegration:
             valid=True, totp=False, sid="test-sid", csrf="test-csrf", validity=1800
         )
 
-        response = AuthResponse(session=session, took=0.1)
-
         # Test that the models work and have the expected fields
         assert hasattr(session, "valid")
         assert hasattr(session, "sid")
-        assert hasattr(response, "session")
-        assert hasattr(response, "took")
 
         # Test that we can get schema information
         session_schema = PiHoleAuthSession.model_json_schema()
-        response_schema = AuthResponse.model_json_schema()
 
         assert "properties" in session_schema
-        assert "properties" in response_schema
         assert "valid" in session_schema["properties"]
-        assert "session" in response_schema["properties"]
 
 
 class TestModelIntegrationWithRealData:
     """Test models with real Pi-hole API responses."""
 
-    def test_auth_response_with_real_pihole_data(self, pihole_session):
-        """Test AuthResponse model with real Pi-hole authentication data."""
+    def test_auth_session_with_real_pihole_data(self, pihole_session):
+        """Test PiHoleAuthSession model with real Pi-hole authentication data."""
         session, session_id = pihole_session
 
         # Make a fresh authentication request to get real response data
@@ -689,25 +433,24 @@ class TestModelIntegrationWithRealData:
         response_data = response.json()
 
         # Test that our model can parse real Pi-hole response
-        auth_response = AuthResponse(**response_data)
+        auth_session = PiHoleAuthSession(**response_data["session"])
 
         # Verify the parsed data makes sense
-        assert auth_response.session.valid is True
-        assert auth_response.session.sid is not None
-        assert len(auth_response.session.sid) > 0
-        assert auth_response.session.csrf is not None
-        assert auth_response.session.validity > 0
-        assert auth_response.took >= 0
+        assert auth_session.valid is True
+        assert auth_session.sid is not None
+        assert len(auth_session.sid) > 0
+        assert auth_session.csrf is not None
+        assert auth_session.validity > 0
 
         # Test serialization round-trip
-        serialized = auth_response.model_dump()
-        recreated = AuthResponse(**serialized)
-        assert recreated.session.sid == auth_response.session.sid
+        serialized = auth_session.model_dump()
+        recreated = PiHoleAuthSession(**serialized)
+        assert recreated.sid == auth_session.sid
 
         fresh_session.close()
 
-    def test_invalid_auth_response_with_real_pihole(self, pihole_container):
-        """Test AuthResponse model with real Pi-hole invalid authentication."""
+    def test_invalid_auth_session_with_real_pihole(self, pihole_container):
+        """Test PiHoleAuthSession model with real Pi-hole invalid authentication."""
         import requests
 
         session = requests.Session()
@@ -725,11 +468,10 @@ class TestModelIntegrationWithRealData:
             response_data = response.json()
 
             # Test that our model can parse the invalid response
-            auth_response = AuthResponse(**response_data)
+            auth_session = PiHoleAuthSession(**response_data["session"])
 
             # Should indicate invalid session
-            assert auth_response.session.valid is False
-            assert auth_response.took >= 0
+            assert auth_session.valid is False
 
         session.close()
 
@@ -755,7 +497,6 @@ class TestRealPiHoleResponseValidation:
 
         # Validate response structure matches our expectations
         assert "session" in data
-        assert "took" in data
 
         session_data = data["session"]
         assert "valid" in session_data
@@ -770,7 +511,6 @@ class TestRealPiHoleResponseValidation:
         assert isinstance(session_data["csrf"], str)
         assert isinstance(session_data["validity"], int)
         assert isinstance(session_data["totp"], bool)
-        assert isinstance(data["took"], (int, float))
 
         # For successful auth, these should be true/non-empty
         assert session_data["valid"] is True
@@ -799,7 +539,6 @@ class TestRealPiHoleResponseValidation:
 
             # Should still have the same structure
             assert "session" in data
-            assert "took" in data
 
             session_data = data["session"]
             assert "valid" in session_data
@@ -999,166 +738,6 @@ class TestPiHoleList:
             "invalid_domains": 5,
             "abp_entries": 0,
             "status": 1,
-        }
-
-        assert data == expected
-
-
-class TestListsResponse:
-    """Test the ListsResponse model."""
-
-    def test_valid_lists_response(self):
-        """Should create ListsResponse with valid data."""
-        response_data = {
-            "lists": [
-                {
-                    "address": "https://example.com/blocklist.txt",
-                    "type": "block",
-                    "comment": "Test blocklist",
-                    "groups": [0],
-                    "enabled": True,
-                    "id": 1,
-                    "date_added": 1640995200,
-                    "date_modified": 1640995200,
-                    "date_updated": 1640995200,
-                    "number": 1000,
-                    "invalid_domains": 5,
-                    "abp_entries": 0,
-                    "status": 1,
-                },
-                {
-                    "address": "https://example.com/allowlist.txt",
-                    "type": "allow",
-                    "comment": None,
-                    "groups": [0, 1],
-                    "enabled": False,
-                    "id": 2,
-                    "date_added": 1640995300,
-                    "date_modified": 1640995300,
-                    "date_updated": 1640995300,
-                    "number": 500,
-                    "invalid_domains": 0,
-                    "abp_entries": 10,
-                    "status": 0,
-                },
-            ],
-            "took": 0.123456,
-        }
-
-        lists_response = ListsResponse(**response_data)
-
-        assert len(lists_response.lists) == 2
-        assert lists_response.took == 0.123456
-
-        # Check first list
-        first_list = lists_response.lists[0]
-        assert isinstance(first_list, PiHoleList)
-        assert first_list.address == "https://example.com/blocklist.txt"
-        assert first_list.type == ListType.BLOCK
-        assert first_list.enabled is True
-
-        # Check second list
-        second_list = lists_response.lists[1]
-        assert isinstance(second_list, PiHoleList)
-        assert second_list.address == "https://example.com/allowlist.txt"
-        assert second_list.type == ListType.ALLOW
-        assert second_list.enabled is False
-        assert second_list.comment is None
-
-    def test_empty_lists_response(self):
-        """Should handle empty lists response."""
-        response_data = {
-            "lists": [],
-            "took": 0.05,
-        }
-
-        lists_response = ListsResponse(**response_data)
-
-        assert len(lists_response.lists) == 0
-        assert lists_response.took == 0.05
-
-    def test_lists_response_missing_fields(self):
-        """Should raise validation error for missing required fields."""
-        # Missing lists
-        with pytest.raises(ValidationError) as exc_info:
-            ListsResponse(took=0.1)
-
-        assert "lists" in str(exc_info.value)
-
-        # Missing took
-        with pytest.raises(ValidationError) as exc_info:
-            ListsResponse(lists=[])
-
-        assert "took" in str(exc_info.value)
-
-    def test_lists_response_invalid_list_data(self):
-        """Should raise validation error for invalid list data."""
-        response_data = {
-            "lists": [
-                {
-                    "address": "https://example.com/list.txt",
-                    "type": "invalid_type",  # Invalid type
-                    "groups": [0],
-                    "id": 1,
-                    "date_added": 1640995200,
-                    "date_modified": 1640995200,
-                    "date_updated": 1640995200,
-                    "number": 100,
-                    "invalid_domains": 0,
-                    "abp_entries": 0,
-                    "status": 1,
-                }
-            ],
-            "took": 0.1,
-        }
-
-        with pytest.raises(ValidationError):
-            ListsResponse(**response_data)
-
-    def test_lists_response_serialization(self):
-        """Should be able to serialize ListsResponse to dict."""
-        lists_response = ListsResponse(
-            lists=[
-                PiHoleList(
-                    address="https://example.com/list.txt",
-                    type=ListType.BLOCK,
-                    comment="Test",
-                    groups=[0],
-                    enabled=True,
-                    id=1,
-                    date_added=1640995200,
-                    date_modified=1640995200,
-                    date_updated=1640995200,
-                    number=100,
-                    invalid_domains=0,
-                    abp_entries=0,
-                    status=1,
-                )
-            ],
-            took=0.123,
-        )
-
-        data = lists_response.model_dump()
-
-        expected = {
-            "lists": [
-                {
-                    "address": "https://example.com/list.txt",
-                    "type": "block",
-                    "comment": "Test",
-                    "groups": [0],
-                    "enabled": True,
-                    "id": 1,
-                    "date_added": 1640995200,
-                    "date_modified": 1640995200,
-                    "date_updated": 1640995200,
-                    "number": 100,
-                    "invalid_domains": 0,
-                    "abp_entries": 0,
-                    "status": 1,
-                }
-            ],
-            "took": 0.123,
         }
 
         assert data == expected
