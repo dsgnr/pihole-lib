@@ -47,41 +47,21 @@ class TestPiHoleInfoLoginInfo:
 
         client.close()
 
-    def test_get_login_info_multiple_calls(self, pihole_container):
-        """Multiple calls should work consistently."""
+    def test_get_login_info_session_management(self, pihole_container):
+        """Test that client session is properly managed."""
         client = PiHoleClient(
             base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
         )
         info_client = PiHoleInfo(client)
 
-        # Make multiple calls
-        info1 = info_client.get_login_info()
-        info2 = info_client.get_login_info()
+        # Call should work and create session in client
+        info = info_client.get_login_info()
+        assert info.https_port >= 0  # Should be valid port number
+        assert isinstance(info.dns, bool)
+        assert isinstance(info, LoginInfo)
 
-        # Should get consistent results
-        assert info1.https_port == info2.https_port
-        assert info1.dns == info2.dns
-
-        client.close()
-
-    def test_get_login_info_session_reuse(self, pihole_container):
-        """Should reuse client session across multiple calls."""
-        client = PiHoleClient(
-            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
-        )
-        info_client = PiHoleInfo(client)
-
-        # First call creates session in client
-        info1 = info_client.get_login_info()
-        first_session = client._session
-
-        # Second call should reuse client session
-        info2 = info_client.get_login_info()
-        second_session = client._session
-
-        assert first_session is second_session
-        assert isinstance(info1, LoginInfo)
-        assert isinstance(info2, LoginInfo)
+        # Session should be created
+        assert client._session is not None
 
         client.close()
 

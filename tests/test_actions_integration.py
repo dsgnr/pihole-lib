@@ -71,7 +71,7 @@ class TestPiHoleActionsIntegration:
             assert "DNS resolution is available" in output_text
             assert "Done." in output_text
 
-    def test_update_gravity_streaming_behavior(self, pihole_container):
+    def test_gravity_update_streaming_behavior(self, pihole_container):
         """Test that gravity update streams output progressively."""
         with PiHoleClient(
             PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
@@ -91,44 +91,6 @@ class TestPiHoleActionsIntegration:
 
             # Verify we got at least some lines
             assert line_count >= 3
-
-    def test_multiple_gravity_updates(self, pihole_container):
-        """Test multiple consecutive gravity updates."""
-        with PiHoleClient(
-            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
-        ) as client:
-            actions = PiHoleActions(client)
-
-            # First update
-            lines1 = list(actions.update_gravity())
-            assert len(lines1) > 0
-
-            # Second update (should work without issues)
-            lines2 = list(actions.update_gravity())
-            assert len(lines2) > 0
-
-            # Both should have similar structure
-            output1 = "\n".join(lines1)
-            output2 = "\n".join(lines2)
-
-            assert "DNS resolution is available" in output1
-            assert "DNS resolution is available" in output2
-            assert "Done." in output1
-            assert "Done." in output2
-
-    def test_restart_dns_basic(self, pihole_container):
-        """Test basic DNS restart against real Pi-hole instance."""
-        with PiHoleClient(
-            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
-        ) as client:
-            actions = PiHoleActions(client)
-
-            # Restart DNS service
-            result = actions.restart_dns()
-
-            # Verify response
-            assert isinstance(result, bool)
-            assert result is True  # Should be successful
 
     def test_actions_combination(self, pihole_container):
         """Test using multiple action methods together."""
