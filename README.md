@@ -82,6 +82,9 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **List Management** | Get domain lists (by type, and name) | ✅ |
 | | List metadata and statistics | ✅ |
 | | Add/remove lists | ✅ |
+| | Update existing lists | ✅ |
+| | Batch list operations | ✅ |
+| | Domain search in lists | ✅ |
 | | Regex list management | 📋 |
 | | Import/export lists | 📋 |
 | **Group Management** | Get groups | ✅ |
@@ -407,7 +410,7 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 ### Domain lists management
 
 ```python
-from pihole_lib import PiHoleClient, ListType
+from pihole_lib import PiHoleClient, ListType, BatchDeleteItem
 
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     # Get all lists
@@ -423,9 +426,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"Found {len(allow_lists)} allow lists")
 
     # Get specific list by name
-    specific_list = client.lists.get_lists(list_name="my_blocklist")
-    if specific_list:
-        list_info = specific_list[0]
+    specific_lists = client.lists.get_lists(list_name="my_blocklist")
+    if specific_lists:
+        list_info = specific_lists[0]
         print(f"List: {list_info.address}")
         print(f"Type: {list_info.type.value}")
         print(f"Enabled: {list_info.enabled}")
@@ -440,7 +443,7 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         groups=[0],
         enabled=True
     )
-    print(f"Added list, API returned {len(new_lists)} lists")
+    print(f"Successfully added list: {new_lists[0].address}")
 
     # Add an allowlist for a specific domain
     allow_lists = client.lists.add_list(
@@ -448,21 +451,63 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         list_type=ListType.ALLOW,
         comment="Allow example.com"
     )
-    print(f"Added allowlist, API returned {len(allow_lists)} lists")
+    print(f"Added allowlist: {allow_lists[0].address}")
 
-    # Delete a blocklist
-    success = client.lists.delete_list(
-        address="https://hosts-file.net/ad_servers.txt",
-        list_type=ListType.BLOCK
-    )
-    print(f"Blocklist deletion successful: {success}")
-
-    # Delete an allowlist
-    success = client.lists.delete_list(
+    # Update an existing list
+    update_response = client.lists.update_list(
         address="example.com",
+        list_type=ListType.ALLOW,
+        comment="Updated comment for example.com",
+        groups=[0, 1],
+        enabled=False
+    )
+
+    # Update returns ListsResponse object with processing results
+    if update_response.processed and update_response.processed.errors:
+        for error in update_response.processed.errors:
+            print(f"Error updating list: {error.error}")
+    else:
+        updated_list = update_response.lists[0]
+        print(f"Updated list: {updated_list.address}")
+        print(f"New comment: {updated_list.comment}")
+        print(f"Enabled: {updated_list.enabled}")
+
+    # Search for domains in lists
+    search_response = client.lists.search_domains("example.com")
+    print(f"Search found {search_response.search.results.total} results")
+
+    for domain_match in search_response.search.domains:
+        print(f"Domain match: {domain_match.address} ({domain_match.type})")
+
+    for gravity_match in search_response.search.gravity:
+        print(f"Gravity match: {gravity_match.address} ({gravity_match.type})")
+
+    # Partial search with more results
+    partial_search = client.lists.search_domains(
+        domain="example",
+        partial=True,
+        max_results=50,
+        debug=True
+    )
+    print(f"Partial search parameters: {partial_search.search.parameters}")
+    print(f"Domain matches: {partial_search.search.results.domains.exact}")
+    print(f"Gravity matches: {partial_search.search.results.gravity.block}")
+
+    # Batch delete multiple lists
+    items_to_delete = [
+        BatchDeleteItem(item="https://hosts-file.net/ad_servers.txt", type=ListType.BLOCK),
+        BatchDeleteItem(item="example.com", type=ListType.ALLOW),
+    ]
+
+    batch_success = client.lists.batch_delete_lists(items_to_delete)
+    print(f"Batch deletion successful: {batch_success}")
+
+    # Individual delete (existing functionality)
+    success = client.lists.delete_list(
+        address="remaining.example.com",
         list_type=ListType.ALLOW
     )
-    print(f"Allowlist deletion successful: {success}")
+    print(f"Individual deletion successful: {success}")
 
 # Alternative usage with explicit class imports
 from pihole_lib import PiHoleLists
@@ -470,59 +515,50 @@ from pihole_lib import PiHoleLists
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     lists = PiHoleLists(client)
 
-    # Get all lists
     all_lists = lists.get_lists()
     print(f"Found {len(all_lists)} total lists")
 
-    # Get only block lists
-    block_lists = lists.get_lists(list_type=ListType.BLOCK)
-    print(f"Found {len(block_lists)} block lists")
-
-    # Get only allow lists
-    allow_lists = lists.get_lists(list_type=ListType.ALLOW)
-    print(f"Found {len(allow_lists)} allow lists")
-
-    # Get specific list by name
-    specific_list = lists.get_lists(list_name="my_blocklist")
-    if specific_list:
-        list_info = specific_list[0]
-        print(f"List: {list_info.address}")
-        print(f"Type: {list_info.type.value}")
-        print(f"Enabled: {list_info.enabled}")
-        print(f"Domains: {list_info.number}")
-        print(f"Invalid domains: {list_info.invalid_domains}")
-
-    # Add a new blocklist
+    # Add list
     new_lists = lists.add_list(
-        address="https://hosts-file.net/ad_servers.txt",
+        address="https://example.com/blocklist.txt",
         list_type=ListType.BLOCK,
-        comment="Ad servers blocklist",
+        comment="Example blocklist",
         groups=[0],
         enabled=True
     )
     print(f"Added list, API returned {len(new_lists)} lists")
 
-    # Add an allowlist for a specific domain
-    allow_lists = lists.add_list(
-        address="example.com",
-        list_type=ListType.ALLOW,
-        comment="Allow example.com"
+    # Update list
+    update_response = lists.update_list(
+        address="https://example.com/blocklist.txt",
+        list_type=ListType.BLOCK,
+        comment="Updated blocklist comment",
+        groups=[0],
+        enabled=True
     )
-    print(f"Added allowlist, API returned {len(allow_lists)} lists")
+
+    # Access processing results
+    if update_response.processed:
+        print(f"Successful updates: {len(update_response.processed.success)}")
+        print(f"Errors: {len(update_response.processed.errors)}")
+
+        for success_item in update_response.processed.success:
+            print(f"Successfully processed: {success_item.item}")
+
+        for error_item in update_response.processed.errors:
+            print(f"Error processing {error_item.item}: {error_item.error}")
+
+    # Search functionality
+    search_response = lists.search_domains("example.com")
+    print(f"Search took {search_response.took}s")
+    print(f"Found {search_response.search.results.total} total matches")
 
     # Delete a blocklist
     success = lists.delete_list(
-        address="https://hosts-file.net/ad_servers.txt",
+        address="https://example.com/blocklist.txt",
         list_type=ListType.BLOCK
     )
     print(f"Blocklist deletion successful: {success}")
-
-    # Delete an allowlist
-    success = lists.delete_list(
-        address="example.com",
-        list_type=ListType.ALLOW
-    )
-    print(f"Allowlist deletion successful: {success}")
 ```
 
 ### Custom DNS records and blocking management
@@ -1110,13 +1146,25 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 
 **Methods:**
 - `PiHoleLists(client)` - Create a new lists client using an existing PiHoleClient
-- `get_lists(list_name=None, list_type=None)` - Get domain lists with optional filtering by name or type
-- `add_list(address, list_type, comment=None, groups=None, enabled=True)` - Add a new domain list
-- `delete_list(address, list_type)` - Delete a domain list. Returns True if successful, raises exceptions on failure.
+
+**List Operations:**
+- `get_lists(list_name=None, list_type=None)` - Get domain lists with optional filtering by name or type.
+- `add_list(address, list_type, comment=None, groups=None, enabled=True)` - Add a new domain list.
+- `delete_list(address, list_type)` - Delete a single domain list. Returns True if successful, raises exceptions on failure.
+- `update_list(address, list_type, comment=None, groups=None, enabled=True)` - Update an existing domain list. Returns ListsResponse object with updated list and processing results.
+- `batch_delete_lists(items)` - Delete multiple domain lists in batch. Takes list of BatchDeleteItem objects. Returns True if successful.
+
+**Search Operations:**
+- `search_domains(domain, partial=False, max_results=20, debug=False)` - Search for domains in Pi-hole's lists. Returns SearchResponse object with search results and metadata.
 
 **List Types:**
 - `ListType.ALLOW` - Allow lists (domains that bypass blocking)
 - `ListType.BLOCK` - Block lists (domains that are blocked)
+
+**Response Objects:**
+- `ListsResponse` - Contains lists array, processing results, and timing information (returned by update_list)
+- `SearchResponse` - Contains search results, parameters used, and result counts (returned by search_domains)
+- `BatchDeleteItem` - Specifies item address and type for batch deletion operations
 
 ### PiHoleGroups
 

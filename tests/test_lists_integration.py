@@ -621,3 +621,84 @@ class TestPiHoleListsDeleteList:
         ) as client:
             lists = PiHoleLists(client)
             assert lists.BASE_URL == "/api/lists"
+
+
+class TestPiHoleListsSearchDomains:
+    def test_search_domains_functionality(self, pihole_container):
+        """Should search for domains in lists."""
+        with PiHoleClient(PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD) as client:
+            lists_client = PiHoleLists(client)
+
+            # Add a test domain to search for
+            test_address = "searchable-integration.example.com"
+            lists_client.add_list(
+                address=test_address,
+                list_type=ListType.ALLOW,
+                comment="Searchable integration test domain",
+            )
+
+            try:
+                # Search for the domain
+                search_response = lists_client.search_domains(
+                    "searchable-integration.example.com"
+                )
+
+                # Should return SearchResponse object
+                assert hasattr(search_response, "search")
+                assert hasattr(search_response, "took")
+                assert isinstance(search_response.took, float)
+
+                # Check search structure
+                search_data = search_response.search
+                assert hasattr(search_data, "domains")
+                assert hasattr(search_data, "gravity")
+                assert hasattr(search_data, "results")
+                assert hasattr(search_data, "parameters")
+
+                # Check parameters
+                params = search_data.parameters
+                assert params.domain == "searchable-integration.example.com"
+                assert params.partial is False
+                assert params.N == 20
+                assert params.debug is False
+
+                # Check results structure
+                results = search_data.results
+                assert hasattr(results, "domains")
+                assert hasattr(results, "gravity")
+                assert hasattr(results, "total")
+                assert isinstance(results.total, int)
+
+            finally:
+                # Clean up
+                lists_client.delete_list(test_address, ListType.ALLOW)
+
+    def test_search_domains_partial_matching(self, pihole_container):
+        """Should perform partial domain search with custom options."""
+        with PiHoleClient(PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD) as client:
+            lists_client = PiHoleLists(client)
+
+            # Partial search with custom options
+            search_response = lists_client.search_domains(
+                domain="example",
+                partial=True,
+                max_results=10,
+                debug=True,
+            )
+
+            # Should return SearchResponse object
+            assert hasattr(search_response, "search")
+            assert hasattr(search_response, "took")
+
+            # Check parameters were applied
+            params = search_response.search.parameters
+            assert params.domain == "example"
+            assert params.partial is True
+            assert params.N == 10
+            assert params.debug is True
+
+            # Should have results structure
+            results = search_response.search.results
+            assert hasattr(results, "domains")
+            assert hasattr(results, "gravity")
+            assert hasattr(results, "total")

@@ -566,6 +566,172 @@ class AddListRequest(BaseModel):
     enabled: bool = Field(default=True, description="Whether the list is enabled")
 
 
+class UpdateListRequest(BaseModel):
+    """Request model for updating an existing Pi-hole list.
+
+    Attributes:
+        comment: Optional user-provided comment for this list.
+        type: Type of list (allow or block).
+        groups: Array of group IDs.
+        enabled: Whether the list should be enabled.
+    """
+
+    comment: str | None = Field(None, description="Optional comment for this list")
+    type: ListType = Field(..., description="Type of list")
+    groups: list[int] = Field(..., description="Array of group IDs")
+    enabled: bool = Field(..., description="Whether the list is enabled")
+
+
+class BatchDeleteItem(BaseModel):
+    """Item for batch delete operation.
+
+    Attributes:
+        item: Address of the list to delete.
+        type: Type of list (allow or block).
+    """
+
+    item: str = Field(..., description="Address of the list to delete")
+    type: ListType = Field(..., description="Type of list")
+
+
+class ListProcessedSuccess(BaseModel):
+    """Success item in list processing result.
+
+    Attributes:
+        item: List that was successfully processed.
+    """
+
+    item: str = Field(..., description="List that was successfully processed")
+
+
+class ListProcessedError(BaseModel):
+    """Error item in list processing result.
+
+    Attributes:
+        item: List that could not be processed.
+        error: Error message.
+    """
+
+    item: str = Field(..., description="List that could not be processed")
+    error: str = Field(..., description="Error message")
+
+
+class ListProcessedResult(BaseModel):
+    """Processing result for list operations.
+
+    Attributes:
+        success: Array of lists that were successfully processed.
+        errors: Array of errors that occurred during processing.
+    """
+
+    success: list[ListProcessedSuccess] = Field(
+        default_factory=list, description="Successfully processed lists"
+    )
+    errors: list[ListProcessedError] = Field(
+        default_factory=list, description="Processing errors"
+    )
+
+
+class ListsResponse(BaseModel):
+    """Response model for list operations.
+
+    Attributes:
+        lists: Array of list objects.
+        processed: Processing result (null for GET operations).
+        took: Time in seconds it took to process the request.
+    """
+
+    lists: list[PiHoleList] = Field(..., description="Array of list objects")
+    processed: ListProcessedResult | None = Field(None, description="Processing result")
+    took: float = Field(
+        ..., description="Time in seconds it took to process the request"
+    )
+
+
+class SearchResultCounts(BaseModel):
+    """Search result counts.
+
+    Attributes:
+        exact: Number of exact matches.
+        regex: Number of regex matches.
+    """
+
+    exact: int = Field(..., description="Number of exact matches")
+    regex: int = Field(..., description="Number of regex matches")
+
+
+class SearchGravityCounts(BaseModel):
+    """Search gravity result counts.
+
+    Attributes:
+        allow: Number of allow list matches.
+        block: Number of block list matches.
+    """
+
+    allow: int = Field(..., description="Number of allow list matches")
+    block: int = Field(..., description="Number of block list matches")
+
+
+class SearchResults(BaseModel):
+    """Search results summary.
+
+    Attributes:
+        domains: Domain search result counts.
+        gravity: Gravity search result counts.
+        total: Total number of results.
+    """
+
+    domains: SearchResultCounts = Field(..., description="Domain search result counts")
+    gravity: SearchGravityCounts = Field(
+        ..., description="Gravity search result counts"
+    )
+    total: int = Field(..., description="Total number of results")
+
+
+class SearchParameters(BaseModel):
+    """Search parameters used.
+
+    Attributes:
+        N: Maximum number of results returned.
+        partial: Whether partial matching was used.
+        domain: Domain that was searched for.
+        debug: Whether debug information was included.
+    """
+
+    N: int = Field(..., description="Maximum number of results returned")
+    partial: bool = Field(..., description="Whether partial matching was used")
+    domain: str = Field(..., description="Domain that was searched for")
+    debug: bool = Field(..., description="Whether debug information was included")
+
+
+class SearchData(BaseModel):
+    """Search data container.
+
+    Attributes:
+        domains: List of domain matches.
+        gravity: List of gravity matches.
+        results: Search result summary.
+        parameters: Search parameters used.
+    """
+
+    domains: list[PiHoleList] = Field(..., description="List of domain matches")
+    gravity: list[PiHoleList] = Field(..., description="List of gravity matches")
+    results: SearchResults = Field(..., description="Search result summary")
+    parameters: SearchParameters = Field(..., description="Search parameters used")
+
+
+class SearchResponse(BaseModel):
+    """Response for domain search operations.
+
+    Attributes:
+        search: Search data and results.
+        took: Time taken to process the request.
+    """
+
+    search: SearchData = Field(..., description="Search data and results")
+    took: float = Field(..., description="Time taken to process the request")
+
+
 class PiHoleAuthSession(BaseModel):
     """Pi-hole authentication session data.
 
