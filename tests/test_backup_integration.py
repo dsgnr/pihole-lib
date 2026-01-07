@@ -51,7 +51,9 @@ class TestPiHoleBackupExport:
 
         client.close()
 
-    def test_export_backup_creates_directory(self, pihole_container):
+    def test_export_backup_creates_directory(
+        self, pihole_container, pihole_restart_isolation
+    ):
         """Should create parent directories if they don't exist."""
         with PiHoleClient(
             base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
@@ -67,7 +69,9 @@ class TestPiHoleBackupExport:
                 assert Path(result).exists()
                 assert backup_dir.exists()
 
-    def test_export_backup_invalid_path(self, pihole_container):
+    def test_export_backup_invalid_path(
+        self, pihole_container, pihole_restart_isolation
+    ):
         """Should raise error for invalid backup paths."""
         with PiHoleClient(
             base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
@@ -84,7 +88,9 @@ class TestPiHoleBackupExport:
 class TestPiHoleBackupImport:
     """Test backup import functionality against real Pi-hole."""
 
-    def test_import_backup_file_not_found(self, pihole_container):
+    def test_import_backup_file_not_found(
+        self, pihole_container, pihole_restart_isolation
+    ):
         """Should raise error when backup file doesn't exist."""
         with PiHoleClient(
             base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
