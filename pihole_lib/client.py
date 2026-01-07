@@ -70,6 +70,11 @@ API_CLIENTS = {
         "class": "PiHoleNetwork",
         "description": "network information operations",
     },
+    "clients": {
+        "module": "clients",
+        "class": "PiHoleClients",
+        "description": "client management operations",
+    },
 }
 
 

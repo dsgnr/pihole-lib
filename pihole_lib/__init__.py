@@ -67,8 +67,23 @@ Examples:
         interfaces = client.network.get_interfaces()
         routes = client.network.get_routes()
 
+        # Client management
+        all_clients = client.clients.get_clients()
+        print(f"Found {len(all_clients)} clients")
+
+        # Add a new client
+        client.clients.add_client(
+            client="192.168.1.50",
+            comment="John's laptop",
+            groups=[0]
+        )
+
+        # Get client suggestions
+        suggestions = client.clients.get_client_suggestions()
+        print(f"Found {len(suggestions)} unconfigured clients")
+
     # Alternative usage with explicit class imports
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, PiHoleDomains, PiHoleNetwork
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, PiHoleDomains, PiHoleNetwork, PiHoleClients
 
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
         # Configuration management
@@ -112,6 +127,22 @@ Examples:
         gateway = network.get_gateway()
         interfaces = network.get_interfaces()
         routes = network.get_routes()
+
+        # Client management
+        clients = PiHoleClients(client)
+        all_clients = clients.get_clients()
+        print(f"Found {len(all_clients)} clients")
+
+        # Add a new client
+        clients.add_client(
+            client="192.168.1.50",
+            comment="John's laptop",
+            groups=[0]
+        )
+
+        # Get client suggestions
+        suggestions = clients.get_client_suggestions()
+        print(f"Found {len(suggestions)} unconfigured clients")
     ```
 """
 
@@ -119,6 +150,7 @@ from .actions import PiHoleActions
 from .backup import PiHoleBackup
 from .base import BasePiHoleAPIClient
 from .client import PiHoleClient
+from .clients import PiHoleClients
 from .config import PiHoleConfig
 from .dhcp import PiHoleDHCP
 from .dns import PiHoleDNS
@@ -137,10 +169,19 @@ from .models import (
     PADDFTL,
     AddListRequest,
     BatchDeleteItem,
+    Client,
+    ClientBatchDeleteItem,
     ClientHeader,
     ClientHistoryEntry,
     ClientHistoryResponse,
     ClientInfo,
+    ClientProcessedError,
+    ClientProcessedResult,
+    ClientProcessedSuccess,
+    ClientRequest,
+    ClientsResponse,
+    ClientSuggestionsResponse,
+    ClientUpdateRequest,
     ComponentVersion,
     DatabaseClientHistoryResponse,
     DatabaseGroup,
@@ -289,14 +330,24 @@ __all__ = [
     "PiHoleNetwork",
     "PiHolePADD",
     "PiHoleStats",
+    "PiHoleClients",
     "BasePiHoleAPIClient",
     "PiHoleAPIError",
     "PiHoleAuthenticationError",
     "PiHoleConnectionError",
     "PiHoleServerError",
     "AddListRequest",
+    "Client",
+    "ClientBatchDeleteItem",
     "ClientHeader",
     "ClientInfo",
+    "ClientProcessedError",
+    "ClientProcessedResult",
+    "ClientProcessedSuccess",
+    "ClientRequest",
+    "ClientsResponse",
+    "ClientSuggestionsResponse",
+    "ClientUpdateRequest",
     "DatabaseGroup",
     "DatabaseInfo",
     "DatabaseOwner",

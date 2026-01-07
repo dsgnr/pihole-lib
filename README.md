@@ -93,6 +93,11 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Group Management** | Get groups | ✅ |
 | | Create/update/delete groups | ✅ |
 | | Batch group operations | ✅ |
+| **Client Management** | Get clients | ✅ |
+| | Add/update/delete clients | ✅ |
+| | Batch client operations | ✅ |
+| | Client suggestions | ✅ |
+| | Client identification (IP/MAC/hostname/interface) | ✅ |
 | **Pi-hole Configuration** | Get/Update Network settings | 📋 |
 | | Get/Update DNS settings | 📋 |
 | | Get/Update Web interface settings | 📋 |
@@ -968,6 +973,147 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     # Delete the group
     success = client.groups.delete_group("test_group")
     print(f"Group deleted: {success}")
+```
+
+### Client management
+
+```python
+from pihole_lib import PiHoleClient, PiHoleClients, ClientBatchDeleteItem
+
+# Manage Pi-hole clients
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    clients = PiHoleClients(client)
+
+    # Get all clients
+    all_clients = clients.get_clients()
+    print(f"Found {len(all_clients)} clients")
+
+    for client_info in all_clients:
+        print(f"Client: {client_info.client}")
+        print(f"  Name: {client_info.name}")
+        print(f"  Comment: {client_info.comment}")
+        print(f"  Groups: {client_info.groups}")
+        print(f"  ID: {client_info.id}")
+
+    # Get specific client by IP address
+    specific_client = clients.get_clients(client="192.168.1.50")
+    if specific_client:
+        client_info = specific_client[0]
+        print(f"Found client: {client_info.client}")
+
+    # Get client by MAC address
+    mac_client = clients.get_clients(client="12:34:56:78:9A:BC")
+
+    # Get client by hostname
+    hostname_client = clients.get_clients(client="laptop.local")
+
+    # Add a new client by IP address
+    new_clients = clients.add_client(
+        client="192.168.1.100",
+        comment="John's laptop",
+        groups=[0, 1]
+    )
+    print(f"Added client: {new_clients[0].client}")
+
+    # Add client by MAC address
+    mac_clients = clients.add_client(
+        client="12:34:56:78:9A:BC",
+        comment="Smart TV",
+        groups=[0]
+    )
+
+    # Add client by hostname
+    hostname_clients = clients.add_client(
+        client="laptop.local",
+        comment="Development machine"
+    )
+
+    # Add client by subnet (CIDR notation)
+    subnet_clients = clients.add_client(
+        client="192.168.2.0/24",
+        comment="Guest network devices"
+    )
+
+    # Add client by interface
+    interface_clients = clients.add_client(
+        client=":eth0",
+        comment="Ethernet interface clients"
+    )
+
+    # Update an existing client
+    update_response = clients.update_client(
+        client="192.168.1.100",
+        comment="Updated comment for John's laptop",
+        groups=[0, 1, 2]
+    )
+
+    if update_response.processed and update_response.processed.errors:
+        for error in update_response.processed.errors:
+            print(f"Error updating client: {error.error}")
+    else:
+        updated_client = update_response.clients[0]
+        print(f"Updated client: {updated_client.client}")
+        print(f"New comment: {updated_client.comment}")
+        print(f"Groups: {updated_client.groups}")
+
+    # Get client suggestions (unconfigured clients that have been seen)
+    suggestions = clients.get_client_suggestions()
+    print(f"Found {len(suggestions)} unconfigured clients")
+
+    for suggestion in suggestions:
+        print(f"Suggested client: {suggestion.client}")
+        if suggestion.name:
+            print(f"  Name: {suggestion.name}")
+        print(f"  Last seen: {suggestion.date_modified}")
+
+    # Add suggested clients to configuration
+    for suggestion in suggestions[:3]:  # Add first 3 suggestions
+        clients.add_client(
+            client=suggestion.client,
+            comment=f"Auto-added from suggestions: {suggestion.name or 'Unknown'}"
+        )
+
+    # Delete a single client
+    delete_success = clients.delete_client("192.168.1.100")
+    print(f"Client deletion successful: {delete_success}")
+
+    # Batch delete multiple clients
+    items_to_delete = [
+        ClientBatchDeleteItem(item="12:34:56:78:9A:BC"),
+        ClientBatchDeleteItem(item="laptop.local"),
+        ClientBatchDeleteItem(item="192.168.2.0/24"),
+    ]
+
+    batch_success = clients.batch_delete_clients(items_to_delete)
+    print(f"Batch deletion successful: {batch_success}")
+
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get all clients - no need to import PiHoleClients
+    all_clients = client.clients.get_clients()
+    print(f"Found {len(all_clients)} clients")
+
+    # Add a client
+    new_clients = client.clients.add_client(
+        client="192.168.1.200",
+        comment="Test client via property access",
+        groups=[0]
+    )
+
+    # Update the client
+    update_response = client.clients.update_client(
+        client="192.168.1.200",
+        comment="Updated test client",
+        groups=[0]
+    )
+
+    # Get client suggestions
+    suggestions = client.clients.get_client_suggestions()
+    print(f"Client suggestions: {len(suggestions)}")
+
+    # Delete the client
+    success = client.clients.delete_client("192.168.1.200")
+    print(f"Client deleted: {success}")
 ```
 
 ### Configuration management

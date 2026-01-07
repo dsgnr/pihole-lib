@@ -2311,3 +2311,144 @@ class NetworkDeviceDeleteResponse(BaseModel):
     """
 
     took: float = Field(..., description="Time taken to process the request")
+
+
+# Client Management Models
+
+
+class Client(BaseModel):
+    """Pi-hole client entry.
+
+    Attributes:
+        client: Client identifier (IP, MAC, hostname, or interface).
+        name: Client name (hostname if available).
+        comment: User-provided free-text comment for this client.
+        groups: Array of group IDs.
+        id: Database ID.
+        date_added: Unix timestamp of client addition.
+        date_modified: Unix timestamp of last client modification.
+    """
+
+    client: str = Field(..., description="Client identifier")
+    name: str = Field(default="", description="Client name")
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this client"
+    )
+    groups: list[int] = Field(..., description="Array of group IDs")
+    id: int = Field(..., description="Database ID")
+    date_added: int = Field(..., description="Unix timestamp of client addition")
+    date_modified: int = Field(
+        ..., description="Unix timestamp of last client modification"
+    )
+
+
+class ClientRequest(BaseModel):
+    """Request model for creating or updating a client.
+
+    Attributes:
+        client: Client identifier (IP, MAC, hostname, or interface).
+        comment: User-provided free-text comment for this client.
+        groups: Array of group IDs.
+    """
+
+    client: str | None = Field(None, description="Client identifier")
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this client"
+    )
+    groups: list[int] = Field(default=[0], description="Array of group IDs")
+
+
+class ClientUpdateRequest(BaseModel):
+    """Request model for updating an existing client.
+
+    Attributes:
+        comment: User-provided free-text comment for this client.
+        groups: Array of group IDs.
+    """
+
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this client"
+    )
+    groups: list[int] = Field(..., description="Array of group IDs")
+
+
+class ClientBatchDeleteItem(BaseModel):
+    """Item for batch client deletion.
+
+    Attributes:
+        item: Client identifier to delete.
+    """
+
+    item: str = Field(..., description="Client identifier to delete")
+
+
+class ClientProcessedSuccess(BaseModel):
+    """Success item in client processing result.
+
+    Attributes:
+        item: Client that was successfully processed.
+    """
+
+    item: str = Field(..., description="Client that was successfully processed")
+
+
+class ClientProcessedError(BaseModel):
+    """Error item in client processing result.
+
+    Attributes:
+        item: Client that could not be processed.
+        error: Error message.
+    """
+
+    item: str = Field(..., description="Client that could not be processed")
+    error: str = Field(..., description="Error message")
+
+
+class ClientProcessedResult(BaseModel):
+    """Processing result for client operations.
+
+    Attributes:
+        success: Array of clients that were successfully processed.
+        errors: Array of errors that occurred during processing.
+    """
+
+    success: list[ClientProcessedSuccess] = Field(
+        default_factory=list, description="Successfully processed clients"
+    )
+    errors: list[ClientProcessedError] = Field(
+        default_factory=list, description="Processing errors"
+    )
+
+
+class ClientsResponse(BaseModel):
+    """Response model for client operations.
+
+    Attributes:
+        clients: Array of client objects.
+        processed: Processing result (null for GET operations).
+        took: Time in seconds it took to process the request.
+    """
+
+    clients: list[Client] = Field(..., description="Array of client objects")
+    processed: ClientProcessedResult | None = Field(
+        None, description="Processing result"
+    )
+    took: float = Field(
+        ..., description="Time in seconds it took to process the request"
+    )
+
+
+class ClientSuggestionsResponse(BaseModel):
+    """Response model for client suggestions.
+
+    Attributes:
+        clients: Array of unconfigured client suggestions.
+        took: Time in seconds it took to process the request.
+    """
+
+    clients: list[Client] = Field(
+        ..., description="Array of unconfigured client suggestions"
+    )
+    took: float = Field(
+        ..., description="Time in seconds it took to process the request"
+    )
