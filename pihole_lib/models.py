@@ -68,6 +68,34 @@ class LoginInfo(BaseModel):
     dns: bool = Field(..., description="Whether the DNS server is up and running")
 
 
+class ClientHeader(BaseModel):
+    """HTTP header from client request.
+
+    Attributes:
+        name: Header name.
+        value: Header value.
+    """
+
+    name: str = Field(..., description="Header name")
+    value: str = Field(..., description="Header value")
+
+
+class ClientInfo(BaseModel):
+    """Pi-hole client request information.
+
+    Attributes:
+        remote_addr: Client's remote IP address.
+        http_version: HTTP version used by client.
+        method: HTTP method used.
+        headers: List of HTTP headers sent by client.
+    """
+
+    remote_addr: str = Field(..., description="Client's remote IP address")
+    http_version: str = Field(..., description="HTTP version used by client")
+    method: str = Field(..., description="HTTP method used")
+    headers: list[ClientHeader] = Field(..., description="HTTP headers sent by client")
+
+
 class TeleporterGravityOptions(BaseModel):
     """Teleporter gravity database import options.
 

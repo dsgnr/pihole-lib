@@ -49,6 +49,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Automatic session management | ✅ |
 | | Context manager support | ✅ |
 | **Information** | Login page information | ✅ |
+| | Client information | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -126,6 +127,15 @@ login_info = info.get_login_info()
 print(f"HTTPS Port: {login_info.https_port}")  # 443 or 0 if disabled
 print(f"DNS Status: {login_info.dns}")         # True if DNS is running
 
+# Get client request information
+client_info = info.get_client_info()
+print(f"Client IP: {client_info.remote_addr}")
+print(f"HTTP Version: {client_info.http_version}")
+print(f"Method: {client_info.method}")
+print(f"Headers: {len(client_info.headers)} headers")
+for header in client_info.headers:
+    print(f"  {header.name}: {header.value}")
+
 client.close()
 
 # Or use within client context manager
@@ -133,6 +143,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     info = PiHoleInfo(client)
     login_info = info.get_login_info()
     print(f"HTTPS Port: {login_info.https_port}")
+
+    client_info = info.get_client_info()
+    print(f"Client IP: {client_info.remote_addr}")
 ```
 
 ### Backup and restore operations
@@ -437,6 +450,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 **Methods:**
 - `PiHoleInfo(client)` - Create a new info client using an existing PiHoleClient
 - `get_login_info()` - Get login page information (HTTPS port, DNS status, processing time)
+- `get_client_info()` - Get client request information (IP address, HTTP version, method, headers)
 
 ### PiHoleBackup
 

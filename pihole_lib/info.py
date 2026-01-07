@@ -3,8 +3,8 @@
 from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_INFO_LOGIN
-from .models import LoginInfo
+from .constants import API_INFO_CLIENT, API_INFO_LOGIN
+from .models import ClientInfo, LoginInfo
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -57,3 +57,40 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return LoginInfo(**data)
+
+    def get_client_info(self) -> ClientInfo:
+        """Get client request information.
+
+        This API hook returns information about the current HTTP request,
+        including client IP, HTTP version, method, and headers.
+
+        Returns:
+            ClientInfo: Client request information including remote address,
+                       HTTP version, method, and headers.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                client_info = info.get_client_info()
+                print(f"Client IP: {client_info.remote_addr}")
+                print(f"HTTP Version: {client_info.http_version}")
+                print(f"Method: {client_info.method}")
+                for header in client_info.headers:
+                    print(f"Header: {header.name} = {header.value}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_CLIENT,
+        )
+
+        data = response.json()
+        return ClientInfo(**data)

@@ -1,5 +1,7 @@
 """Unit tests for PiHoleInfo (no network calls)."""
 
+from unittest.mock import Mock, patch
+
 from pihole_lib import PiHoleClient, PiHoleInfo
 
 from .constants import (
@@ -47,6 +49,71 @@ class TestPiHoleInfoLoginInfo:
             pass
 
         assert client._session is not None
+
+
+class TestPiHoleInfoClientInfo:
+    """Test info client get_client_info functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_client_info_success(self, mock_request):
+        """Should successfully get client info."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "remote_addr": "192.168.1.100",
+            "http_version": "1.1",
+            "method": "GET",
+            "headers": [
+                {"name": "Host", "value": "localhost:8080"},
+                {"name": "User-Agent", "value": "python-requests/2.32.5"},
+            ],
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_client_info()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/client",
+        )
+
+        # Verify the response structure
+        assert result.remote_addr == "192.168.1.100"
+        assert result.http_version == "1.1"
+        assert result.method == "GET"
+        assert len(result.headers) == 2
+        assert result.headers[0].name == "Host"
+        assert result.headers[0].value == "localhost:8080"
+        assert result.headers[1].name == "User-Agent"
+        assert result.headers[1].value == "python-requests/2.32.5"
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_client_info_empty_headers(self, mock_request):
+        """Should handle empty headers list."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "remote_addr": "127.0.0.1",
+            "http_version": "2.0",
+            "method": "POST",
+            "headers": [],
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_client_info()
+
+        assert result.remote_addr == "127.0.0.1"
+        assert result.http_version == "2.0"
+        assert result.method == "POST"
+        assert len(result.headers) == 0
 
     def test_get_login_info_uses_client_properties(self):
         """get_login_info should use client's base_url and timeout."""

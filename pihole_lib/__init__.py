@@ -64,6 +64,8 @@ from .info import PiHoleInfo
 from .lists import PiHoleLists
 from .models import (
     AddListRequest,
+    ClientHeader,
+    ClientInfo,
     ListType,
     LoginInfo,
     PiHoleAuthSession,
@@ -88,6 +90,8 @@ __all__ = [
     "PiHoleConnectionError",
     "PiHoleServerError",
     "AddListRequest",
+    "ClientHeader",
+    "ClientInfo",
     "ListType",
     "LoginInfo",
     "PiHoleAuthSession",

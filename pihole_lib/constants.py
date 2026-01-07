@@ -3,6 +3,7 @@
 # API Endpoints
 API_AUTH = "/api/auth"
 API_INFO_LOGIN = "/api/info/login"
+API_INFO_CLIENT = "/api/info/client"
 API_TELEPORTER = "/api/teleporter"
 API_LISTS = "/api/lists"
 API_ACTION_GRAVITY = "/api/action/gravity"

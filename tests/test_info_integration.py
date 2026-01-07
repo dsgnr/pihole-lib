@@ -4,7 +4,7 @@ import pytest
 
 from pihole_lib import PiHoleClient, PiHoleInfo
 from pihole_lib.exceptions import PiHoleConnectionError
-from pihole_lib.models import LoginInfo
+from pihole_lib.models import ClientInfo, LoginInfo
 
 from .constants import (
     CONNECTION_FAILED_MESSAGE,
@@ -135,3 +135,65 @@ class TestPiHoleInfoWorkflows:
         assert info_client1._client._session is info_client2._client._session
 
         client.close()
+
+
+class TestPiHoleInfoClientInfo:
+    """Test client info functionality against real Pi-hole."""
+
+    def test_get_client_info_success(self, pihole_container):
+        """Should successfully retrieve client info from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            client_info = info_client.get_client_info()
+
+            assert isinstance(client_info, ClientInfo)
+            assert isinstance(client_info.remote_addr, str)
+            assert len(client_info.remote_addr) > 0
+            assert isinstance(client_info.http_version, str)
+            assert client_info.http_version in ["1.0", "1.1", "2.0"]
+            assert isinstance(client_info.method, str)
+            assert client_info.method == "GET"
+            assert isinstance(client_info.headers, list)
+            assert len(client_info.headers) > 0
+
+            # Check that headers have the expected structure
+            for header in client_info.headers:
+                assert hasattr(header, "name")
+                assert hasattr(header, "value")
+                assert isinstance(header.name, str)
+                assert isinstance(header.value, str)
+
+    def test_get_client_info_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_client_info()
+
+        client.close()
+
+    def test_get_client_info_headers_content(self, pihole_container):
+        """Should return expected headers in client info."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            client_info = info_client.get_client_info()
+
+            # Should have common HTTP headers
+            header_names = [header.name for header in client_info.headers]
+            assert "Host" in header_names
+            assert "User-Agent" in header_names
+
+            # Find the Host header and verify it
+            host_header = next(h for h in client_info.headers if h.name == "Host")
+            assert "localhost:8080" in host_header.value
