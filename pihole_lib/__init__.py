@@ -66,10 +66,12 @@ from .models import (
     AddListRequest,
     ClientHeader,
     ClientInfo,
+    ComponentVersion,
     DatabaseGroup,
     DatabaseInfo,
     DatabaseOwner,
     DatabaseUser,
+    DockerVersion,
     FTLClientStats,
     FTLDatabaseStats,
     FTLDnsmasqStats,
@@ -89,6 +91,10 @@ from .models import (
     PiHoleList,
     TeleporterGravityOptions,
     TeleporterImportOptions,
+    VersionDetails,
+    VersionInfo,
+    VersionLocal,
+    VersionRemote,
 )
 
 __version__ = "0.1.0"

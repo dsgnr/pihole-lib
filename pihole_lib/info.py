@@ -9,8 +9,9 @@ from .constants import (
     API_INFO_FTL,
     API_INFO_HOST,
     API_INFO_LOGIN,
+    API_INFO_VERSION,
 )
-from .models import ClientInfo, DatabaseInfo, FTLInfo, HostInfo, LoginInfo
+from .models import ClientInfo, DatabaseInfo, FTLInfo, HostInfo, LoginInfo, VersionInfo
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -212,3 +213,42 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return HostInfo(**data)
+
+    def get_version_info(self) -> VersionInfo:
+        """Get Pi-hole version information.
+
+        Request versions of the individual Pi-hole components.
+
+        Returns:
+            VersionInfo: Version information for all Pi-hole components including
+                        local and remote versions, git hashes, and build dates.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                version_info = info.get_version_info()
+                print(f"Pi-hole Core: {version_info.version.core.local.version}")
+                print(f"Web Interface: {version_info.version.web.local.version}")
+                print(f"FTL: {version_info.version.ftl.local.version}")
+                print(f"Docker: {version_info.version.docker.local}")
+
+                # Check if updates are available
+                if version_info.version.core.local.version != version_info.version.core.remote.version:
+                    print("Core update available!")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_VERSION,
+        )
+
+        data = response.json()
+        return VersionInfo(**data)

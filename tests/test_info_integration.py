@@ -538,3 +538,143 @@ class TestPiHoleInfoHostInfo:
             # Release should be a valid kernel version
             version_parts = host_info.host.uname.release.split(".")
             assert len(version_parts) >= 2  # At least major.minor
+
+
+class TestPiHoleInfoVersionInfo:
+    """Test version info functionality against real Pi-hole."""
+
+    def test_get_version_info_success(self, pihole_container):
+        """Should successfully retrieve version info from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            version_info = info_client.get_version_info()
+
+            # Verify basic structure
+            assert hasattr(version_info, "version")
+            assert hasattr(version_info.version, "core")
+            assert hasattr(version_info.version, "web")
+            assert hasattr(version_info.version, "ftl")
+            assert hasattr(version_info.version, "docker")
+
+            # Verify core version structure
+            assert hasattr(version_info.version.core, "local")
+            assert hasattr(version_info.version.core, "remote")
+            assert hasattr(version_info.version.core.local, "version")
+            assert hasattr(version_info.version.core.local, "branch")
+            assert hasattr(version_info.version.core.local, "hash")
+            assert hasattr(version_info.version.core.remote, "version")
+            assert hasattr(version_info.version.core.remote, "hash")
+
+            # Verify web version structure
+            assert hasattr(version_info.version.web.local, "version")
+            assert hasattr(version_info.version.web.local, "branch")
+            assert hasattr(version_info.version.web.local, "hash")
+
+            # Verify FTL version structure
+            assert hasattr(version_info.version.ftl.local, "version")
+            assert hasattr(version_info.version.ftl.local, "branch")
+            assert hasattr(version_info.version.ftl.local, "hash")
+            assert hasattr(version_info.version.ftl.local, "date")
+
+            # Verify Docker version structure
+            assert hasattr(version_info.version.docker, "local")
+            assert hasattr(version_info.version.docker, "remote")
+
+            # Verify data types
+            assert isinstance(version_info.version.core.local.version, str)
+            assert isinstance(version_info.version.core.local.hash, str)
+            assert isinstance(version_info.version.docker.local, str)
+
+    def test_get_version_info_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_version_info()
+
+        client.close()
+
+    def test_get_version_info_version_format(self, pihole_container):
+        """Should return properly formatted version information."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            version_info = info_client.get_version_info()
+
+            # Versions should follow semantic versioning pattern
+            assert version_info.version.core.local.version.startswith("v")
+            assert version_info.version.web.local.version.startswith("v")
+            assert version_info.version.ftl.local.version.startswith("v")
+
+            # Hashes should be git commit hashes (typically 7+ characters)
+            assert len(version_info.version.core.local.hash) >= 7
+            assert len(version_info.version.web.local.hash) >= 7
+            assert len(version_info.version.ftl.local.hash) >= 7
+
+            # Branch should be a valid git branch name
+            assert len(version_info.version.core.local.branch) > 0
+            assert " " not in version_info.version.core.local.branch
+
+            # FTL should have a build date
+            assert version_info.version.ftl.local.date is not None
+            assert len(version_info.version.ftl.local.date) > 0
+
+    def test_get_version_info_docker_versions(self, pihole_container):
+        """Should return valid Docker version information."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            version_info = info_client.get_version_info()
+
+            # Docker versions should be strings
+            assert isinstance(version_info.version.docker.local, str)
+            assert isinstance(version_info.version.docker.remote, str)
+
+            # Docker versions should not be empty
+            assert len(version_info.version.docker.local) > 0
+            assert len(version_info.version.docker.remote) > 0
+
+            # Docker versions typically follow YYYY.MM.N format or "dev"
+            local_docker = version_info.version.docker.local
+            assert local_docker == "dev" or "." in local_docker
+
+    def test_get_version_info_consistency(self, pihole_container):
+        """Should return consistent version information."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            version_info = info_client.get_version_info()
+
+            # Local and remote versions should be valid
+            assert version_info.version.core.local.version is not None
+            assert version_info.version.core.remote.version is not None
+            assert version_info.version.web.local.version is not None
+            assert version_info.version.web.remote.version is not None
+            assert version_info.version.ftl.local.version is not None
+            assert version_info.version.ftl.remote.version is not None
+
+            # Hashes should be consistent format
+            for component in [
+                version_info.version.core,
+                version_info.version.web,
+                version_info.version.ftl,
+            ]:
+                assert len(component.local.hash) >= 7
+                assert len(component.remote.hash) >= 7
+                # Hashes should be alphanumeric
+                assert component.local.hash.isalnum()
+                assert component.remote.hash.isalnum()

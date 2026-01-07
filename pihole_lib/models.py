@@ -408,6 +408,88 @@ class HostInfo(BaseModel):
     host: HostDetails = Field(..., description="Host system details")
 
 
+class VersionLocal(BaseModel):
+    """Local version information.
+
+    Attributes:
+        version: Version string.
+        branch: Git branch (optional).
+        hash: Git commit hash.
+        date: Build date (optional).
+    """
+
+    version: str = Field(..., description="Version string")
+    branch: str | None = Field(None, description="Git branch")
+    hash: str = Field(..., description="Git commit hash")
+    date: str | None = Field(None, description="Build date")
+
+
+class VersionRemote(BaseModel):
+    """Remote version information.
+
+    Attributes:
+        version: Version string.
+        hash: Git commit hash.
+    """
+
+    version: str = Field(..., description="Version string")
+    hash: str = Field(..., description="Git commit hash")
+
+
+class ComponentVersion(BaseModel):
+    """Component version information.
+
+    Attributes:
+        local: Local version information.
+        remote: Remote version information.
+    """
+
+    local: VersionLocal = Field(..., description="Local version information")
+    remote: VersionRemote = Field(..., description="Remote version information")
+
+
+class DockerVersion(BaseModel):
+    """Docker version information.
+
+    Attributes:
+        local: Local Docker version.
+        remote: Remote Docker version.
+    """
+
+    local: str = Field(..., description="Local Docker version")
+    remote: str = Field(..., description="Remote Docker version")
+
+
+class VersionDetails(BaseModel):
+    """Pi-hole version details.
+
+    Attributes:
+        core: Pi-hole core version information.
+        web: Pi-hole web interface version information.
+        ftl: FTL version information.
+        docker: Docker image version information.
+    """
+
+    core: ComponentVersion = Field(..., description="Pi-hole core version information")
+    web: ComponentVersion = Field(
+        ..., description="Pi-hole web interface version information"
+    )
+    ftl: ComponentVersion = Field(..., description="FTL version information")
+    docker: DockerVersion = Field(..., description="Docker image version information")
+
+
+class VersionInfo(BaseModel):
+    """Pi-hole version information.
+
+    Attributes:
+        version: Version details for all components.
+    """
+
+    version: VersionDetails = Field(
+        ..., description="Version details for all components"
+    )
+
+
 class FTLInfo(BaseModel):
     """Pi-hole FTL (Faster Than Light) information.
 

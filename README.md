@@ -53,6 +53,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Database information | ✅ |
 | | FTL runtime information | ✅ |
 | | Host system information | ✅ |
+| | Version information | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -167,6 +168,17 @@ print(f"Hardware model: {host_info.host.model}")
 if host_info.host.dmi.sys.vendor:
     print(f"System vendor: {host_info.host.dmi.sys.vendor}")
 
+# Get version information
+version_info = info.get_version_info()
+print(f"Pi-hole Core: {version_info.version.core.local.version}")
+print(f"Web Interface: {version_info.version.web.local.version}")
+print(f"FTL: {version_info.version.ftl.local.version}")
+print(f"Docker: {version_info.version.docker.local}")
+
+# Check if updates are available
+if version_info.version.core.local.version != version_info.version.core.remote.version:
+    print("Core update available!")
+
 client.close()
 
 # Or use within client context manager
@@ -186,6 +198,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     host_info = info.get_host_info()
     print(f"Hostname: {host_info.host.uname.nodename}")
+
+    version_info = info.get_version_info()
+    print(f"Pi-hole Core: {version_info.version.core.local.version}")
 ```
 
 ### Backup and restore operations
@@ -494,6 +509,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `get_database_info()` - Get database information (file size, permissions, ownership, query counts, SQLite version)
 - `get_ftl_info()` - Get FTL runtime information (process details, resource usage, database stats, dnsmasq stats)
 - `get_host_info()` - Get host system information (uname details, hardware model, DMI/SMBIOS data)
+- `get_version_info()` - Get version information (core, web, FTL, Docker versions with local/remote comparison)
 
 ### PiHoleBackup
 

@@ -628,3 +628,176 @@ class TestPiHoleInfoHostInfo:
         assert "linuxkit" in result.host.uname.release  # Docker/container kernel
         assert result.host.model is None  # Containers don't have hardware models
         assert result.host.dmi.sys.vendor is None  # No DMI info in containers
+
+
+class TestPiHoleInfoVersionInfo:
+    """Test info client get_version_info functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_version_info_success(self, mock_request):
+        """Should successfully get version info."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "version": {
+                "core": {
+                    "local": {
+                        "version": "v6.3",
+                        "branch": "master",
+                        "hash": "5a23c9c3",
+                    },
+                    "remote": {"version": "v6.3", "hash": "5a23c9c3"},
+                },
+                "web": {
+                    "local": {
+                        "version": "v6.4",
+                        "branch": "master",
+                        "hash": "cd0c392d",
+                    },
+                    "remote": {"version": "v6.4", "hash": "cd0c392d"},
+                },
+                "ftl": {
+                    "local": {
+                        "hash": "8d1add8d",
+                        "branch": "master",
+                        "version": "v6.4.1",
+                        "date": "2025-11-27 18:02:19 +0000",
+                    },
+                    "remote": {"version": "v6.4.1", "hash": "8d1add8d"},
+                },
+                "docker": {"local": "2025.11.1", "remote": "2025.11.1"},
+            },
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_version_info()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/version",
+        )
+
+        # Verify the response structure
+        assert result.version.core.local.version == "v6.3"
+        assert result.version.core.local.branch == "master"
+        assert result.version.core.local.hash == "5a23c9c3"
+        assert result.version.core.remote.version == "v6.3"
+        assert result.version.core.remote.hash == "5a23c9c3"
+
+        assert result.version.web.local.version == "v6.4"
+        assert result.version.web.local.branch == "master"
+        assert result.version.web.local.hash == "cd0c392d"
+        assert result.version.web.remote.version == "v6.4"
+        assert result.version.web.remote.hash == "cd0c392d"
+
+        assert result.version.ftl.local.version == "v6.4.1"
+        assert result.version.ftl.local.branch == "master"
+        assert result.version.ftl.local.hash == "8d1add8d"
+        assert result.version.ftl.local.date == "2025-11-27 18:02:19 +0000"
+        assert result.version.ftl.remote.version == "v6.4.1"
+        assert result.version.ftl.remote.hash == "8d1add8d"
+
+        assert result.version.docker.local == "2025.11.1"
+        assert result.version.docker.remote == "2025.11.1"
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_version_info_update_available(self, mock_request):
+        """Should handle version info when updates are available."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "version": {
+                "core": {
+                    "local": {"version": "v6.2", "branch": "master", "hash": "abc123"},
+                    "remote": {"version": "v6.3", "hash": "def456"},
+                },
+                "web": {
+                    "local": {"version": "v6.3", "branch": "master", "hash": "ghi789"},
+                    "remote": {"version": "v6.4", "hash": "jkl012"},
+                },
+                "ftl": {
+                    "local": {
+                        "hash": "mno345",
+                        "branch": "master",
+                        "version": "v6.4.0",
+                        "date": "2025-10-15 12:00:00 +0000",
+                    },
+                    "remote": {"version": "v6.4.1", "hash": "pqr678"},
+                },
+                "docker": {"local": "2025.10.1", "remote": "2025.11.1"},
+            },
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_version_info()
+
+        # Verify updates are detected
+        assert result.version.core.local.version != result.version.core.remote.version
+        assert result.version.web.local.version != result.version.web.remote.version
+        assert result.version.ftl.local.version != result.version.ftl.remote.version
+        assert result.version.docker.local != result.version.docker.remote
+
+        # Verify specific versions
+        assert result.version.core.local.version == "v6.2"
+        assert result.version.core.remote.version == "v6.3"
+        assert result.version.ftl.local.version == "v6.4.0"
+        assert result.version.ftl.remote.version == "v6.4.1"
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_version_info_development_branch(self, mock_request):
+        """Should handle version info from development branches."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "version": {
+                "core": {
+                    "local": {
+                        "version": "v6.4-dev",
+                        "branch": "development",
+                        "hash": "abc123",
+                    },
+                    "remote": {"version": "v6.3", "hash": "def456"},
+                },
+                "web": {
+                    "local": {
+                        "version": "v6.5-beta",
+                        "branch": "beta",
+                        "hash": "ghi789",
+                    },
+                    "remote": {"version": "v6.4", "hash": "jkl012"},
+                },
+                "ftl": {
+                    "local": {
+                        "hash": "mno345",
+                        "branch": "development",
+                        "version": "v6.5-dev",
+                        "date": "2025-12-01 10:30:00 +0000",
+                    },
+                    "remote": {"version": "v6.4.1", "hash": "pqr678"},
+                },
+                "docker": {"local": "dev", "remote": "2025.11.1"},
+            },
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_version_info()
+
+        # Verify development versions
+        assert result.version.core.local.branch == "development"
+        assert result.version.web.local.branch == "beta"
+        assert result.version.ftl.local.branch == "development"
+        assert "dev" in result.version.core.local.version
+        assert "beta" in result.version.web.local.version
+        assert "dev" in result.version.ftl.local.version
+        assert result.version.docker.local == "dev"
