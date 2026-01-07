@@ -10,6 +10,7 @@ from .constants import (
     API_INFO_HOST,
     API_INFO_LOGIN,
     API_INFO_MESSAGES,
+    API_INFO_MESSAGES_COUNT,
     API_INFO_SYSTEM,
     API_INFO_VERSION,
 )
@@ -19,6 +20,7 @@ from .models import (
     FTLInfo,
     HostInfo,
     LoginInfo,
+    MessagesCountInfo,
     MessagesInfo,
     SystemInfo,
     VersionInfo,
@@ -340,3 +342,40 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return MessagesInfo(**data)
+
+    def get_messages_count(self) -> MessagesCountInfo:
+        """Get system messages count.
+
+        Request number of Pi-hole diagnosis messages.
+
+        Returns:
+            MessagesCountInfo: Count of system messages.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                messages_count = info.get_messages_count()
+                print(f"Total messages: {messages_count.count}")
+
+                # More efficient than getting all messages if you only need the count
+                if messages_count.count > 0:
+                    print("There are messages to review")
+                else:
+                    print("No messages")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_MESSAGES_COUNT,
+        )
+
+        data = response.json()
+        return MessagesCountInfo(**data)

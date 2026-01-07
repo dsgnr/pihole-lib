@@ -56,6 +56,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Version information | ✅ |
 | | System resource information | ✅ |
 | | System messages | ✅ |
+| | System messages count | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -198,6 +199,10 @@ for message in messages_info.messages:
     print(f"[{message.type.upper()}] {message.plain}")
     print(f"  ID: {message.id}, Time: {message.timestamp}")
 
+# Get messages count
+messages_count = info.get_messages_count()
+print(f"Message count: {messages_count.count}")
+
 client.close()
 
 # Or use within client context manager
@@ -226,6 +231,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     messages_info = info.get_messages()
     print(f"Messages: {len(messages_info.messages)}")
+
+    messages_count = info.get_messages_count()
+    print(f"Message count: {messages_count.count}")
 ```
 
 ### Backup and restore operations
@@ -537,6 +545,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `get_version_info()` - Get version information (core, web, FTL, Docker versions with local/remote comparison)
 - `get_system_info()` - Get system resource information (uptime, memory, CPU, processes, FTL resource usage)
 - `get_messages()` - Get system messages (notifications, warnings, errors with plain text and HTML content)
+- `get_messages_count()` - Get system messages count (efficient way to get just the message count)
 
 ### PiHoleBackup
 

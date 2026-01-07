@@ -729,3 +729,13 @@ class MessagesInfo(BaseModel):
     """
 
     messages: list[Message] = Field(..., description="List of system messages")
+
+
+class MessagesCountInfo(BaseModel):
+    """Pi-hole messages count information.
+
+    Attributes:
+        count: Number of system messages.
+    """
+
+    count: int = Field(..., description="Number of system messages")

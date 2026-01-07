@@ -88,6 +88,7 @@ from .models import (
     ListType,
     LoginInfo,
     Message,
+    MessagesCountInfo,
     MessagesInfo,
     PiHoleAuthSession,
     PiHoleList,

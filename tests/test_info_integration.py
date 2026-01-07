@@ -934,3 +934,49 @@ class TestPiHoleInfoMessagesInfo:
                 html_text = re.sub(r"<[^>]+>", "", message.html)
                 # Basic check that core content is similar
                 assert len(html_text.strip()) > 0
+
+
+class TestPiHoleInfoMessagesCountInfo:
+    """Test messages count info functionality against real Pi-hole."""
+
+    def test_get_messages_count_success(self, pihole_container):
+        """Should successfully retrieve messages count from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            messages_count = info_client.get_messages_count()
+
+            # Verify basic structure
+            assert hasattr(messages_count, "count")
+            assert isinstance(messages_count.count, int)
+            assert messages_count.count >= 0  # Count should be non-negative
+
+    def test_get_messages_count_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_messages_count()
+
+        client.close()
+
+    def test_get_messages_count_consistency(self, pihole_container):
+        """Should return consistent count with get_messages."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            # Get count and messages
+            messages_count = info_client.get_messages_count()
+            messages_info = info_client.get_messages()
+
+            # Count should match the length of messages array
+            assert messages_count.count == len(messages_info.messages)

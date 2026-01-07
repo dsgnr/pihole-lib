@@ -1103,3 +1103,70 @@ class TestPiHoleInfoMessagesInfo:
         assert "v6.5" in message.html
         assert "<strong>" in message.html
         assert "<em>" in message.html
+
+
+class TestPiHoleInfoMessagesCountInfo:
+    """Test info client get_messages_count functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_messages_count_zero(self, mock_request):
+        """Should successfully get zero messages count."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "count": 0,
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_messages_count()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/messages/count",
+        )
+
+        # Verify the response structure
+        assert result.count == 0
+        assert isinstance(result.count, int)
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_messages_count_positive(self, mock_request):
+        """Should successfully get positive messages count."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "count": 5,
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_messages_count()
+
+        # Verify the response structure
+        assert result.count == 5
+        assert isinstance(result.count, int)
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_messages_count_large_number(self, mock_request):
+        """Should handle large message counts."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "count": 1000,
+            "took": 0.0005,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_messages_count()
+
+        assert result.count == 1000
+        assert isinstance(result.count, int)
