@@ -50,6 +50,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Context manager support | ✅ |
 | **Information** | Login page information | ✅ |
 | | Client information | ✅ |
+| | Database information | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -70,7 +71,6 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Regex list management | 📋 |
 | | Import/export lists | 📋 |
 | **FTL Information** | FTL version and status | 📋 |
-| | Database statistics | 📋 |
 | **Pi-hole Configuration** | Network settings | 📋 |
 | | DNS settings | 📋 |
 | | Web interface settings | 📋 |
@@ -136,6 +136,16 @@ print(f"Headers: {len(client_info.headers)} headers")
 for header in client_info.headers:
     print(f"  {header.name}: {header.value}")
 
+# Get database information
+database_info = info.get_database_info()
+print(f"Database size: {database_info.size} bytes")
+print(f"SQLite version: {database_info.sqlite_version}")
+print(f"Queries in memory: {database_info.queries}")
+print(f"Queries on disk: {database_info.queries_disk}")
+print(f"File owner: {database_info.owner.user.name}")
+print(f"File group: {database_info.owner.group.name}")
+print(f"File permissions: {database_info.mode}")
+
 client.close()
 
 # Or use within client context manager
@@ -146,6 +156,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     client_info = info.get_client_info()
     print(f"Client IP: {client_info.remote_addr}")
+
+    database_info = info.get_database_info()
+    print(f"Database size: {database_info.size} bytes")
 ```
 
 ### Backup and restore operations
@@ -451,6 +464,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `PiHoleInfo(client)` - Create a new info client using an existing PiHoleClient
 - `get_login_info()` - Get login page information (HTTPS port, DNS status, processing time)
 - `get_client_info()` - Get client request information (IP address, HTTP version, method, headers)
+- `get_database_info()` - Get database information (file size, permissions, ownership, query counts, SQLite version)
 
 ### PiHoleBackup
 

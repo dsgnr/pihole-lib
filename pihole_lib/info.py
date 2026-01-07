@@ -3,8 +3,8 @@
 from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_INFO_CLIENT, API_INFO_LOGIN
-from .models import ClientInfo, LoginInfo
+from .constants import API_INFO_CLIENT, API_INFO_DATABASE, API_INFO_LOGIN
+from .models import ClientInfo, DatabaseInfo, LoginInfo
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -94,3 +94,39 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return ClientInfo(**data)
+
+    def get_database_info(self) -> DatabaseInfo:
+        """Get database information.
+
+        This API hook returns a collection of various long-term database properties infos.
+
+        Returns:
+            DatabaseInfo: Database information including file size, permissions,
+                         ownership, query counts, and SQLite version.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                db_info = info.get_database_info()
+                print(f"Database size: {db_info.size} bytes")
+                print(f"SQLite version: {db_info.sqlite_version}")
+                print(f"Queries in memory: {db_info.queries}")
+                print(f"Queries on disk: {db_info.queries_disk}")
+                print(f"File owner: {db_info.owner.user.name}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_DATABASE,
+        )
+
+        data = response.json()
+        return DatabaseInfo(**data)

@@ -96,6 +96,80 @@ class ClientInfo(BaseModel):
     headers: list[ClientHeader] = Field(..., description="HTTP headers sent by client")
 
 
+class DatabaseUser(BaseModel):
+    """Database file user information.
+
+    Attributes:
+        uid: User ID.
+        name: User name.
+        info: Additional user information.
+    """
+
+    uid: int = Field(..., description="User ID")
+    name: str = Field(..., description="User name")
+    info: str = Field(..., description="Additional user information")
+
+
+class DatabaseGroup(BaseModel):
+    """Database file group information.
+
+    Attributes:
+        gid: Group ID.
+        name: Group name.
+    """
+
+    gid: int = Field(..., description="Group ID")
+    name: str = Field(..., description="Group name")
+
+
+class DatabaseOwner(BaseModel):
+    """Database file ownership information.
+
+    Attributes:
+        user: User information.
+        group: Group information.
+    """
+
+    user: DatabaseUser = Field(..., description="User information")
+    group: DatabaseGroup = Field(..., description="Group information")
+
+
+class DatabaseInfo(BaseModel):
+    """Pi-hole database information.
+
+    Attributes:
+        size: Database file size in bytes.
+        type: File type description.
+        mode: File permissions.
+        atime: Last access time (Unix timestamp).
+        mtime: Last modification time (Unix timestamp).
+        ctime: Creation time (Unix timestamp).
+        owner: File ownership information.
+        queries: Number of queries in memory.
+        earliest_timestamp: Earliest query timestamp in memory.
+        queries_disk: Number of queries on disk.
+        earliest_timestamp_disk: Earliest query timestamp on disk.
+        sqlite_version: SQLite version.
+    """
+
+    size: int = Field(..., description="Database file size in bytes")
+    type: str = Field(..., description="File type description")
+    mode: str = Field(..., description="File permissions")
+    atime: int = Field(..., description="Last access time (Unix timestamp)")
+    mtime: int = Field(..., description="Last modification time (Unix timestamp)")
+    ctime: int = Field(..., description="Creation time (Unix timestamp)")
+    owner: DatabaseOwner = Field(..., description="File ownership information")
+    queries: int = Field(..., description="Number of queries in memory")
+    earliest_timestamp: int = Field(
+        ..., description="Earliest query timestamp in memory"
+    )
+    queries_disk: int = Field(..., description="Number of queries on disk")
+    earliest_timestamp_disk: int = Field(
+        ..., description="Earliest query timestamp on disk"
+    )
+    sqlite_version: str = Field(..., description="SQLite version")
+
+
 class TeleporterGravityOptions(BaseModel):
     """Teleporter gravity database import options.
 

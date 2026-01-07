@@ -197,3 +197,99 @@ class TestPiHoleInfoClientInfo:
             # Find the Host header and verify it
             host_header = next(h for h in client_info.headers if h.name == "Host")
             assert "localhost:8080" in host_header.value
+
+
+class TestPiHoleInfoDatabaseInfo:
+    """Test database info functionality against real Pi-hole."""
+
+    def test_get_database_info_success(self, pihole_container):
+        """Should successfully retrieve database info from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            db_info = info_client.get_database_info()
+
+            # Verify basic structure
+            assert hasattr(db_info, "size")
+            assert hasattr(db_info, "type")
+            assert hasattr(db_info, "mode")
+            assert hasattr(db_info, "owner")
+            assert hasattr(db_info, "queries")
+            assert hasattr(db_info, "sqlite_version")
+
+            # Verify data types and reasonable values
+            assert isinstance(db_info.size, int)
+            assert db_info.size > 0  # Database should have some size
+            assert isinstance(db_info.type, str)
+            assert "file" in db_info.type.lower()  # Should be some kind of file
+            assert isinstance(db_info.mode, str)
+            assert len(db_info.mode) > 0  # Should have permissions
+            assert isinstance(db_info.queries, int)
+            assert db_info.queries >= 0  # Queries count should be non-negative
+            assert isinstance(db_info.sqlite_version, str)
+            assert len(db_info.sqlite_version) > 0  # Should have version string
+
+            # Verify owner structure
+            assert hasattr(db_info.owner, "user")
+            assert hasattr(db_info.owner, "group")
+            assert hasattr(db_info.owner.user, "uid")
+            assert hasattr(db_info.owner.user, "name")
+            assert hasattr(db_info.owner.group, "gid")
+            assert hasattr(db_info.owner.group, "name")
+
+            # Verify owner data types
+            assert isinstance(db_info.owner.user.uid, int)
+            assert isinstance(db_info.owner.user.name, str)
+            assert isinstance(db_info.owner.group.gid, int)
+            assert isinstance(db_info.owner.group.name, str)
+
+    def test_get_database_info_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_database_info()
+
+        client.close()
+
+    def test_get_database_info_timestamps(self, pihole_container):
+        """Should return valid timestamps in database info."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            db_info = info_client.get_database_info()
+
+            # Verify timestamp fields exist and are reasonable
+            assert hasattr(db_info, "atime")
+            assert hasattr(db_info, "mtime")
+            assert hasattr(db_info, "ctime")
+            assert hasattr(db_info, "earliest_timestamp")
+            assert hasattr(db_info, "earliest_timestamp_disk")
+
+            # Timestamps should be integers (Unix timestamps)
+            assert isinstance(db_info.atime, int)
+            assert isinstance(db_info.mtime, int)
+            assert isinstance(db_info.ctime, int)
+            assert isinstance(db_info.earliest_timestamp, int)
+            assert isinstance(db_info.earliest_timestamp_disk, int)
+
+            # Timestamps should be reasonable (after year 2000, before year 2100)
+            min_timestamp = 946684800  # 2000-01-01
+            max_timestamp = 4102444800  # 2100-01-01
+
+            assert min_timestamp <= db_info.atime <= max_timestamp
+            assert min_timestamp <= db_info.mtime <= max_timestamp
+            assert min_timestamp <= db_info.ctime <= max_timestamp
+
+            # Query timestamps can be 0 if no queries exist
+            assert db_info.earliest_timestamp >= 0
+            assert db_info.earliest_timestamp_disk >= 0
