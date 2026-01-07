@@ -59,8 +59,16 @@ Examples:
             comment="Blocked site"
         )
 
+        # Network operations
+        devices = client.network.get_devices()
+        print(f"Found {len(devices.devices)} network devices")
+
+        gateway = client.network.get_gateway()
+        interfaces = client.network.get_interfaces()
+        routes = client.network.get_routes()
+
     # Alternative usage with explicit class imports
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, PiHoleDomains
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, PiHoleDomains, PiHoleNetwork
 
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
         # Configuration management
@@ -97,6 +105,13 @@ Examples:
         domains = PiHoleDomains(client)
         all_domains = domains.get_domains()
         print(f"Found {len(all_domains)} domains")
+
+        # Network operations
+        network = PiHoleNetwork(client)
+        devices = network.get_devices()
+        gateway = network.get_gateway()
+        interfaces = network.get_interfaces()
+        routes = network.get_routes()
     ```
 """
 
@@ -181,6 +196,19 @@ from .models import (
     Message,
     MessagesCountInfo,
     MessagesInfo,
+    NetworkDevice,
+    NetworkDeviceAddress,
+    NetworkDeviceDeleteResponse,
+    NetworkDevicesResponse,
+    NetworkGateway,
+    NetworkGatewayDetailedResponse,
+    NetworkGatewayResponse,
+    NetworkInterface,
+    NetworkInterfaceAddress,
+    NetworkInterfacesResponse,
+    NetworkInterfaceStats,
+    NetworkRoute,
+    NetworkRoutesResponse,
     PADDCache,
     PADDConfig,
     PADDCPULoad,
@@ -240,6 +268,7 @@ from .models import (
     VersionLocal,
     VersionRemote,
 )
+from .network import PiHoleNetwork
 from .padd import PiHolePADD
 from .stats import PiHoleStats
 
@@ -257,6 +286,7 @@ __all__ = [
     "PiHoleDNS",
     "PiHoleDomains",
     "PiHoleGroups",
+    "PiHoleNetwork",
     "PiHolePADD",
     "PiHoleStats",
     "BasePiHoleAPIClient",
@@ -331,6 +361,19 @@ __all__ = [
     "SearchResponse",
     "ListType",
     "LoginInfo",
+    "NetworkDevice",
+    "NetworkDeviceAddress",
+    "NetworkDeviceDeleteResponse",
+    "NetworkDevicesResponse",
+    "NetworkGateway",
+    "NetworkGatewayDetailedResponse",
+    "NetworkGatewayResponse",
+    "NetworkInterface",
+    "NetworkInterfaceAddress",
+    "NetworkInterfacesResponse",
+    "NetworkInterfaceStats",
+    "NetworkRoute",
+    "NetworkRoutesResponse",
     "PADDCache",
     "PADDConfig",
     "PADDCPULoad",

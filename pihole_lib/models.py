@@ -2042,3 +2042,272 @@ class DomainBatchDeleteResponse(BaseModel):
     """
 
     took: float = Field(..., description="Time taken to process the request")
+
+
+# Network models
+
+
+class NetworkDeviceAddress(BaseModel):
+    """Network device address information.
+
+    Attributes:
+        ip: IP address.
+        hostname: Hostname associated with the IP.
+        last_query: Unix timestamp of last query from this IP.
+    """
+
+    ip: str = Field(..., description="IP address")
+    hostname: str | None = Field(None, description="Hostname associated with the IP")
+    last_query: int = Field(
+        ..., description="Unix timestamp of last query from this IP"
+    )
+
+
+class NetworkDevice(BaseModel):
+    """Network device information.
+
+    Attributes:
+        id: Device ID.
+        hwaddr: Hardware (MAC) address.
+        interface: Network interface.
+        name: Device name.
+        first_seen: Unix timestamp when device was first seen.
+        last_query: Unix timestamp of last query from this device.
+        num_queries: Total number of queries from this device.
+        addresses: List of IP addresses associated with this device.
+    """
+
+    id: int = Field(..., description="Device ID")
+    hwaddr: str = Field(..., description="Hardware (MAC) address")
+    interface: str = Field(..., description="Network interface")
+    name: str = Field(..., description="Device name")
+    first_seen: int = Field(
+        ..., description="Unix timestamp when device was first seen"
+    )
+    last_query: int = Field(
+        ..., description="Unix timestamp of last query from this device"
+    )
+    num_queries: int = Field(
+        ..., description="Total number of queries from this device"
+    )
+    addresses: list[NetworkDeviceAddress] = Field(
+        ..., description="List of IP addresses associated with this device"
+    )
+
+
+class NetworkDevicesResponse(BaseModel):
+    """Response for network devices endpoint.
+
+    Attributes:
+        devices: List of network devices.
+        took: Time taken to process the request.
+    """
+
+    devices: list[NetworkDevice] = Field(..., description="List of network devices")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class NetworkGateway(BaseModel):
+    """Network gateway information.
+
+    Attributes:
+        family: Address family (inet, inet6).
+        interface: Network interface.
+        address: Gateway IP address.
+        local: List of local IP addresses.
+    """
+
+    family: str = Field(..., description="Address family (inet, inet6)")
+    interface: str = Field(..., description="Network interface")
+    address: str = Field(..., description="Gateway IP address")
+    local: list[str] = Field(..., description="List of local IP addresses")
+
+
+class NetworkGatewayResponse(BaseModel):
+    """Response for network gateway endpoint.
+
+    Attributes:
+        gateway: List of gateway information.
+        took: Time taken to process the request.
+    """
+
+    gateway: list[NetworkGateway] = Field(
+        ..., description="List of gateway information"
+    )
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class NetworkGatewayDetailedResponse(BaseModel):
+    """Response for detailed network gateway endpoint.
+
+    Attributes:
+        gateway: List of gateway information.
+        routes: List of routing table entries.
+        interfaces: List of network interfaces.
+        took: Time taken to process the request.
+    """
+
+    gateway: list[NetworkGateway] = Field(
+        ..., description="List of gateway information"
+    )
+    routes: list[dict] = Field(..., description="List of routing table entries")
+    interfaces: list[dict] = Field(..., description="List of network interfaces")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class NetworkInterfaceStats(BaseModel):
+    """Network interface statistics.
+
+    Attributes:
+        rx_bytes: Received bytes with value and unit.
+        tx_bytes: Transmitted bytes with value and unit.
+        bits: Bit architecture (32 or 64).
+    """
+
+    rx_bytes: dict[str, str | float] = Field(
+        ..., description="Received bytes with value and unit"
+    )
+    tx_bytes: dict[str, str | float] = Field(
+        ..., description="Transmitted bytes with value and unit"
+    )
+    bits: int = Field(..., description="Bit architecture (32 or 64)")
+
+
+class NetworkInterfaceAddress(BaseModel):
+    """Network interface address information.
+
+    Attributes:
+        family: Address family (inet, inet6).
+        scope: Address scope.
+        flags: List of address flags.
+        prefixlen: Prefix length.
+        address: IP address.
+        address_type: Type of address.
+        local: Local address.
+        local_type: Type of local address.
+        broadcast: Broadcast address (optional).
+        broadcast_type: Type of broadcast address (optional).
+        label: Interface label (optional).
+        prefered: Preferred lifetime.
+        valid: Valid lifetime.
+        cstamp: Creation timestamp.
+        tstamp: Timestamp.
+    """
+
+    family: str = Field(..., description="Address family (inet, inet6)")
+    scope: str = Field(..., description="Address scope")
+    flags: list[str] = Field(..., description="List of address flags")
+    prefixlen: int = Field(..., description="Prefix length")
+    address: str = Field(..., description="IP address")
+    address_type: str = Field(..., description="Type of address")
+    local: str | None = Field(None, description="Local address")
+    local_type: str | None = Field(None, description="Type of local address")
+    broadcast: str | None = Field(None, description="Broadcast address")
+    broadcast_type: str | None = Field(None, description="Type of broadcast address")
+    label: str | None = Field(None, description="Interface label")
+    prefered: int = Field(..., description="Preferred lifetime")
+    valid: int = Field(..., description="Valid lifetime")
+    cstamp: float = Field(..., description="Creation timestamp")
+    tstamp: float = Field(..., description="Timestamp")
+
+
+class NetworkInterface(BaseModel):
+    """Network interface information.
+
+    Attributes:
+        name: Interface name.
+        speed: Interface speed (optional).
+        type: Interface type.
+        flags: List of interface flags.
+        state: Interface state.
+        carrier: Carrier status.
+        proto_down: Protocol down status.
+        address: Hardware address.
+        broadcast: Broadcast address.
+        perm_address: Permanent address (optional).
+        stats: Interface statistics.
+        addresses: List of IP addresses (optional).
+    """
+
+    name: str = Field(..., description="Interface name")
+    speed: int | None = Field(None, description="Interface speed")
+    type: str = Field(..., description="Interface type")
+    flags: list[str] = Field(..., description="List of interface flags")
+    state: str = Field(..., description="Interface state")
+    carrier: bool = Field(..., description="Carrier status")
+    proto_down: bool = Field(..., description="Protocol down status")
+    address: str = Field(..., description="Hardware address")
+    broadcast: str = Field(..., description="Broadcast address")
+    perm_address: str | None = Field(None, description="Permanent address")
+    stats: NetworkInterfaceStats = Field(..., description="Interface statistics")
+    addresses: list[NetworkInterfaceAddress] | None = Field(
+        None, description="List of IP addresses"
+    )
+
+
+class NetworkInterfacesResponse(BaseModel):
+    """Response for network interfaces endpoint.
+
+    Attributes:
+        interfaces: List of network interfaces.
+        took: Time taken to process the request.
+    """
+
+    interfaces: list[NetworkInterface] = Field(
+        ..., description="List of network interfaces"
+    )
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class NetworkRoute(BaseModel):
+    """Network route information.
+
+    Attributes:
+        table: Routing table ID.
+        family: Address family (inet, inet6).
+        protocol: Routing protocol.
+        scope: Route scope.
+        type: Route type.
+        flags: List of route flags.
+        gateway: Gateway address (optional).
+        oif: Output interface.
+        dst: Destination address.
+        prefsrc: Preferred source address (optional).
+        priority: Route priority (optional).
+        pref: Route preference (optional).
+    """
+
+    table: int = Field(..., description="Routing table ID")
+    family: str = Field(..., description="Address family (inet, inet6)")
+    protocol: str = Field(..., description="Routing protocol")
+    scope: str = Field(..., description="Route scope")
+    type: str = Field(..., description="Route type")
+    flags: list[str] = Field(..., description="List of route flags")
+    gateway: str | None = Field(None, description="Gateway address")
+    oif: str = Field(..., description="Output interface")
+    dst: str = Field(..., description="Destination address")
+    prefsrc: str | None = Field(None, description="Preferred source address")
+    priority: int | None = Field(None, description="Route priority")
+    pref: int | None = Field(None, description="Route preference")
+
+
+class NetworkRoutesResponse(BaseModel):
+    """Response for network routes endpoint.
+
+    Attributes:
+        routes: List of network routes.
+        took: Time taken to process the request.
+    """
+
+    routes: list[NetworkRoute] = Field(..., description="List of network routes")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class NetworkDeviceDeleteResponse(BaseModel):
+    """Response for network device deletion.
+
+    Attributes:
+        took: Time taken to process the request.
+    """
+
+    took: float = Field(..., description="Time taken to process the request")

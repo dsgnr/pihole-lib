@@ -107,6 +107,11 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **DHCP** | Get active DHCP leases | ✅ |
 | | Delete DHCP lease | ✅ |
 | **PADD** | Get dashboard data | ✅ |
+| **Network** | Get network devices | ✅ |
+| | Get gateway information | ✅ |
+| | Get network interfaces | ✅ |
+| | Get network routes | ✅ |
+| | Delete network devices | ✅ |
 | **Other** | Better documentation format (Sphinx?) | 📋 |
 | | Initial Pypi release | 📋 |
 
@@ -352,6 +357,131 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     messages_count = info.get_messages_count()
     print(f"Message count: {messages_count.count}")
+```
+
+### Network information
+
+```python
+from pihole_lib import PiHoleClient, PiHoleNetwork
+
+# Get advanced network information about your Pi-hole
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    network = PiHoleNetwork(client)
+
+    # Get network devices seen by Pi-hole
+    devices = network.get_devices()
+    print(f"Found {len(devices.devices)} network devices")
+
+    for device in devices.devices:
+        print(f"Device: {device.name} ({device.hwaddr})")
+        print(f"  Interface: {device.interface}")
+        print(f"  First seen: {device.first_seen}")
+        print(f"  Last query: {device.last_query}")
+        print(f"  Total queries: {device.num_queries}")
+
+        for address in device.addresses:
+            print(f"  Address: {address.ip}")
+            if address.hostname:
+                print(f"    Hostname: {address.hostname}")
+            print(f"    Last query: {address.last_query}")
+
+    # Get devices with limits
+    limited_devices = network.get_devices(max_devices=5, max_addresses=3)
+    print(f"Limited to {len(limited_devices.devices)} devices")
+
+    # Get gateway information
+    gateway = network.get_gateway()
+    print(f"Found {len(gateway.gateway)} gateway entries")
+
+    for gw in gateway.gateway:
+        print(f"Gateway: {gw.address} (family: {gw.family})")
+        print(f"  Interface: {gw.interface}")
+        print(f"  Local addresses: {gw.local}")
+
+    # Get detailed gateway information (includes routes and interfaces)
+    detailed_gateway = network.get_gateway(detailed=True)
+    print(f"Detailed gateway info:")
+    print(f"  Gateways: {len(detailed_gateway.gateway)}")
+    print(f"  Routes: {len(detailed_gateway.routes)}")
+    print(f"  Interfaces: {len(detailed_gateway.interfaces)}")
+
+    # Get network interfaces
+    interfaces = network.get_interfaces()
+    print(f"Found {len(interfaces.interfaces)} network interfaces")
+
+    for interface in interfaces.interfaces:
+        print(f"Interface: {interface.name}")
+        print(f"  Type: {interface.type}")
+        print(f"  State: {interface.state}")
+        print(f"  Speed: {interface.speed}")
+        print(f"  Flags: {interface.flags}")
+        print(f"  Carrier: {interface.carrier}")
+        print(f"  Address: {interface.address}")
+        print(f"  Broadcast: {interface.broadcast}")
+
+        # Interface statistics
+        stats = interface.stats
+        print(f"  RX bytes: {stats.rx_bytes}")
+        print(f"  TX bytes: {stats.tx_bytes}")
+        print(f"  Architecture: {stats.bits}-bit")
+
+        # IP addresses on interface
+        if interface.addresses:
+            for addr in interface.addresses:
+                print(f"  IP: {addr.address}/{addr.prefixlen} ({addr.family})")
+                print(f"    Scope: {addr.scope}")
+                print(f"    Type: {addr.address_type}")
+                if addr.local:
+                    print(f"    Local: {addr.local}")
+
+    # Get detailed interface information
+    detailed_interfaces = network.get_interfaces(detailed=True)
+    print(f"Detailed interfaces: {len(detailed_interfaces.interfaces)}")
+
+    # Get network routes
+    routes = network.get_routes()
+    print(f"Found {len(routes.routes)} network routes")
+
+    for route in routes.routes:
+        print(f"Route: {route.dst}")
+        print(f"  Table: {route.table}")
+        print(f"  Family: {route.family}")
+        print(f"  Protocol: {route.protocol}")
+        print(f"  Scope: {route.scope}")
+        print(f"  Type: {route.type}")
+        print(f"  Output interface: {route.oif}")
+        if route.gateway:
+            print(f"  Gateway: {route.gateway}")
+        if route.prefsrc:
+            print(f"  Preferred source: {route.prefsrc}")
+
+    # Get detailed route information
+    detailed_routes = network.get_routes(detailed=True)
+    print(f"Detailed routes: {len(detailed_routes.routes)}")
+
+    # Delete a network device (removes device and all associated addresses/hostnames)
+    # Note: This requires a valid device ID from the devices list
+    if devices.devices:
+        device_id = devices.devices[0].id
+        try:
+            result = network.delete_device(device_id)
+            print(f"Device {device_id} deleted successfully")
+        except Exception as e:
+            print(f"Failed to delete device {device_id}: {e}")
+
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get network information directly via client property
+    devices = client.network.get_devices(max_devices=10)
+    gateway = client.network.get_gateway()
+    interfaces = client.network.get_interfaces()
+    routes = client.network.get_routes()
+
+    print(f"Network summary:")
+    print(f"  Devices: {len(devices.devices)}")
+    print(f"  Gateways: {len(gateway.gateway)}")
+    print(f"  Interfaces: {len(interfaces.interfaces)}")
+    print(f"  Routes: {len(routes.routes)}")
 ```
 
 ### Backup and restore operations
@@ -1352,6 +1482,18 @@ The PADD class for Pi-hole dashboard data retrieval.
 - `PiHolePADD(client)` - Create a new PADD client using an existing PiHoleClient
 - `get_dashboard_data()` - Get comprehensive Pi-hole dashboard data including query statistics, system information, network details, version information, and configuration summaries. Returns a PADDInfo object with all dashboard data.
 
+### PiHoleNetwork
+
+The network class for Pi-hole network information operations.
+
+**Methods:**
+- `PiHoleNetwork(client)` - Create a new network client using an existing PiHoleClient
+- `get_devices(max_devices=None, max_addresses=None)` - Get info about devices in your local network as seen by Pi-hole. By default, device count is limited to 10, ordered by most recent query. Optional parameters limit the number of devices and addresses per device shown. Returns NetworkDevicesResponse with device information including hardware addresses, interfaces, query counts, and associated IP addresses.
+- `get_gateway(detailed=False)` - Get info about Pi-hole's gateway. Set `detailed=True` to include detailed interface and routing information (dependent on interface type and state). Returns NetworkGatewayResponse or NetworkGatewayDetailedResponse with gateway information.
+- `get_interfaces(detailed=False)` - Get info about Pi-hole's network interfaces. Set `detailed=True` for more detailed information where available (dependent on interface type and state). Returns NetworkInterfacesResponse with interface information including names, types, states, statistics, and IP addresses.
+- `get_routes(detailed=False)` - Get info about Pi-hole's network routes. Set `detailed=True` for more detailed information where available (dependent on route type and state). Returns NetworkRoutesResponse with routing table information including destinations, gateways, and interface mappings.
+- `delete_device(device_id)` - Delete a device from the network table, removing all associated IP addresses and hostnames. Returns NetworkDeviceDeleteResponse with operation timing.
+
 ### PiHoleStats
 
 The stats class for Pi-hole statistics and analytics operations.
@@ -1431,6 +1573,21 @@ with PiHoleClient(base_url, password) as client:
 - `QueryTypesResponse` - Query types breakdown (A, AAAA, PTR, etc.)
 - `RecentBlockedResponse` - Recently blocked domains
 - `DatabaseSummaryResponse` - Database summary statistics for time ranges
+
+**Network Models:**
+- `NetworkDevice` - Represents a network device with hardware address, interface, name, query statistics, and associated IP addresses
+- `NetworkDeviceAddress` - IP address information for a network device including hostname and last query timestamp
+- `NetworkDevicesResponse` - Container for network devices information
+- `NetworkGateway` - Gateway information including address family, interface, IP address, and local addresses
+- `NetworkGatewayResponse` - Container for gateway information
+- `NetworkGatewayDetailedResponse` - Detailed gateway information including routes and interfaces
+- `NetworkInterface` - Network interface information including name, type, state, statistics, and IP addresses
+- `NetworkInterfaceAddress` - IP address configuration for a network interface
+- `NetworkInterfaceStats` - Network interface statistics (RX/TX bytes, architecture)
+- `NetworkInterfacesResponse` - Container for network interfaces information
+- `NetworkRoute` - Network route information including destination, gateway, interface, and routing table details
+- `NetworkRoutesResponse` - Container for network routes information
+- `NetworkDeviceDeleteResponse` - Response for network device deletion operations
 
 ## Contributing
 
