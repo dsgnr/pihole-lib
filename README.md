@@ -15,7 +15,7 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
   - [Get login page information](#get-login-page-information)
   - [Backup and restore operations](#backup-and-restore-operations)
   - [Domain lists management](#domain-lists-management)
-  - [Custom DNS records management](#custom-dns-records-management)
+  - [Custom DNS records and blocking management](#custom-dns-records-and-blocking-management)
   - [Configuration management](#configuration-management)
   - [Actions and maintenance](#actions-and-maintenance)
   - [Manual session control](#manual-session-control)
@@ -64,7 +64,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Metrics** | Query statistics | 📋 |
 | | Top clients/domains | 📋 |
 | | Query types over time | 📋 |
-| **DNS Control** | Enable/disable Pi-hole blocking | 📋 |
+| **DNS Control** | Enable/disable Pi-hole blocking | ✅ |
 | | Custom DNS records (A/CNAME) | ✅ |
 | | Get DNS configuration | ✅ |
 | | DNS blocking status | ✅ |
@@ -514,12 +514,12 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"Allowlist deletion successful: {success}")
 ```
 
-### Custom DNS records management
+### Custom DNS records and blocking management
 
 ```python
 from pihole_lib import PiHoleClient, PiHoleDNS
 
-# Manage custom DNS records (A records and CNAME records)
+# Manage custom DNS records and blocking (A records, CNAME records, and blocking control)
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     dns = PiHoleDNS(client)
 
@@ -581,11 +581,37 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     if success:
         print("CNAME record removed successfully")
 
-    # Check DNS blocking status
+    # DNS Blocking Control
+    # Check current DNS blocking status
     status = dns.get_blocking_status()
     print(f"DNS blocking: {status.blocking}")
     if status.timer:
         print(f"Temporarily disabled for {status.timer} seconds")
+
+    # Enable blocking permanently
+    status = dns.enable_blocking()
+    print(f"Blocking enabled: {status.blocking}")
+
+    # Disable blocking for 5 minutes (300 seconds)
+    status = dns.disable_blocking(timer=300)
+    print(f"Blocking disabled for {status.timer} seconds")
+
+    # Enable blocking for 1 hour, then auto-disable
+    status = dns.enable_blocking(timer=3600)
+    print(f"Blocking enabled with auto-disable in {status.timer} seconds")
+
+    # Use the general set_blocking_status method
+    # Disable permanently
+    status = dns.set_blocking_status(blocking=False)
+    print(f"Blocking status: {status.blocking}")
+
+    # Enable with 10-minute timer
+    status = dns.set_blocking_status(blocking=True, timer=600)
+    print(f"Blocking enabled for {status.timer} seconds")
+
+    # Cancel any timer and enable permanently
+    status = dns.set_blocking_status(blocking=True, timer=None)
+    print(f"Blocking permanently enabled: {status.blocking}")
 ```
 
 ### Configuration management
@@ -932,7 +958,7 @@ The DHCP class for Pi-hole DHCP lease management.
 
 ### PiHoleDNS
 
-The DNS class for Pi-hole custom DNS record management.
+The DNS class for Pi-hole custom DNS record management and blocking control.
 
 **Methods:**
 - `PiHoleDNS(client)` - Create a new DNS client using an existing PiHoleClient
@@ -943,6 +969,9 @@ The DNS class for Pi-hole custom DNS record management.
 - `add_cname_record(domain, target)` - Add a custom CNAME record for domain aliasing. Returns True if successful.
 - `remove_cname_record(domain, target)` - Remove a custom CNAME record. Returns True if successful.
 - `get_blocking_status()` - Get DNS blocking status. Returns a DNSBlockingStatus object with current blocking state and any temporary disable timer.
+- `set_blocking_status(blocking=True, timer=None)` - Change DNS blocking status. Set `blocking=True` to enable or `blocking=False` to disable. Optional `timer` parameter sets automatic revert after specified seconds. Returns DNSBlockingStatus object.
+- `enable_blocking(timer=None)` - Convenience method to enable DNS blocking. Optional `timer` parameter sets automatic disable after specified seconds. Returns DNSBlockingStatus object.
+- `disable_blocking(timer=None)` - Convenience method to disable DNS blocking. Optional `timer` parameter sets automatic re-enable after specified seconds. Returns DNSBlockingStatus object.
 
 ### PiHolePADD
 

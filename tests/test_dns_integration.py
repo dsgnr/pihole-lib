@@ -302,3 +302,90 @@ class TestPiHoleDNSIntegration:
         # Should match configuration
         assert a_record_count == len(config_hosts)
         assert cname_record_count == len(config_cnames)
+
+    def test_blocking_control_integration(self, dns_client):
+        """Test DNS blocking control against real Pi-hole instance."""
+        # Get initial blocking status
+        initial_status = dns_client.get_blocking_status()
+        assert isinstance(initial_status, DNSBlockingStatus)
+
+        # Store initial state to restore later
+        initial_blocking = initial_status.blocking == "enabled"
+
+        try:
+            # Test enabling blocking (should work regardless of current state)
+            enabled_status = dns_client.enable_blocking()
+            assert isinstance(enabled_status, DNSBlockingStatus)
+            assert enabled_status.blocking == "enabled"
+            assert enabled_status.timer is None  # Should be permanent
+
+            # Verify status was actually changed
+            current_status = dns_client.get_blocking_status()
+            assert current_status.blocking == "enabled"
+
+            # Test disabling blocking with timer (5 seconds)
+            disabled_status = dns_client.disable_blocking(timer=5)
+            assert isinstance(disabled_status, DNSBlockingStatus)
+            assert disabled_status.blocking == "disabled"
+            assert disabled_status.timer == 5
+
+            # Verify status was actually changed
+            current_status = dns_client.get_blocking_status()
+            assert current_status.blocking == "disabled"
+            assert isinstance(current_status.timer, int)
+            assert current_status.timer <= 5  # Should be counting down
+
+            # Test canceling timer by enabling permanently
+            enabled_status = dns_client.enable_blocking()
+            assert isinstance(enabled_status, DNSBlockingStatus)
+            assert enabled_status.blocking == "enabled"
+            assert enabled_status.timer is None  # Timer should be canceled
+
+            # Test set_blocking_status directly
+            disabled_status = dns_client.set_blocking_status(blocking=False, timer=3)
+            assert isinstance(disabled_status, DNSBlockingStatus)
+            assert disabled_status.blocking == "disabled"
+            assert disabled_status.timer == 3
+
+        finally:
+            # Restore initial state
+            if initial_blocking:
+                dns_client.enable_blocking()
+            else:
+                dns_client.disable_blocking()
+
+    def test_blocking_convenience_methods_integration(self, dns_client):
+        """Test blocking convenience methods against real Pi-hole instance."""
+        # Get initial state
+        initial_status = dns_client.get_blocking_status()
+        initial_blocking = initial_status.blocking == "enabled"
+
+        try:
+            # Test enable_blocking convenience method
+            result = dns_client.enable_blocking()
+            assert isinstance(result, DNSBlockingStatus)
+            assert result.blocking == "enabled"
+
+            # Test disable_blocking convenience method
+            result = dns_client.disable_blocking()
+            assert isinstance(result, DNSBlockingStatus)
+            assert result.blocking == "disabled"
+
+            # Test enable_blocking with timer
+            result = dns_client.enable_blocking(timer=2)
+            assert isinstance(result, DNSBlockingStatus)
+            assert result.blocking == "enabled"
+            assert result.timer == 2
+
+            # Test disable_blocking with timer
+            result = dns_client.disable_blocking(timer=2)
+            assert isinstance(result, DNSBlockingStatus)
+            assert result.blocking == "disabled"
+            assert result.timer == 2
+
+        finally:
+            # Restore initial state
+            if initial_blocking:
+                dns_client.enable_blocking()
+            else:
+                dns_client.disable_blocking()

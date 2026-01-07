@@ -486,6 +486,176 @@ class TestPiHoleDNS:
         with pytest.raises(PiHoleAPIError, match="API request failed"):
             dns_client.get_blocking_status()
 
+    @patch("pihole_lib.dns.make_pihole_request")
+    def test_set_blocking_status_enable(self, mock_request, dns_client):
+        """Test enabling DNS blocking."""
+        # Mock response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "blocking": "enabled",
+            "timer": None,
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dns_client.set_blocking_status(blocking=True)
+
+        # Verify API call
+        mock_request.assert_called_once_with(
+            dns_client._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json={"blocking": True},
+        )
+
+        # Verify result
+        assert isinstance(result, DNSBlockingStatus)
+        assert result.blocking == "enabled"
+        assert result.timer is None
+        assert result.took == 0.002
+
+    @patch("pihole_lib.dns.make_pihole_request")
+    def test_set_blocking_status_disable_with_timer(self, mock_request, dns_client):
+        """Test disabling DNS blocking with timer."""
+        # Mock response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "blocking": "disabled",
+            "timer": 600,
+            "took": 0.003,
+        }
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dns_client.set_blocking_status(blocking=False, timer=600)
+
+        # Verify API call
+        mock_request.assert_called_once_with(
+            dns_client._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json={"blocking": False, "timer": 600},
+        )
+
+        # Verify result
+        assert isinstance(result, DNSBlockingStatus)
+        assert result.blocking == "disabled"
+        assert result.timer == 600
+        assert result.took == 0.003
+
+    @patch("pihole_lib.dns.make_pihole_request")
+    def test_enable_blocking(self, mock_request, dns_client):
+        """Test enable_blocking convenience method."""
+        # Mock response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "blocking": "enabled",
+            "timer": None,
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dns_client.enable_blocking()
+
+        # Verify API call
+        mock_request.assert_called_once_with(
+            dns_client._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json={"blocking": True},
+        )
+
+        # Verify result
+        assert isinstance(result, DNSBlockingStatus)
+        assert result.blocking == "enabled"
+        assert result.timer is None
+
+    @patch("pihole_lib.dns.make_pihole_request")
+    def test_enable_blocking_with_timer(self, mock_request, dns_client):
+        """Test enable_blocking with timer."""
+        # Mock response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "blocking": "enabled",
+            "timer": 3600,
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dns_client.enable_blocking(timer=3600)
+
+        # Verify API call
+        mock_request.assert_called_once_with(
+            dns_client._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json={"blocking": True, "timer": 3600},
+        )
+
+        # Verify result
+        assert isinstance(result, DNSBlockingStatus)
+        assert result.blocking == "enabled"
+        assert result.timer == 3600
+
+    @patch("pihole_lib.dns.make_pihole_request")
+    def test_disable_blocking(self, mock_request, dns_client):
+        """Test disable_blocking convenience method."""
+        # Mock response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "blocking": "disabled",
+            "timer": None,
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dns_client.disable_blocking()
+
+        # Verify API call
+        mock_request.assert_called_once_with(
+            dns_client._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json={"blocking": False},
+        )
+
+        # Verify result
+        assert isinstance(result, DNSBlockingStatus)
+        assert result.blocking == "disabled"
+        assert result.timer is None
+
+    @patch("pihole_lib.dns.make_pihole_request")
+    def test_disable_blocking_with_timer(self, mock_request, dns_client):
+        """Test disable_blocking with timer."""
+        # Mock response
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "blocking": "disabled",
+            "timer": 300,
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dns_client.disable_blocking(timer=300)
+
+        # Verify API call
+        mock_request.assert_called_once_with(
+            dns_client._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json={"blocking": False, "timer": 300},
+        )
+
+        # Verify result
+        assert isinstance(result, DNSBlockingStatus)
+        assert result.blocking == "disabled"
+        assert result.timer == 300
+
     def test_inheritance(self, dns_client):
         """Test that PiHoleDNS inherits from BasePiHoleAPIClient."""
         from pihole_lib.base import BasePiHoleAPIClient

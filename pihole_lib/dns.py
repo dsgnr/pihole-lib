@@ -18,7 +18,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
 
     This class provides methods to interact with Pi-hole's DNS functionality,
     including managing custom DNS records (A records and CNAME records),
-    retrieving DNS configuration, and checking blocking status.
+    retrieving DNS configuration, and controlling DNS blocking status.
 
     Uses a PiHoleClient instance for making authenticated requests.
 
@@ -49,6 +49,14 @@ class PiHoleDNS(BasePiHoleAPIClient):
             # Check blocking status
             status = dns.get_blocking_status()
             print(f"Blocking: {status.blocking}")
+
+            # Disable blocking for 5 minutes
+            status = dns.disable_blocking(timer=300)
+            print(f"Blocking disabled for {status.timer} seconds")
+
+            # Re-enable blocking permanently
+            status = dns.enable_blocking()
+            print(f"Blocking enabled: {status.blocking}")
         ```
     """
 
@@ -334,3 +342,112 @@ class PiHoleDNS(BasePiHoleAPIClient):
             API_DNS_BLOCKING,
         )
         return DNSBlockingStatus(**response.json())
+
+    def set_blocking_status(
+        self, blocking: bool = True, timer: int | None = None
+    ) -> DNSBlockingStatus:
+        """Change DNS blocking status.
+
+        Change the current blocking mode by setting blocking to the desired value.
+        The optional timer parameter can be used to set a timer. Once this timer
+        elapses, the opposite blocking mode is automatically set.
+
+        Args:
+            blocking: Whether to enable (True) or disable (False) blocking.
+                     Defaults to True (enabled).
+            timer: Optional timer in seconds. If provided, the blocking status
+                  will automatically revert after this many seconds. Set to None
+                  to make the change permanent. Defaults to None.
+
+        Returns:
+            DNSBlockingStatus: Updated blocking status including any active timer.
+
+        Raises:
+            PiHoleConnectionError: If connection to Pi-hole fails.
+            PiHoleAuthenticationError: If authentication fails.
+            PiHoleAPIError: If the API request fails.
+
+        Examples:
+            ```python
+            # Enable blocking permanently
+            status = dns.set_blocking_status(blocking=True)
+            print(f"Blocking enabled: {status.blocking}")
+
+            # Disable blocking for 5 minutes
+            status = dns.set_blocking_status(blocking=False, timer=300)
+            print(f"Blocking disabled for {status.timer} seconds")
+
+            # Enable blocking permanently (cancel any timer)
+            status = dns.set_blocking_status(blocking=True, timer=None)
+            print(f"Blocking enabled permanently")
+            ```
+        """
+        payload: dict[str, bool | int] = {"blocking": blocking}
+        if timer is not None:
+            payload["timer"] = timer
+
+        response = make_pihole_request(
+            self._client,
+            "POST",
+            API_DNS_BLOCKING,
+            json=payload,
+        )
+        return DNSBlockingStatus(**response.json())
+
+    def enable_blocking(self, timer: int | None = None) -> DNSBlockingStatus:
+        """Enable DNS blocking.
+
+        Convenience method to enable Pi-hole's DNS blocking functionality.
+
+        Args:
+            timer: Optional timer in seconds. If provided, blocking will be
+                  automatically disabled after this many seconds. Set to None
+                  to enable permanently. Defaults to None.
+
+        Returns:
+            DNSBlockingStatus: Updated blocking status.
+
+        Raises:
+            PiHoleConnectionError: If connection to Pi-hole fails.
+            PiHoleAuthenticationError: If authentication fails.
+            PiHoleAPIError: If the API request fails.
+
+        Examples:
+            ```python
+            # Enable blocking permanently
+            status = dns.enable_blocking()
+
+            # Enable blocking for 1 hour, then auto-disable
+            status = dns.enable_blocking(timer=3600)
+            ```
+        """
+        return self.set_blocking_status(blocking=True, timer=timer)
+
+    def disable_blocking(self, timer: int | None = None) -> DNSBlockingStatus:
+        """Disable DNS blocking.
+
+        Convenience method to disable Pi-hole's DNS blocking functionality.
+
+        Args:
+            timer: Optional timer in seconds. If provided, blocking will be
+                  automatically re-enabled after this many seconds. Set to None
+                  to disable permanently. Defaults to None.
+
+        Returns:
+            DNSBlockingStatus: Updated blocking status.
+
+        Raises:
+            PiHoleConnectionError: If connection to Pi-hole fails.
+            PiHoleAuthenticationError: If authentication fails.
+            PiHoleAPIError: If the API request fails.
+
+        Examples:
+            ```python
+            # Disable blocking permanently
+            status = dns.disable_blocking()
+
+            # Disable blocking for 10 minutes, then auto-enable
+            status = dns.disable_blocking(timer=600)
+            ```
+        """
+        return self.set_blocking_status(blocking=False, timer=timer)
