@@ -116,3 +116,48 @@ class TestPiHoleDHCP:
     def test_constants_usage(self, dhcp_client):
         """Test that the class uses the correct API endpoint constant."""
         assert API_DHCP_LEASES == "/api/dhcp/leases"
+
+    @patch("pihole_lib.dhcp.make_pihole_request")
+    def test_delete_lease_success(self, mock_request, dhcp_client, mock_client):
+        """Test successful DHCP lease deletion."""
+        # Mock successful response (204 No Content)
+        mock_response = Mock()
+        mock_response.status_code = 204
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dhcp_client.delete_lease("192.168.1.100")
+
+        # Verify request was made correctly
+        mock_request.assert_called_once_with(
+            mock_client,
+            "DELETE",
+            "/api/dhcp/leases/192.168.1.100",
+        )
+
+        # Verify result
+        assert result is True
+
+    @patch("pihole_lib.dhcp.make_pihole_request")
+    def test_delete_lease_not_found(self, mock_request, dhcp_client):
+        """Test DHCP lease deletion when lease not found."""
+        # Mock 400 response for invalid/not found lease
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = dhcp_client.delete_lease("192.168.1.999")
+
+        # Verify result
+        assert result is False
+
+    @patch("pihole_lib.dhcp.make_pihole_request")
+    def test_delete_lease_api_error(self, mock_request, dhcp_client):
+        """Test DHCP lease deletion with API error."""
+        # Mock API error
+        mock_request.side_effect = PiHoleAPIError("Invalid IP address")
+
+        # Call method and expect exception
+        with pytest.raises(PiHoleAPIError, match="Invalid IP address"):
+            dhcp_client.delete_lease("invalid-ip")

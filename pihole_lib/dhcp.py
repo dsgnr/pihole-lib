@@ -61,3 +61,43 @@ class PiHoleDHCP(BasePiHoleAPIClient):
             API_DHCP_LEASES,
         )
         return DHCPLeasesInfo(**response_data.json())
+
+    def delete_lease(self, ip: str) -> bool:
+        """Delete a currently active DHCP lease.
+
+        Managing DHCP leases is only possible when the DHCP server is enabled.
+        This endpoint removes a currently active DHCP lease by IP address.
+
+        Args:
+            ip: IP address of the lease to delete (e.g., "192.168.1.100").
+
+        Returns:
+            True if the lease was successfully deleted.
+
+        Raises:
+            PiHoleConnectionError: If connection to Pi-hole fails.
+            PiHoleAuthenticationError: If authentication fails.
+            PiHoleAPIError: If the API request fails (e.g., invalid IP, lease not found).
+
+        Examples:
+            ```python
+            # Delete a specific DHCP lease
+            success = dhcp.delete_lease("192.168.1.100")
+            if success:
+                print("DHCP lease deleted successfully")
+
+            # Get leases and delete the first one
+            leases = dhcp.get_leases()
+            if leases.leases:
+                first_lease_ip = leases.leases[0].ip
+                success = dhcp.delete_lease(first_lease_ip)
+                print(f"Deleted lease for {first_lease_ip}: {success}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "DELETE",
+            f"{API_DHCP_LEASES}/{ip}",
+        )
+        # DELETE returns 204 No Content on success
+        return response.status_code == 204

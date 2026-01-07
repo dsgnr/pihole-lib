@@ -46,3 +46,17 @@ class TestPiHoleDHCPIntegration:
             assert isinstance(lease.hwaddr, str)
             assert isinstance(lease.ip, str)
             assert isinstance(lease.clientid, str)
+
+    def test_delete_lease_integration(self, dhcp_client):
+        """Test DHCP lease deletion against real Pi-hole instance."""
+        # Try to delete a non-existent lease (should handle gracefully)
+        # In a real environment, this would return False or raise an appropriate exception
+        try:
+            result = dhcp_client.delete_lease("192.168.1.999")
+            # If it returns False, that's expected for non-existent lease
+            assert isinstance(result, bool)
+        except Exception as e:
+            # If it raises an exception, it should be a PiHoleAPIError
+            from pihole_lib.exceptions import PiHoleAPIError
+
+            assert isinstance(e, PiHoleAPIError)

@@ -87,6 +87,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Teleporter** | Backup configuration | ✅ |
 | | Restore from backup | ✅ |
 | **DHCP** | Get active DHCP leases | ✅ |
+| | Delete DHCP lease | ✅ |
 | **PADD** | Get dashboard data | ✅ |
 
 ## Supported Pi-hole Versions
@@ -435,6 +436,12 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         print(f"IP: {lease.ip}")
         print(f"MAC: {lease.hwaddr}")
         print(f"Client ID: {lease.clientid}")
+
+    # Delete a specific DHCP lease
+    if leases.leases:
+        first_lease_ip = leases.leases[0].ip
+        success = dhcp.delete_lease(first_lease_ip)
+        print(f"Deleted lease for {first_lease_ip}: {'success' if success else 'failed'}")
 ```
 
 ### PADD dashboard data
@@ -667,6 +674,7 @@ The DHCP class for Pi-hole DHCP lease management.
 **Methods:**
 - `PiHoleDHCP(client)` - Create a new DHCP client using an existing PiHoleClient
 - `get_leases()` - Get currently active DHCP leases. Returns a DHCPLeasesInfo object containing a list of DHCPLease objects with information about each active lease including hostname, IP address, MAC address, client ID, and expiration time.
+- `delete_lease(ip)` - Delete a currently active DHCP lease by IP address. Returns True if successful. Requires DHCP server to be enabled.
 
 ### PiHolePADD
 
