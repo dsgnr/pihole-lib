@@ -613,3 +613,11 @@ class TestPiHoleListsDeleteList:
             )
 
         client.close()
+
+    def test_constants_usage(self, pihole_container):
+        """Test that the class uses the correct API endpoint constants."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            lists = PiHoleLists(client)
+            assert lists.BASE_URL == "/api/lists"

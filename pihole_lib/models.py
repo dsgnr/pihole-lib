@@ -433,8 +433,8 @@ class VersionRemote(BaseModel):
         hash: Git commit hash.
     """
 
-    version: str = Field(..., description="Version string")
-    hash: str = Field(..., description="Git commit hash")
+    version: str | None = Field(None, description="Version string")
+    hash: str | None = Field(None, description="Git commit hash")
 
 
 class ComponentVersion(BaseModel):
@@ -457,8 +457,8 @@ class DockerVersion(BaseModel):
         remote: Remote Docker version.
     """
 
-    local: str = Field(..., description="Local Docker version")
-    remote: str = Field(..., description="Remote Docker version")
+    local: str | None = Field(None, description="Local Docker version")
+    remote: str | None = Field(None, description="Remote Docker version")
 
 
 class VersionDetails(BaseModel):
@@ -484,11 +484,13 @@ class VersionInfo(BaseModel):
 
     Attributes:
         version: Version details for all components.
+        took: Time taken to process the request.
     """
 
     version: VersionDetails = Field(
         ..., description="Version details for all components"
     )
+    took: float = Field(..., description="Time taken to process the request")
 
 
 class FTLInfo(BaseModel):

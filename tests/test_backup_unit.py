@@ -5,7 +5,6 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 
 from pihole_lib import PiHoleBackup, PiHoleClient
-from pihole_lib.constants import API_TELEPORTER
 from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models import TeleporterImportOptions
 
@@ -72,7 +71,7 @@ class TestPiHoleBackupExport:
                     backup_client.export_backup("/tmp")
 
         # Verify make_pihole_request was called with the client
-        mock_request.assert_called_once_with(client, "GET", "/api/teleporter")
+        mock_request.assert_called_once_with(client, "GET", backup_client.BASE_URL)
 
     @patch("pihole_lib.backup.make_pihole_request")
     @patch("pathlib.Path.write_bytes")
@@ -93,7 +92,7 @@ class TestPiHoleBackupExport:
         assert result.startswith("/tmp/pi-hole_pihole_teleporter_")
         assert result.endswith("_UTC.zip")
 
-        mock_request.assert_called_once_with(client, "GET", API_TELEPORTER)
+        mock_request.assert_called_once_with(client, "GET", backup_client.BASE_URL)
 
         # Should create directory and write file
         mock_mkdir.assert_called_once()
@@ -156,7 +155,7 @@ class TestPiHoleBackupImport:
         mock_request.assert_called_once_with(
             client,
             "POST",
-            API_TELEPORTER,
+            backup_client.BASE_URL,
             files={
                 "file": (
                     "test.zip",

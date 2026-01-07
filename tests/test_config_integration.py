@@ -207,3 +207,11 @@ class TestPiHoleConfigElementIntegration:
             # Get DHCP element and verify it matches
             dhcp_element = config.get_config("dhcp")
             assert full_config["dhcp"] == dhcp_element["dhcp"]
+
+    def test_constants_usage(self, pihole_container):
+        """Test that the class uses the correct API endpoint constants."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+            assert config.BASE_URL == "/api/config"

@@ -238,3 +238,7 @@ class TestPiHoleGroupsIntegration:
         assert default_group.id == 0
         assert isinstance(default_group.date_added, int)
         assert isinstance(default_group.date_modified, int)
+
+    def test_constants_usage(self, groups_client):
+        """Test that the class uses the correct API endpoint constants."""
+        assert groups_client.BASE_URL == "/api/groups"

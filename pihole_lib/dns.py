@@ -4,11 +4,6 @@ from urllib.parse import quote
 
 from .base import BasePiHoleAPIClient
 from .config import PiHoleConfig
-from .constants import (
-    API_DNS_BLOCKING,
-    API_DNS_CNAME_RECORDS,
-    API_DNS_HOSTS,
-)
 from .models import DNSBlockingStatus, DNSConfig, DNSRecord
 from .utils import make_pihole_request
 
@@ -59,6 +54,9 @@ class PiHoleDNS(BasePiHoleAPIClient):
             print(f"Blocking enabled: {status.blocking}")
         ```
     """
+
+    BASE_URL = "/api/dns"
+    CONFIG_URL = "/api/config/dns"
 
     def get_config(self) -> DNSConfig:
         """Get Pi-hole DNS configuration.
@@ -192,7 +190,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "PUT",
-            f"{API_DNS_HOSTS}/{encoded_record}",
+            f"{self.CONFIG_URL}/hosts/{encoded_record}",
         )
         # PUT returns 201 Created on success
         return response.status_code == 201
@@ -230,7 +228,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "DELETE",
-            f"{API_DNS_HOSTS}/{encoded_record}",
+            f"{self.CONFIG_URL}/hosts/{encoded_record}",
         )
         # DELETE returns 204 No Content on success
         return response.status_code == 204
@@ -272,7 +270,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "PUT",
-            f"{API_DNS_CNAME_RECORDS}/{encoded_record}",
+            f"{self.CONFIG_URL}/cnameRecords/{encoded_record}",
         )
         # PUT returns 201 Created on success
         return response.status_code == 201
@@ -310,7 +308,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "DELETE",
-            f"{API_DNS_CNAME_RECORDS}/{encoded_record}",
+            f"{self.CONFIG_URL}/cnameRecords/{encoded_record}",
         )
         # DELETE returns 204 No Content on success
         return response.status_code == 204
@@ -339,9 +337,9 @@ class PiHoleDNS(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_DNS_BLOCKING,
+            f"{self.BASE_URL}/blocking",
         )
-        return DNSBlockingStatus(**response.json())
+        return DNSBlockingStatus.model_validate(response.json())
 
     def set_blocking_status(
         self, blocking: bool = True, timer: int | None = None
@@ -389,10 +387,10 @@ class PiHoleDNS(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{self.BASE_URL}/blocking",
             json=payload,
         )
-        return DNSBlockingStatus(**response.json())
+        return DNSBlockingStatus.model_validate(response.json())
 
     def enable_blocking(self, timer: int | None = None) -> DNSBlockingStatus:
         """Enable DNS blocking.

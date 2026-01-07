@@ -10,7 +10,10 @@ class BasePiHoleAPIClient:
     """Base class for Pi-hole API clients.
 
     Provides common functionality for all API client classes.
+    Uses __slots__ for memory efficiency.
     """
+
+    __slots__ = ("_client",)
 
     def __init__(self, client: "PiHoleClient") -> None:
         """Initialize the API client.

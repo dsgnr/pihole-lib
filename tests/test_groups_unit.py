@@ -4,7 +4,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from pihole_lib.constants import API_GROUPS
 from pihole_lib.exceptions import PiHoleServerError
 from pihole_lib.groups import PiHoleGroups
 from pihole_lib.models import (
@@ -62,7 +61,7 @@ class TestPiHoleGroups:
         mock_request.assert_called_once_with(
             groups_client._client,
             "GET",
-            API_GROUPS,
+            groups_client.BASE_URL,
         )
 
         # Verify result
@@ -101,7 +100,7 @@ class TestPiHoleGroups:
         mock_request.assert_called_once_with(
             groups_client._client,
             "GET",
-            f"{API_GROUPS}/test_group",
+            f"{groups_client.BASE_URL}/test_group",
         )
 
         # Verify result
@@ -144,7 +143,7 @@ class TestPiHoleGroups:
         mock_request.assert_called_once_with(
             groups_client._client,
             "POST",
-            API_GROUPS,
+            groups_client.BASE_URL,
             json={
                 "name": "new_group",
                 "comment": "New test group",
@@ -195,7 +194,7 @@ class TestPiHoleGroups:
         mock_request.assert_called_once_with(
             groups_client._client,
             "PUT",
-            f"{API_GROUPS}/old_group",
+            f"{groups_client.BASE_URL}/old_group",
             json={
                 "name": "updated_group",
                 "comment": "Updated comment",
@@ -224,7 +223,7 @@ class TestPiHoleGroups:
         mock_request.assert_called_once_with(
             groups_client._client,
             "DELETE",
-            f"{API_GROUPS}/test_group",
+            f"{groups_client.BASE_URL}/test_group",
         )
 
         # Verify result
@@ -279,4 +278,4 @@ class TestPiHoleGroups:
 
     def test_constants_usage(self, groups_client):
         """Test that the class uses the correct API endpoint constants."""
-        assert API_GROUPS == "/api/groups"
+        assert groups_client.BASE_URL == "/api/groups"

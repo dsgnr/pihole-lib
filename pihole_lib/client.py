@@ -4,7 +4,6 @@ from typing import Any
 
 import requests
 
-from .constants import API_AUTH, DEFAULT_TIMEOUT, HEADER_SESSION_ID
 from .exceptions import PiHoleAuthenticationError
 from .utils import make_pihole_request
 
@@ -75,13 +74,15 @@ def _create_api_property(property_name: str, config: dict[str, str]) -> property
     description = config["description"]
 
     def getter(self: "PiHoleClient") -> Any:
-        # Check if already cached
-        if not hasattr(self, cache_attr) or getattr(self, cache_attr) is None:
+        # Use faster attribute access with getattr default
+        cached_instance = getattr(self, cache_attr, None)
+        if cached_instance is None:
             # Dynamic import and instantiation
             module = __import__(f"pihole_lib.{module_name}", fromlist=[class_name])
             api_class = getattr(module, class_name)
-            setattr(self, cache_attr, api_class(self))
-        return getattr(self, cache_attr)
+            cached_instance = api_class(self)
+            setattr(self, cache_attr, cached_instance)
+        return cached_instance
 
     getter.__doc__ = f"""Get Pi-hole {property_name} API client.
 
@@ -124,11 +125,14 @@ class PiHoleClient:
         ```
     """
 
+    DEFAULT_TIMEOUT = 30
+    HEADER_SESSION_ID = "X-FTL-SID"
+
     def __init__(
         self,
         base_url: str,
         password: str,
-        timeout: int = DEFAULT_TIMEOUT,
+        timeout: int | None = None,
         verify_ssl: bool = True,
     ) -> None:
         """Initialize a Pi-hole client.
@@ -142,11 +146,12 @@ class PiHoleClient:
         self.base_url = base_url.rstrip("/")  # Remove trailing slash for consistency
         self._password = password
         self._session_id: str | None = None
-        self.timeout = timeout
+        self.timeout = timeout or self.DEFAULT_TIMEOUT
         self.verify_ssl = verify_ssl
         self._session: requests.Session | None = None
 
-        # Initialize cache attributes for all API clients
+        # Pre-initialize cache attributes for all API clients to None
+        # This avoids hasattr() calls in the property getters
         for property_name in API_CLIENTS:
             setattr(self, f"_{property_name}", None)
 
@@ -165,14 +170,23 @@ class PiHoleClient:
         self.close()
 
     def _ensure_session(self) -> None:
-        """Ensure HTTP session exists."""
+        """Ensure HTTP session exists with optimized configuration."""
         if self._session is None:
             self._session = requests.Session()
             self._session.verify = self.verify_ssl
 
+            # Optimize connection pooling for better performance
+            adapter = requests.adapters.HTTPAdapter(
+                pool_connections=1,  # Single connection pool for Pi-hole
+                pool_maxsize=10,  # Reasonable pool size
+                max_retries=0,  # Let our code handle retries
+            )
+            self._session.mount("http://", adapter)
+            self._session.mount("https://", adapter)
+
         # Update session headers with authentication if available
         if self._session_id and self._session:
-            self._session.headers.update({HEADER_SESSION_ID: self._session_id})
+            self._session.headers.update({self.HEADER_SESSION_ID: self._session_id})
 
     def close(self) -> None:
         """Close session and clean up resources."""
@@ -198,7 +212,7 @@ class PiHoleClient:
         response = make_pihole_request(
             self,
             "POST",
-            API_AUTH,
+            "/api/auth",
             json={"password": self._password},
         )
 
@@ -210,7 +224,7 @@ class PiHoleClient:
             response = make_pihole_request(
                 self,
                 "POST",
-                API_AUTH,
+                "/api/auth",
                 json={"password": self._password},
             )
 
@@ -234,10 +248,10 @@ class PiHoleClient:
             return
 
         try:
-            auth_url = f"{self.base_url}{API_AUTH}"
+            auth_url = f"{self.base_url}/api/auth"
             self._session.delete(
                 auth_url,
-                headers={HEADER_SESSION_ID: self._session_id},
+                headers={self.HEADER_SESSION_ID: self._session_id},
                 timeout=self.timeout,
             )
         except Exception:

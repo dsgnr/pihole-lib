@@ -79,7 +79,7 @@ class TestPiHoleInfoClientInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/client",
+            f"{info_client.BASE_URL}/client",
         )
 
         # Verify the response structure
@@ -152,7 +152,7 @@ class TestPiHoleInfoDatabaseInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/database",
+            f"{info_client.BASE_URL}/database",
         )
 
         # Verify the response structure
@@ -304,7 +304,7 @@ class TestPiHoleInfoFTLInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/ftl",
+            f"{info_client.BASE_URL}/ftl",
         )
 
         # Verify the response structure
@@ -528,7 +528,7 @@ class TestPiHoleInfoHostInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/host",
+            f"{info_client.BASE_URL}/host",
         )
 
         # Verify the response structure
@@ -679,7 +679,7 @@ class TestPiHoleInfoVersionInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/version",
+            f"{info_client.BASE_URL}/version",
         )
 
         # Verify the response structure
@@ -847,7 +847,7 @@ class TestPiHoleInfoSystemInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/system",
+            f"{info_client.BASE_URL}/system",
         )
 
         # Verify the response structure
@@ -999,7 +999,7 @@ class TestPiHoleInfoMessagesInfo:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/info/messages",
+            f"{info_client.BASE_URL}/messages",
         )
 
         # Verify the response structure

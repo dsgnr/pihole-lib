@@ -5,7 +5,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pihole_lib import PiHoleClient, PiHoleConfig
-from pihole_lib.constants import API_CONFIG
 from pihole_lib.exceptions import (
     PiHoleAPIError,
     PiHoleAuthenticationError,
@@ -71,7 +70,7 @@ class TestGetConfig:
         mock_request.assert_called_once_with(
             config_client._client,
             "GET",
-            API_CONFIG,
+            config_client.BASE_URL,
         )
 
         # Verify the response structure
@@ -111,7 +110,7 @@ class TestGetConfig:
         mock_request.assert_called_once_with(
             config_client._client,
             "GET",
-            f"{API_CONFIG}/dns",
+            "/api/config/dns",
         )
 
         # Verify the response structure
@@ -141,7 +140,7 @@ class TestGetConfig:
         mock_request.assert_called_once_with(
             config_client._client,
             "GET",
-            f"{API_CONFIG}/dns/upstreams",
+            "/api/config/dns/upstreams",
         )
 
         # Verify the response structure
@@ -176,7 +175,7 @@ class TestGetConfig:
         mock_request.assert_called_once_with(
             config_client._client,
             "GET",
-            f"{API_CONFIG}/dhcp",
+            "/api/config/dhcp",
         )
 
         # Verify the response structure
@@ -210,7 +209,7 @@ class TestGetConfig:
         mock_request.assert_called_once_with(
             config_client._client,
             "GET",
-            f"{API_CONFIG}/webserver",
+            "/api/config/webserver",
         )
 
         # Verify the response structure

@@ -2,16 +2,11 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_TELEPORTER, MIME_ZIP, ZIP_EXTENSION
 from .exceptions import PiHoleAPIError
 from .models import TeleporterImportOptions
 from .utils import make_pihole_request
-
-if TYPE_CHECKING:
-    pass
 
 
 class PiHoleBackup(BasePiHoleAPIClient):
@@ -38,6 +33,10 @@ class PiHoleBackup(BasePiHoleAPIClient):
         ```
     """
 
+    BASE_URL = "/api/teleporter"
+    ZIP_EXTENSION = ".zip"
+    MIME_ZIP = "application/zip"
+
     def _generate_backup_filename(self) -> str:
         """Generate a timestamped backup filename.
 
@@ -45,7 +44,7 @@ class PiHoleBackup(BasePiHoleAPIClient):
             Backup filename in format: pi-hole_pihole_teleporter_YYYY-MM-DD_HH-MM-SS_UTC.zip
         """
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        return f"pi-hole_pihole_teleporter_{timestamp}_UTC{ZIP_EXTENSION}"
+        return f"pi-hole_pihole_teleporter_{timestamp}_UTC{self.ZIP_EXTENSION}"
 
     def export_backup(self, backup_dir: str) -> str:
         """Export Pi-hole settings to a backup file.
@@ -69,7 +68,7 @@ class PiHoleBackup(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_TELEPORTER,
+            self.BASE_URL,
         )
 
         # Generate timestamped filename and create full path
@@ -114,7 +113,7 @@ class PiHoleBackup(BasePiHoleAPIClient):
         file_path_obj = Path(file_path)
 
         # Check if file is a ZIP file (Pi-hole only accepts ZIP format)
-        if not file_path_obj.name.lower().endswith(ZIP_EXTENSION):
+        if not file_path_obj.name.lower().endswith(self.ZIP_EXTENSION):
             raise PiHoleAPIError(
                 f"Invalid backup file format. Pi-hole only accepts ZIP files, "
                 f"got: {file_path_obj.name}"
@@ -128,12 +127,12 @@ class PiHoleBackup(BasePiHoleAPIClient):
 
         # Prepare files for upload and make request
         with file_path_obj.open("rb") as f:
-            files = {"file": (file_path_obj.name, f, MIME_ZIP)}
+            files = {"file": (file_path_obj.name, f, self.MIME_ZIP)}
 
             response = make_pihole_request(
                 self._client,
                 "POST",
-                API_TELEPORTER,
+                self.BASE_URL,
                 files=files,
                 json=json_data,
             )

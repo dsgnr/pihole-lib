@@ -1,7 +1,6 @@
 """Pi-hole PADD (Pi-hole API Dashboard Data) management."""
 
 from pihole_lib.base import BasePiHoleAPIClient
-from pihole_lib.constants import API_PADD
 from pihole_lib.models import PADDInfo
 from pihole_lib.utils import make_pihole_request
 
@@ -31,6 +30,8 @@ class PiHolePADD(BasePiHoleAPIClient):
             print(f"Blocked queries: {dashboard.queries.blocked}")
         ```
     """
+
+    BASE_URL = "/api/padd"
 
     def get_dashboard_data(self) -> PADDInfo:
         """Get comprehensive Pi-hole dashboard data.
@@ -78,6 +79,6 @@ class PiHolePADD(BasePiHoleAPIClient):
         response_data = make_pihole_request(
             self._client,
             "GET",
-            API_PADD,
+            self.BASE_URL,
         )
-        return PADDInfo(**response_data.json())
+        return PADDInfo.model_validate(response_data.json())

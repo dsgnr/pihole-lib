@@ -1,7 +1,6 @@
 """Pi-hole DHCP management."""
 
 from pihole_lib.base import BasePiHoleAPIClient
-from pihole_lib.constants import API_DHCP_LEASES
 from pihole_lib.models import DHCPLeasesInfo
 from pihole_lib.utils import make_pihole_request
 
@@ -29,6 +28,8 @@ class PiHoleDHCP(BasePiHoleAPIClient):
                 print(f"{lease.name} ({lease.ip}) - {lease.hwaddr}")
         ```
     """
+
+    BASE_URL = "/api/dhcp"
 
     def get_leases(self) -> DHCPLeasesInfo:
         """Get currently active DHCP leases.
@@ -58,9 +59,9 @@ class PiHoleDHCP(BasePiHoleAPIClient):
         response_data = make_pihole_request(
             self._client,
             "GET",
-            API_DHCP_LEASES,
+            f"{self.BASE_URL}/leases",
         )
-        return DHCPLeasesInfo(**response_data.json())
+        return DHCPLeasesInfo.model_validate(response_data.json())
 
     def delete_lease(self, ip: str) -> bool:
         """Delete a currently active DHCP lease.
@@ -97,7 +98,7 @@ class PiHoleDHCP(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "DELETE",
-            f"{API_DHCP_LEASES}/{ip}",
+            f"{self.BASE_URL}/leases/{ip}",
         )
         # DELETE returns 204 No Content on success
         return response.status_code == 204

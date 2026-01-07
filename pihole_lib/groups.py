@@ -3,7 +3,6 @@
 from urllib.parse import quote
 
 from .base import BasePiHoleAPIClient
-from .constants import API_GROUPS
 from .models import (
     Group,
     GroupRequest,
@@ -54,6 +53,8 @@ class PiHoleGroups(BasePiHoleAPIClient):
         ```
     """
 
+    BASE_URL = "/api/groups"
+
     def get_groups(self, name: str | None = None) -> GroupsResponse:
         """Get groups from Pi-hole.
 
@@ -82,17 +83,17 @@ class PiHoleGroups(BasePiHoleAPIClient):
                 print(f"Group: {group.name}, Enabled: {group.enabled}")
             ```
         """
-        endpoint = API_GROUPS
+        endpoint = self.BASE_URL
         if name:
             encoded_name = quote(name, safe="")
-            endpoint = f"{API_GROUPS}/{encoded_name}"
+            endpoint = f"{self.BASE_URL}/{encoded_name}"
 
         response = make_pihole_request(
             self._client,
             "GET",
             endpoint,
         )
-        return GroupsResponse(**response.json())
+        return GroupsResponse.model_validate(response.json())
 
     def create_group(
         self,
@@ -139,7 +140,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "POST",
-            API_GROUPS,
+            self.BASE_URL,
             json=group_request.model_dump(exclude_none=True),
         )
 
@@ -148,7 +149,9 @@ class PiHoleGroups(BasePiHoleAPIClient):
         # Check for Pi-hole errors in the response
         check_api_errors(response_data, name, "create group")
 
-        return [Group(**group_data) for group_data in response_data["groups"]]
+        # Optimize model creation
+        groups_data = response_data["groups"]
+        return [Group.model_validate(group_data) for group_data in groups_data]
 
     def update_group(
         self,
@@ -197,10 +200,10 @@ class PiHoleGroups(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "PUT",
-            f"{API_GROUPS}/{encoded_name}",
+            f"{self.BASE_URL}/{encoded_name}",
             json=group_request.model_dump(exclude_none=True),
         )
-        return GroupsResponse(**response.json())
+        return GroupsResponse.model_validate(response.json())
 
     def delete_group(self, name: str) -> bool:
         """Delete a group.
@@ -229,7 +232,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "DELETE",
-            f"{API_GROUPS}/{encoded_name}",
+            f"{self.BASE_URL}/{encoded_name}",
         )
         # DELETE returns 204 No Content on success
         return response.status_code == 204

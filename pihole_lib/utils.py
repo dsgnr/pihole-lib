@@ -14,6 +14,16 @@ from .exceptions import (
 if TYPE_CHECKING:
     from .client import PiHoleClient
 
+_CLIENT_ERROR_MESSAGES = {
+    400: "Bad request - missing parameter",
+    402: "Request failed",
+    404: "Endpoint not found",
+    429: "Too many requests - rate limited",
+}
+
+_AUTH_ERROR_CODES = frozenset([401, 403])
+_SUCCESS_CODES = frozenset([200, 204])
+
 
 def handle_pihole_response(response: requests.Response) -> None:
     """Handle Pi-hole API response and raise appropriate exceptions.
@@ -26,30 +36,25 @@ def handle_pihole_response(response: requests.Response) -> None:
         PiHoleServerError: Server error (5xx status codes).
         PiHoleAPIError: Other API errors (4xx status codes).
     """
-    if response.status_code in (200, 204):
+    status_code = response.status_code
+
+    if status_code in _SUCCESS_CODES:
         return  # Success, no error handling needed
 
     # Handle authentication-related errors (common in Pi-hole)
-    if response.status_code in (401, 403):
-        if response.status_code == 401:
+    if status_code in _AUTH_ERROR_CODES:
+        if status_code == 401:
             raise PiHoleAuthenticationError("Invalid credentials")
         else:  # 403
             raise PiHoleAuthenticationError("Access denied")
 
-    # Handle common client errors (4xx)
-    client_error_messages: dict[int, str] = {
-        400: "Bad request - missing parameter",
-        402: "Request failed",
-        404: "Endpoint not found",
-        429: "Too many requests - rate limited",
-    }
-
-    if response.status_code in client_error_messages:
-        raise PiHoleAPIError(client_error_messages[response.status_code])
+    # Handle common client errors (4xx) with pre-computed messages
+    if status_code in _CLIENT_ERROR_MESSAGES:
+        raise PiHoleAPIError(_CLIENT_ERROR_MESSAGES[status_code])
 
     # Handle server errors (5xx)
-    if response.status_code >= 500:
-        raise PiHoleServerError(f"Server error: {response.status_code}")
+    if status_code >= 500:
+        raise PiHoleServerError(f"Server error: {status_code}")
 
     # Handle any other non-200 status codes
     try:

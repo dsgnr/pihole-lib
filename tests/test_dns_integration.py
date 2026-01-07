@@ -389,3 +389,8 @@ class TestPiHoleDNSIntegration:
                 dns_client.enable_blocking()
             else:
                 dns_client.disable_blocking()
+
+    def test_constants_usage(self, dns_client):
+        """Test that the class uses the correct API endpoint constants."""
+        assert dns_client.BASE_URL == "/api/dns"
+        assert dns_client.CONFIG_URL == "/api/config/dns"

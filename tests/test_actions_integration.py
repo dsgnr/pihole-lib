@@ -134,3 +134,11 @@ class TestPiHoleActionsIntegration:
             # Flush network table
             result = actions.flush_network()
             assert result is True
+
+    def test_constants_usage(self, pihole_container):
+        """Test that the class uses the correct API endpoint constants."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            actions = PiHoleActions(client)
+            assert actions.BASE_URL == "/api/action"

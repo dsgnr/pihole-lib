@@ -1,19 +1,7 @@
 """Pi-hole Info API client."""
 
-from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import (
-    API_INFO_CLIENT,
-    API_INFO_DATABASE,
-    API_INFO_FTL,
-    API_INFO_HOST,
-    API_INFO_LOGIN,
-    API_INFO_MESSAGES,
-    API_INFO_MESSAGES_COUNT,
-    API_INFO_SYSTEM,
-    API_INFO_VERSION,
-)
 from .models import (
     ClientInfo,
     DatabaseInfo,
@@ -26,9 +14,6 @@ from .models import (
     VersionInfo,
 )
 from .utils import make_pihole_request
-
-if TYPE_CHECKING:
-    pass
 
 
 class PiHoleInfo(BasePiHoleAPIClient):
@@ -54,6 +39,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
         ```
     """
 
+    BASE_URL = "/api/info"
+
     def get_login_info(self) -> LoginInfo:
         """Get login page related information.
 
@@ -72,11 +59,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_LOGIN,
+            f"{self.BASE_URL}/login",
         )
 
         data = response.json()
-        return LoginInfo(**data)
+        return LoginInfo.model_validate(data)
 
     def get_client_info(self) -> ClientInfo:
         """Get client request information.
@@ -109,11 +96,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_CLIENT,
+            f"{self.BASE_URL}/client",
         )
 
         data = response.json()
-        return ClientInfo(**data)
+        return ClientInfo.model_validate(data)
 
     def get_database_info(self) -> DatabaseInfo:
         """Get database information.
@@ -145,11 +132,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_DATABASE,
+            f"{self.BASE_URL}/database",
         )
 
         data = response.json()
-        return DatabaseInfo(**data)
+        return DatabaseInfo.model_validate(data)
 
     def get_ftl_info(self) -> FTLInfo:
         """Get FTL information.
@@ -184,11 +171,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_FTL,
+            f"{self.BASE_URL}/ftl",
         )
 
         data = response.json()
-        return FTLInfo(**data)
+        return FTLInfo.model_validate(data)
 
     def get_host_info(self) -> HostInfo:
         """Get host system information.
@@ -221,11 +208,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_HOST,
+            f"{self.BASE_URL}/host",
         )
 
         data = response.json()
-        return HostInfo(**data)
+        return HostInfo.model_validate(data)
 
     def get_version_info(self) -> VersionInfo:
         """Get Pi-hole version information.
@@ -260,11 +247,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_VERSION,
+            f"{self.BASE_URL}/version",
         )
 
         data = response.json()
-        return VersionInfo(**data)
+        return VersionInfo.model_validate(data)
 
     def get_system_info(self) -> SystemInfo:
         """Get system resource information.
@@ -299,11 +286,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_SYSTEM,
+            f"{self.BASE_URL}/system",
         )
 
         data = response.json()
-        return SystemInfo(**data)
+        return SystemInfo.model_validate(data)
 
     def get_messages(self) -> MessagesInfo:
         """Get system messages.
@@ -337,11 +324,11 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_MESSAGES,
+            f"{self.BASE_URL}/messages",
         )
 
         data = response.json()
-        return MessagesInfo(**data)
+        return MessagesInfo.model_validate(data)
 
     def get_messages_count(self) -> MessagesCountInfo:
         """Get system messages count.
@@ -374,8 +361,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            API_INFO_MESSAGES_COUNT,
+            f"{self.BASE_URL}/messages/count",
         )
 
         data = response.json()
-        return MessagesCountInfo(**data)
+        return MessagesCountInfo.model_validate(data)

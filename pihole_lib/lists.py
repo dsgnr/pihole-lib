@@ -1,14 +1,9 @@
 """Pi-hole Lists API client."""
 
-from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_LISTS, DEFAULT_GROUP_ID
 from .models import AddListRequest, ListType, PiHoleList
 from .utils import check_api_errors, make_pihole_request
-
-if TYPE_CHECKING:
-    pass
 
 
 class PiHoleLists(BasePiHoleAPIClient):
@@ -36,6 +31,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             )
         ```
     """
+
+    BASE_URL = "/api/lists"
 
     def get_lists(
         self,
@@ -72,7 +69,7 @@ class PiHoleLists(BasePiHoleAPIClient):
             my_list = lists.get_lists(list_name="my_blocklist")
             ```
         """
-        endpoint = f"{API_LISTS}/{list_name}" if list_name else API_LISTS
+        endpoint = f"{self.BASE_URL}/{list_name}" if list_name else self.BASE_URL
         params = {"type": list_type.value} if list_type else None
 
         response = make_pihole_request(
@@ -83,7 +80,9 @@ class PiHoleLists(BasePiHoleAPIClient):
         )
 
         response_data = response.json()
-        return [PiHoleList(**list_data) for list_data in response_data["lists"]]
+        # Optimize model creation with list comprehension
+        lists_data = response_data["lists"]
+        return [PiHoleList.model_validate(list_data) for list_data in lists_data]
 
     def add_list(
         self,
@@ -129,14 +128,14 @@ class PiHoleLists(BasePiHoleAPIClient):
         request_data = AddListRequest(
             address=address,
             comment=comment,
-            groups=groups or [DEFAULT_GROUP_ID],
+            groups=groups or [0],  # Default group ID
             enabled=enabled,
         )
 
         response = make_pihole_request(
             self._client,
             "POST",
-            API_LISTS,
+            self.BASE_URL,
             params={"type": list_type.value},
             json=request_data.model_dump(exclude_none=True),
         )
@@ -146,7 +145,9 @@ class PiHoleLists(BasePiHoleAPIClient):
         # Check for Pi-hole errors in the response
         check_api_errors(response_data, address, "add list")
 
-        return [PiHoleList(**list_data) for list_data in response_data["lists"]]
+        # Optimize model creation
+        lists_data = response_data["lists"]
+        return [PiHoleList.model_validate(list_data) for list_data in lists_data]
 
     def delete_list(self, address: str, list_type: ListType) -> bool:
         """Delete a domain list from Pi-hole.
@@ -180,7 +181,7 @@ class PiHoleLists(BasePiHoleAPIClient):
             )
             ```
         """
-        endpoint = f"{API_LISTS}/{address}"
+        endpoint = f"{self.BASE_URL}/{address}"
         params = {"type": list_type.value}
 
         response = make_pihole_request(

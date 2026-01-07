@@ -60,3 +60,7 @@ class TestPiHoleDHCPIntegration:
             from pihole_lib.exceptions import PiHoleAPIError
 
             assert isinstance(e, PiHoleAPIError)
+
+    def test_constants_usage(self, dhcp_client):
+        """Test that the class uses the correct API endpoint constants."""
+        assert dhcp_client.BASE_URL == "/api/dhcp"

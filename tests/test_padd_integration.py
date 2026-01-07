@@ -85,3 +85,11 @@ class TestPiHolePADDIntegration:
         assert hasattr(result.sensors, "unit")
         assert isinstance(result.sensors.hot_limit, int)
         assert isinstance(result.sensors.unit, str)
+
+    def test_constants_usage(self, pihole_container):
+        """Test that the class uses the correct API endpoint constants."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            padd = PiHolePADD(client)
+            assert padd.BASE_URL == "/api/padd"

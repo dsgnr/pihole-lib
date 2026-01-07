@@ -64,7 +64,7 @@ class TestUpdateGravity:
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            "/api/action/gravity",
+            f"{actions_client.BASE_URL}/gravity",
             params=None,
             stream=True,
         )
@@ -95,7 +95,7 @@ class TestUpdateGravity:
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            "/api/action/gravity",
+            f"{actions_client.BASE_URL}/gravity",
             params={"color": "true"},
             stream=True,
         )
@@ -122,7 +122,7 @@ class TestUpdateGravity:
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            "/api/action/gravity",
+            f"{actions_client.BASE_URL}/gravity",
             params=None,
             stream=True,
         )
@@ -233,7 +233,7 @@ class TestRestartDns:
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            "/api/action/restartdns",
+            f"{actions_client.BASE_URL}/restartdns",
         )
 
         # Verify the response
@@ -318,7 +318,7 @@ class TestPiHoleActionsFlush:
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            "/api/action/flush/logs",
+            f"{actions_client.BASE_URL}/flush/logs",
         )
 
         # Verify result
@@ -361,7 +361,7 @@ class TestPiHoleActionsFlush:
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            "/api/action/flush/network",
+            f"{actions_client.BASE_URL}/flush/network",
         )
 
         # Verify result

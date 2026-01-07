@@ -5,7 +5,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pihole_lib import PiHoleClient, PiHoleDHCP
-from pihole_lib.constants import API_DHCP_LEASES
 from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models import DHCPLease, DHCPLeasesInfo
 
@@ -58,7 +57,7 @@ class TestPiHoleDHCP:
         mock_request.assert_called_once_with(
             mock_client,
             "GET",
-            "/api/dhcp/leases",
+            f"{dhcp_client.BASE_URL}/leases",
         )
 
         # Verify result
@@ -113,10 +112,6 @@ class TestPiHoleDHCP:
 
         assert isinstance(dhcp_client, BasePiHoleAPIClient)
 
-    def test_constants_usage(self, dhcp_client):
-        """Test that the class uses the correct API endpoint constant."""
-        assert API_DHCP_LEASES == "/api/dhcp/leases"
-
     @patch("pihole_lib.dhcp.make_pihole_request")
     def test_delete_lease_success(self, mock_request, dhcp_client, mock_client):
         """Test successful DHCP lease deletion."""
@@ -132,7 +127,7 @@ class TestPiHoleDHCP:
         mock_request.assert_called_once_with(
             mock_client,
             "DELETE",
-            "/api/dhcp/leases/192.168.1.100",
+            f"{dhcp_client.BASE_URL}/leases/192.168.1.100",
         )
 
         # Verify result

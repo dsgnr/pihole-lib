@@ -1,13 +1,9 @@
 """Pi-hole Config API client."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from .base import BasePiHoleAPIClient
-from .constants import API_CONFIG
 from .utils import make_pihole_request
-
-if TYPE_CHECKING:
-    pass
 
 
 class PiHoleConfig(BasePiHoleAPIClient):
@@ -29,6 +25,8 @@ class PiHoleConfig(BasePiHoleAPIClient):
             print(f"DHCP active: {current_config['dhcp']['active']}")
         ```
     """
+
+    BASE_URL = "/api/config"
 
     def get_config(self, element: str | None = None) -> dict[str, Any]:
         """Get Pi-hole configuration.
@@ -76,7 +74,7 @@ class PiHoleConfig(BasePiHoleAPIClient):
             ```
         """
         # Build the endpoint URL
-        endpoint = API_CONFIG if element is None else f"{API_CONFIG}/{element}"
+        endpoint = self.BASE_URL if element is None else f"{self.BASE_URL}/{element}"
 
         response = make_pihole_request(
             self._client,

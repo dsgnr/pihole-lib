@@ -1,19 +1,9 @@
 """Pi-hole Actions API client."""
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import (
-    API_ACTION_FLUSH_LOGS,
-    API_ACTION_FLUSH_NETWORK,
-    API_ACTION_GRAVITY,
-    API_ACTION_RESTART_DNS,
-)
 from .utils import make_pihole_request
-
-if TYPE_CHECKING:
-    pass
 
 
 class PiHoleActions(BasePiHoleAPIClient):
@@ -42,6 +32,8 @@ class PiHoleActions(BasePiHoleAPIClient):
             print(f"DNS restart: {'success' if success else 'failed'}")
         ```
     """
+
+    BASE_URL = "/api/action"
 
     def update_gravity(self, color: bool = False) -> Iterator[str]:
         """Update Pi-hole's gravity database (adlists).
@@ -80,7 +72,7 @@ class PiHoleActions(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "POST",
-            API_ACTION_GRAVITY,
+            f"{self.BASE_URL}/gravity",
             params=params,
             stream=True,
         )
@@ -115,11 +107,11 @@ class PiHoleActions(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "POST",
-            API_ACTION_RESTART_DNS,
+            f"{self.BASE_URL}/restartdns",
         )
 
-        result: dict[str, str | float] = response.json()
-        return result.get("status") == "success"
+        result = response.json()
+        return result.get("status") == "success"  # type: ignore[no-any-return]
 
     def flush_logs(self) -> bool:
         """Flush Pi-hole's DNS logs.
@@ -150,11 +142,11 @@ class PiHoleActions(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "POST",
-            API_ACTION_FLUSH_LOGS,
+            f"{self.BASE_URL}/flush/logs",
         )
 
-        result: dict[str, str | float] = response.json()
-        return result.get("status") == "success"
+        result = response.json()
+        return result.get("status") == "success"  # type: ignore[no-any-return]
 
     def flush_network(self) -> bool:
         """Flush Pi-hole's network table.
@@ -184,8 +176,8 @@ class PiHoleActions(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "POST",
-            API_ACTION_FLUSH_NETWORK,
+            f"{self.BASE_URL}/flush/network",
         )
 
-        result: dict[str, str | float] = response.json()
-        return result.get("status") == "success"
+        result = response.json()
+        return result.get("status") == "success"  # type: ignore[no-any-return]

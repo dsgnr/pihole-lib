@@ -5,11 +5,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pihole_lib import PiHoleClient, PiHoleDNS
-from pihole_lib.constants import (
-    API_DNS_BLOCKING,
-    API_DNS_CNAME_RECORDS,
-    API_DNS_HOSTS,
-)
 from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models import DNSBlockingStatus, DNSConfig
 
@@ -294,7 +289,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             mock_client,
             "PUT",
-            "/api/config/dns/hosts/192.168.1.100%20server.local",
+            f"{dns_client.CONFIG_URL}/hosts/192.168.1.100%20server.local",
         )
 
         # Verify result
@@ -339,7 +334,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             mock_client,
             "DELETE",
-            "/api/config/dns/hosts/192.168.1.100%20server.local",
+            f"{dns_client.CONFIG_URL}/hosts/192.168.1.100%20server.local",
         )
 
         # Verify result
@@ -374,7 +369,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             mock_client,
             "PUT",
-            "/api/config/dns/cnameRecords/www.local%2Cserver.local",
+            f"{dns_client.CONFIG_URL}/cnameRecords/www.local%2Cserver.local",
         )
 
         # Verify result
@@ -409,7 +404,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             mock_client,
             "DELETE",
-            "/api/config/dns/cnameRecords/www.local%2Cserver.local",
+            f"{dns_client.CONFIG_URL}/cnameRecords/www.local%2Cserver.local",
         )
 
         # Verify result
@@ -447,7 +442,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             mock_client,
             "GET",
-            "/api/dns/blocking",
+            f"{dns_client.BASE_URL}/blocking",
         )
 
         # Verify result
@@ -505,7 +500,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             dns_client._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{dns_client.BASE_URL}/blocking",
             json={"blocking": True},
         )
 
@@ -534,7 +529,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             dns_client._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{dns_client.BASE_URL}/blocking",
             json={"blocking": False, "timer": 600},
         )
 
@@ -563,7 +558,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             dns_client._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{dns_client.BASE_URL}/blocking",
             json={"blocking": True},
         )
 
@@ -591,7 +586,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             dns_client._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{dns_client.BASE_URL}/blocking",
             json={"blocking": True, "timer": 3600},
         )
 
@@ -619,7 +614,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             dns_client._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{dns_client.BASE_URL}/blocking",
             json={"blocking": False},
         )
 
@@ -647,7 +642,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_once_with(
             dns_client._client,
             "POST",
-            API_DNS_BLOCKING,
+            f"{dns_client.BASE_URL}/blocking",
             json={"blocking": False, "timer": 300},
         )
 
@@ -661,12 +656,6 @@ class TestPiHoleDNS:
         from pihole_lib.base import BasePiHoleAPIClient
 
         assert isinstance(dns_client, BasePiHoleAPIClient)
-
-    def test_constants_usage(self, dns_client):
-        """Test that the class uses the correct API endpoint constants."""
-        assert API_DNS_HOSTS == "/api/config/dns/hosts"
-        assert API_DNS_CNAME_RECORDS == "/api/config/dns/cnameRecords"
-        assert API_DNS_BLOCKING == "/api/dns/blocking"
 
     @patch("pihole_lib.dns.make_pihole_request")
     def test_url_encoding(self, mock_request, dns_client, mock_client):
@@ -683,7 +672,7 @@ class TestPiHoleDNS:
         mock_request.assert_called_with(
             mock_client,
             "PUT",
-            "/api/config/dns/hosts/192.168.1.100%20test-server.local",
+            f"{dns_client.CONFIG_URL}/hosts/192.168.1.100%20test-server.local",
         )
 
         # Reset mock
@@ -696,5 +685,5 @@ class TestPiHoleDNS:
         mock_request.assert_called_with(
             mock_client,
             "PUT",
-            "/api/config/dns/cnameRecords/www-test.local%2Cserver-test.local",
+            f"{dns_client.CONFIG_URL}/cnameRecords/www-test.local%2Cserver-test.local",
         )

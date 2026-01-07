@@ -659,13 +659,20 @@ class TestPiHoleInfoVersionInfo:
 
             version_info = info_client.get_version_info()
 
-            # Local and remote versions should be valid
+            # Local versions should always be available
             assert version_info.version.core.local.version is not None
-            assert version_info.version.core.remote.version is not None
             assert version_info.version.web.local.version is not None
-            assert version_info.version.web.remote.version is not None
             assert version_info.version.ftl.local.version is not None
-            assert version_info.version.ftl.remote.version is not None
+
+            # Remote versions might be None if Pi-hole can't access remote repositories
+            # This is common in containerized environments without internet access
+            # But if they exist, they should be valid strings
+            if version_info.version.core.remote.version is not None:
+                assert isinstance(version_info.version.core.remote.version, str)
+            if version_info.version.web.remote.version is not None:
+                assert isinstance(version_info.version.web.remote.version, str)
+            if version_info.version.ftl.remote.version is not None:
+                assert isinstance(version_info.version.ftl.remote.version, str)
 
             # Hashes should be consistent format
             for component in [
@@ -674,10 +681,13 @@ class TestPiHoleInfoVersionInfo:
                 version_info.version.ftl,
             ]:
                 assert len(component.local.hash) >= 7
-                assert len(component.remote.hash) >= 7
-                # Hashes should be alphanumeric
+                # Local hashes should be alphanumeric
                 assert component.local.hash.isalnum()
-                assert component.remote.hash.isalnum()
+
+                # Remote hashes might be None, but if they exist, should be valid
+                if component.remote.hash is not None:
+                    assert len(component.remote.hash) >= 7
+                    assert component.remote.hash.isalnum()
 
 
 class TestPiHoleInfoSystemInfo:
@@ -980,3 +990,11 @@ class TestPiHoleInfoMessagesCountInfo:
 
             # Count should match the length of messages array
             assert messages_count.count == len(messages_info.messages)
+
+    def test_constants_usage(self, pihole_container):
+        """Test that the class uses the correct API endpoint constants."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info = PiHoleInfo(client)
+            assert info.BASE_URL == "/api/info"

@@ -5,7 +5,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pihole_lib import PiHoleClient, PiHolePADD
-from pihole_lib.constants import API_PADD
 from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models import PADDInfo
 
@@ -125,7 +124,7 @@ class TestPiHolePADD:
         mock_request.assert_called_once_with(
             mock_client,
             "GET",
-            "/api/padd",
+            padd_client.BASE_URL,
         )
 
         # Verify result
@@ -263,7 +262,3 @@ class TestPiHolePADD:
         from pihole_lib.base import BasePiHoleAPIClient
 
         assert isinstance(padd_client, BasePiHoleAPIClient)
-
-    def test_constants_usage(self, padd_client):
-        """Test that the class uses the correct API endpoint constant."""
-        assert API_PADD == "/api/padd"

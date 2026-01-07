@@ -66,7 +66,7 @@ class TestPiHoleListsGetLists:
         mock_request.assert_called_once_with(
             client,
             "GET",
-            "/api/lists",
+            lists_client.BASE_URL,
             params=None,
         )
 
@@ -85,7 +85,7 @@ class TestPiHoleListsGetLists:
         mock_request.assert_called_with(
             client,
             "GET",
-            "/api/lists",
+            lists_client.BASE_URL,
             params={"type": "allow"},
         )
 
@@ -148,7 +148,7 @@ class TestPiHoleListsAddList:
         mock_request.assert_called_once_with(
             client,
             "POST",
-            "/api/lists",
+            lists_client.BASE_URL,
             params={"type": "block"},
             json={
                 "address": "https://example.com/blocklist.txt",
@@ -236,7 +236,7 @@ class TestPiHoleListsAddList:
         mock_request.assert_called_once_with(
             client,
             "POST",
-            "/api/lists",
+            lists_client.BASE_URL,
             params={"type": "block"},
             json={
                 "address": "test.com",

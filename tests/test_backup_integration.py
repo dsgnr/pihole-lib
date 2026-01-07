@@ -205,3 +205,11 @@ class TestPiHoleBackupWorkflows:
                 finally:
                     # Clean up (tempfile.TemporaryDirectory handles this automatically)
                     pass
+
+    def test_constants_usage(self, pihole_container):
+        """Test that the class uses the correct API endpoint constants."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            backup = PiHoleBackup(client)
+            assert backup.BASE_URL == "/api/teleporter"
