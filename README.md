@@ -51,6 +51,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Information** | Login page information | ✅ |
 | | Client information | ✅ |
 | | Database information | ✅ |
+| | FTL runtime information | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -70,7 +71,6 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Remove lists | ✅ |
 | | Regex list management | 📋 |
 | | Import/export lists | 📋 |
-| **FTL Information** | FTL version and status | 📋 |
 | **Pi-hole Configuration** | Network settings | 📋 |
 | | DNS settings | 📋 |
 | | Web interface settings | 📋 |
@@ -146,6 +146,17 @@ print(f"File owner: {database_info.owner.user.name}")
 print(f"File group: {database_info.owner.group.name}")
 print(f"File permissions: {database_info.mode}")
 
+# Get FTL runtime information
+ftl_info = info.get_ftl_info()
+print(f"Process ID: {ftl_info.ftl.pid}")
+print(f"Uptime: {ftl_info.ftl.uptime} seconds")
+print(f"Memory usage: {ftl_info.ftl.mem_percent}%")
+print(f"CPU usage: {ftl_info.ftl.cpu_percent}%")
+print(f"Gravity domains: {ftl_info.ftl.database.gravity}")
+print(f"Total clients: {ftl_info.ftl.clients.total}")
+print(f"Active clients: {ftl_info.ftl.clients.active}")
+print(f"DNS queries forwarded: {ftl_info.ftl.dnsmasq.dns_queries_forwarded}")
+
 client.close()
 
 # Or use within client context manager
@@ -159,6 +170,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     database_info = info.get_database_info()
     print(f"Database size: {database_info.size} bytes")
+
+    ftl_info = info.get_ftl_info()
+    print(f"Process ID: {ftl_info.ftl.pid}")
 ```
 
 ### Backup and restore operations
@@ -465,6 +479,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `get_login_info()` - Get login page information (HTTPS port, DNS status, processing time)
 - `get_client_info()` - Get client request information (IP address, HTTP version, method, headers)
 - `get_database_info()` - Get database information (file size, permissions, ownership, query counts, SQLite version)
+- `get_ftl_info()` - Get FTL runtime information (process details, resource usage, database stats, dnsmasq stats)
 
 ### PiHoleBackup
 

@@ -170,6 +170,146 @@ class DatabaseInfo(BaseModel):
     sqlite_version: str = Field(..., description="SQLite version")
 
 
+class FTLDatabaseStats(BaseModel):
+    """FTL database statistics.
+
+    Attributes:
+        gravity: Number of gravity domains.
+        groups: Number of groups.
+        lists: Number of lists.
+        clients: Number of clients.
+        domains: Domain statistics (allowed/denied).
+        regex: Regex statistics (allowed/denied).
+    """
+
+    gravity: int = Field(..., description="Number of gravity domains")
+    groups: int = Field(..., description="Number of groups")
+    lists: int = Field(..., description="Number of lists")
+    clients: int = Field(..., description="Number of clients")
+    domains: dict = Field(..., description="Domain statistics")
+    regex: dict = Field(..., description="Regex statistics")
+
+
+class FTLClientStats(BaseModel):
+    """FTL client statistics.
+
+    Attributes:
+        total: Total number of clients.
+        active: Number of active clients.
+    """
+
+    total: int = Field(..., description="Total number of clients")
+    active: int = Field(..., description="Number of active clients")
+
+
+class FTLDnsmasqStats(BaseModel):
+    """FTL dnsmasq statistics.
+
+    Attributes:
+        dns_cache_inserted: DNS cache insertions.
+        dns_cache_live_freed: DNS cache live freed.
+        dns_queries_forwarded: DNS queries forwarded.
+        dns_auth_answered: DNS authoritative answers.
+        dns_local_answered: DNS local answers.
+        dns_stale_answered: DNS stale answers.
+        dns_unanswered: DNS unanswered queries.
+        dnssec_max_crypto_use: DNSSEC max crypto use.
+        dnssec_max_sig_fail: DNSSEC max signature failures.
+        dnssec_max_work: DNSSEC max work.
+        bootp: BOOTP requests.
+        pxe: PXE requests.
+        dhcp_ack: DHCP ACK messages.
+        dhcp_decline: DHCP decline messages.
+        dhcp_discover: DHCP discover messages.
+        dhcp_inform: DHCP inform messages.
+        dhcp_nak: DHCP NAK messages.
+        dhcp_offer: DHCP offer messages.
+        dhcp_release: DHCP release messages.
+        dhcp_request: DHCP request messages.
+        noanswer: No answer queries.
+        leases_allocated_4: IPv4 leases allocated.
+        leases_pruned_4: IPv4 leases pruned.
+        leases_allocated_6: IPv6 leases allocated.
+        leases_pruned_6: IPv6 leases pruned.
+        tcp_connections: TCP connections.
+        dhcp_leasequery: DHCP lease queries.
+        dhcp_lease_unassigned: DHCP unassigned leases.
+        dhcp_lease_actve: DHCP active leases.
+        dhcp_lease_unknown: DHCP unknown leases.
+    """
+
+    dns_cache_inserted: int = Field(..., description="DNS cache insertions")
+    dns_cache_live_freed: int = Field(..., description="DNS cache live freed")
+    dns_queries_forwarded: int = Field(..., description="DNS queries forwarded")
+    dns_auth_answered: int = Field(..., description="DNS authoritative answers")
+    dns_local_answered: int = Field(..., description="DNS local answers")
+    dns_stale_answered: int = Field(..., description="DNS stale answers")
+    dns_unanswered: int = Field(..., description="DNS unanswered queries")
+    dnssec_max_crypto_use: int = Field(..., description="DNSSEC max crypto use")
+    dnssec_max_sig_fail: int = Field(..., description="DNSSEC max signature failures")
+    dnssec_max_work: int = Field(..., description="DNSSEC max work")
+    bootp: int = Field(..., description="BOOTP requests")
+    pxe: int = Field(..., description="PXE requests")
+    dhcp_ack: int = Field(..., description="DHCP ACK messages")
+    dhcp_decline: int = Field(..., description="DHCP decline messages")
+    dhcp_discover: int = Field(..., description="DHCP discover messages")
+    dhcp_inform: int = Field(..., description="DHCP inform messages")
+    dhcp_nak: int = Field(..., description="DHCP NAK messages")
+    dhcp_offer: int = Field(..., description="DHCP offer messages")
+    dhcp_release: int = Field(..., description="DHCP release messages")
+    dhcp_request: int = Field(..., description="DHCP request messages")
+    noanswer: int = Field(..., description="No answer queries")
+    leases_allocated_4: int = Field(..., description="IPv4 leases allocated")
+    leases_pruned_4: int = Field(..., description="IPv4 leases pruned")
+    leases_allocated_6: int = Field(..., description="IPv6 leases allocated")
+    leases_pruned_6: int = Field(..., description="IPv6 leases pruned")
+    tcp_connections: int = Field(..., description="TCP connections")
+    dhcp_leasequery: int = Field(..., description="DHCP lease queries")
+    dhcp_lease_unassigned: int = Field(..., description="DHCP unassigned leases")
+    dhcp_lease_actve: int = Field(..., description="DHCP active leases")
+    dhcp_lease_unknown: int = Field(..., description="DHCP unknown leases")
+
+
+class FTLStats(BaseModel):
+    """FTL statistics subset.
+
+    Attributes:
+        database: Database statistics.
+        privacy_level: Privacy level.
+        query_frequency: Query frequency.
+        clients: Client statistics.
+        pid: Process ID of FTL.
+        uptime: FTL uptime in seconds.
+        mem_percent: Memory usage percentage.
+        cpu_percent: CPU usage percentage.
+        allow_destructive: Whether destructive operations are allowed.
+        dnsmasq: Dnsmasq statistics.
+    """
+
+    database: FTLDatabaseStats = Field(..., description="Database statistics")
+    privacy_level: int = Field(..., description="Privacy level")
+    query_frequency: int = Field(..., description="Query frequency")
+    clients: FTLClientStats = Field(..., description="Client statistics")
+    pid: int = Field(..., description="Process ID of FTL")
+    uptime: float = Field(..., description="FTL uptime in seconds")
+    mem_percent: float = Field(..., alias="%mem", description="Memory usage percentage")
+    cpu_percent: float = Field(..., alias="%cpu", description="CPU usage percentage")
+    allow_destructive: bool = Field(
+        ..., description="Whether destructive operations are allowed"
+    )
+    dnsmasq: FTLDnsmasqStats = Field(..., description="Dnsmasq statistics")
+
+
+class FTLInfo(BaseModel):
+    """Pi-hole FTL (Faster Than Light) information.
+
+    Attributes:
+        ftl: FTL statistics and runtime information.
+    """
+
+    ftl: FTLStats = Field(..., description="FTL statistics and runtime information")
+
+
 class TeleporterGravityOptions(BaseModel):
     """Teleporter gravity database import options.
 

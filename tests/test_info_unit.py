@@ -225,3 +225,258 @@ class TestPiHoleInfoDatabaseInfo:
         assert info_client._client.base_url == TEST_LOCALHOST_URL
         assert info_client._client.timeout == 60
         assert info_client._client.verify_ssl is False
+
+
+class TestPiHoleInfoFTLInfo:
+    """Test info client get_ftl_info functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_ftl_info_success(self, mock_request):
+        """Should successfully get FTL info."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "ftl": {
+                "database": {
+                    "gravity": 79811,
+                    "groups": 1,
+                    "lists": 1,
+                    "clients": 0,
+                    "domains": {
+                        "allowed": {"total": 0, "enabled": 0},
+                        "denied": {"total": 0, "enabled": 0},
+                    },
+                    "regex": {
+                        "allowed": {"total": 0, "enabled": 0},
+                        "denied": {"total": 0, "enabled": 0},
+                    },
+                },
+                "privacy_level": 0,
+                "query_frequency": 0,
+                "clients": {"total": 0, "active": 0},
+                "pid": 191,
+                "uptime": 12470.752492,
+                "%mem": 0.10940226167440414,
+                "%cpu": 0.0599999986588955,
+                "allow_destructive": True,
+                "dnsmasq": {
+                    "dns_cache_inserted": 0,
+                    "dns_cache_live_freed": 0,
+                    "dns_queries_forwarded": 0,
+                    "dns_auth_answered": 0,
+                    "dns_local_answered": 0,
+                    "dns_stale_answered": 0,
+                    "dns_unanswered": 0,
+                    "dnssec_max_crypto_use": 0,
+                    "dnssec_max_sig_fail": 0,
+                    "dnssec_max_work": 0,
+                    "bootp": 0,
+                    "pxe": 0,
+                    "dhcp_ack": 0,
+                    "dhcp_decline": 0,
+                    "dhcp_discover": 0,
+                    "dhcp_inform": 0,
+                    "dhcp_nak": 0,
+                    "dhcp_offer": 0,
+                    "dhcp_release": 0,
+                    "dhcp_request": 0,
+                    "noanswer": 0,
+                    "leases_allocated_4": 0,
+                    "leases_pruned_4": 0,
+                    "leases_allocated_6": 0,
+                    "leases_pruned_6": 0,
+                    "tcp_connections": 0,
+                    "dhcp_leasequery": 0,
+                    "dhcp_lease_unassigned": 0,
+                    "dhcp_lease_actve": 0,
+                    "dhcp_lease_unknown": 0,
+                },
+            },
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_ftl_info()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/ftl",
+        )
+
+        # Verify the response structure
+        assert result.ftl.pid == 191
+        assert result.ftl.uptime == 12470.752492
+        assert result.ftl.mem_percent == 0.10940226167440414
+        assert result.ftl.cpu_percent == 0.0599999986588955
+        assert result.ftl.allow_destructive is True
+        assert result.ftl.database.gravity == 79811
+        assert result.ftl.database.groups == 1
+        assert result.ftl.database.lists == 1
+        assert result.ftl.database.clients == 0
+        assert result.ftl.privacy_level == 0
+        assert result.ftl.query_frequency == 0
+        assert result.ftl.clients.total == 0
+        assert result.ftl.clients.active == 0
+        assert result.ftl.dnsmasq.dns_cache_inserted == 0
+        assert result.ftl.dnsmasq.tcp_connections == 0
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_ftl_info_with_activity(self, mock_request):
+        """Should handle FTL info with activity."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "ftl": {
+                "database": {
+                    "gravity": 100000,
+                    "groups": 5,
+                    "lists": 10,
+                    "clients": 25,
+                    "domains": {
+                        "allowed": {"total": 50, "enabled": 45},
+                        "denied": {"total": 100, "enabled": 95},
+                    },
+                    "regex": {
+                        "allowed": {"total": 5, "enabled": 5},
+                        "denied": {"total": 10, "enabled": 8},
+                    },
+                },
+                "privacy_level": 2,
+                "query_frequency": 100,
+                "clients": {"total": 25, "active": 15},
+                "pid": 1234,
+                "uptime": 86400.0,
+                "%mem": 2.5,
+                "%cpu": 1.2,
+                "allow_destructive": False,
+                "dnsmasq": {
+                    "dns_cache_inserted": 1000,
+                    "dns_cache_live_freed": 50,
+                    "dns_queries_forwarded": 5000,
+                    "dns_auth_answered": 100,
+                    "dns_local_answered": 200,
+                    "dns_stale_answered": 10,
+                    "dns_unanswered": 5,
+                    "dnssec_max_crypto_use": 0,
+                    "dnssec_max_sig_fail": 0,
+                    "dnssec_max_work": 0,
+                    "bootp": 0,
+                    "pxe": 0,
+                    "dhcp_ack": 50,
+                    "dhcp_decline": 0,
+                    "dhcp_discover": 25,
+                    "dhcp_inform": 5,
+                    "dhcp_nak": 0,
+                    "dhcp_offer": 25,
+                    "dhcp_release": 10,
+                    "dhcp_request": 30,
+                    "noanswer": 2,
+                    "leases_allocated_4": 20,
+                    "leases_pruned_4": 5,
+                    "leases_allocated_6": 0,
+                    "leases_pruned_6": 0,
+                    "tcp_connections": 10,
+                    "dhcp_leasequery": 0,
+                    "dhcp_lease_unassigned": 0,
+                    "dhcp_lease_actve": 20,
+                    "dhcp_lease_unknown": 0,
+                },
+            },
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_ftl_info()
+
+        assert result.ftl.pid == 1234
+        assert result.ftl.uptime == 86400.0
+        assert result.ftl.mem_percent == 2.5
+        assert result.ftl.cpu_percent == 1.2
+        assert result.ftl.allow_destructive is False
+        assert result.ftl.database.gravity == 100000
+        assert result.ftl.database.groups == 5
+        assert result.ftl.clients.total == 25
+        assert result.ftl.clients.active == 15
+        assert result.ftl.dnsmasq.dns_queries_forwarded == 5000
+        assert result.ftl.dnsmasq.dhcp_ack == 50
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_ftl_info_minimal_response(self, mock_request):
+        """Should handle minimal FTL info response."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "ftl": {
+                "database": {
+                    "gravity": 0,
+                    "groups": 1,
+                    "lists": 0,
+                    "clients": 0,
+                    "domains": {
+                        "allowed": {"total": 0, "enabled": 0},
+                        "denied": {"total": 0, "enabled": 0},
+                    },
+                    "regex": {
+                        "allowed": {"total": 0, "enabled": 0},
+                        "denied": {"total": 0, "enabled": 0},
+                    },
+                },
+                "privacy_level": 0,
+                "query_frequency": 0,
+                "clients": {"total": 0, "active": 0},
+                "pid": 1,
+                "uptime": 0.0,
+                "%mem": 0.0,
+                "%cpu": 0.0,
+                "allow_destructive": True,
+                "dnsmasq": {
+                    "dns_cache_inserted": 0,
+                    "dns_cache_live_freed": 0,
+                    "dns_queries_forwarded": 0,
+                    "dns_auth_answered": 0,
+                    "dns_local_answered": 0,
+                    "dns_stale_answered": 0,
+                    "dns_unanswered": 0,
+                    "dnssec_max_crypto_use": 0,
+                    "dnssec_max_sig_fail": 0,
+                    "dnssec_max_work": 0,
+                    "bootp": 0,
+                    "pxe": 0,
+                    "dhcp_ack": 0,
+                    "dhcp_decline": 0,
+                    "dhcp_discover": 0,
+                    "dhcp_inform": 0,
+                    "dhcp_nak": 0,
+                    "dhcp_offer": 0,
+                    "dhcp_release": 0,
+                    "dhcp_request": 0,
+                    "noanswer": 0,
+                    "leases_allocated_4": 0,
+                    "leases_pruned_4": 0,
+                    "leases_allocated_6": 0,
+                    "leases_pruned_6": 0,
+                    "tcp_connections": 0,
+                    "dhcp_leasequery": 0,
+                    "dhcp_lease_unassigned": 0,
+                    "dhcp_lease_actve": 0,
+                    "dhcp_lease_unknown": 0,
+                },
+            },
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_ftl_info()
+
+        assert result.ftl.pid == 1
+        assert result.ftl.uptime == 0.0
+        assert result.ftl.database.gravity == 0
+        assert result.ftl.clients.total == 0

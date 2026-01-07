@@ -3,8 +3,8 @@
 from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_INFO_CLIENT, API_INFO_DATABASE, API_INFO_LOGIN
-from .models import ClientInfo, DatabaseInfo, LoginInfo
+from .constants import API_INFO_CLIENT, API_INFO_DATABASE, API_INFO_FTL, API_INFO_LOGIN
+from .models import ClientInfo, DatabaseInfo, FTLInfo, LoginInfo
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -130,3 +130,42 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return DatabaseInfo(**data)
+
+    def get_ftl_info(self) -> FTLInfo:
+        """Get FTL information.
+
+        This API hook returns runtime information about the FTL process, including
+        database statistics, process details, resource usage, and dnsmasq statistics.
+
+        Returns:
+            FTLInfo: FTL information including database stats, process info,
+                    resource usage, and dnsmasq statistics.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                ftl_info = info.get_ftl_info()
+                print(f"Process ID: {ftl_info.ftl.pid}")
+                print(f"Uptime: {ftl_info.ftl.uptime} seconds")
+                print(f"Memory usage: {ftl_info.ftl.mem_percent}%")
+                print(f"CPU usage: {ftl_info.ftl.cpu_percent}%")
+                print(f"Gravity domains: {ftl_info.ftl.database.gravity}")
+                print(f"Total clients: {ftl_info.ftl.clients.total}")
+                print(f"Active clients: {ftl_info.ftl.clients.active}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_FTL,
+        )
+
+        data = response.json()
+        return FTLInfo(**data)

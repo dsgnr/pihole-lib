@@ -293,3 +293,130 @@ class TestPiHoleInfoDatabaseInfo:
             # Query timestamps can be 0 if no queries exist
             assert db_info.earliest_timestamp >= 0
             assert db_info.earliest_timestamp_disk >= 0
+
+
+class TestPiHoleInfoFTLInfo:
+    """Test FTL info functionality against real Pi-hole."""
+
+    def test_get_ftl_info_success(self, pihole_container):
+        """Should successfully retrieve FTL info from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            ftl_info = info_client.get_ftl_info()
+
+            # Verify basic structure and types
+            assert hasattr(ftl_info, "ftl")
+
+            # Verify data types
+            assert isinstance(ftl_info.ftl.pid, int)
+            assert isinstance(ftl_info.ftl.uptime, float)
+            assert isinstance(ftl_info.ftl.mem_percent, float)
+            assert isinstance(ftl_info.ftl.cpu_percent, float)
+            assert isinstance(ftl_info.ftl.allow_destructive, bool)
+
+            # Verify reasonable values
+            assert ftl_info.ftl.pid > 0  # Process ID should be positive
+            assert ftl_info.ftl.uptime >= 0  # Uptime should be non-negative
+            assert ftl_info.ftl.mem_percent >= 0  # Memory usage should be non-negative
+            assert ftl_info.ftl.cpu_percent >= 0  # CPU usage should be non-negative
+
+            # Verify FTL structure
+            assert hasattr(ftl_info.ftl, "database")
+            assert hasattr(ftl_info.ftl, "privacy_level")
+            assert hasattr(ftl_info.ftl, "query_frequency")
+            assert hasattr(ftl_info.ftl, "clients")
+
+            # Verify database structure
+            assert hasattr(ftl_info.ftl.database, "gravity")
+            assert hasattr(ftl_info.ftl.database, "groups")
+            assert hasattr(ftl_info.ftl.database, "lists")
+            assert hasattr(ftl_info.ftl.database, "clients")
+
+            # Verify clients structure
+            assert hasattr(ftl_info.ftl.clients, "total")
+            assert hasattr(ftl_info.ftl.clients, "active")
+
+            # Verify dnsmasq structure
+            assert hasattr(ftl_info.ftl.dnsmasq, "dns_queries_forwarded")
+            assert hasattr(ftl_info.ftl.dnsmasq, "tcp_connections")
+
+    def test_get_ftl_info_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_ftl_info()
+
+        client.close()
+
+    def test_get_ftl_info_database_stats(self, pihole_container):
+        """Should return valid database statistics."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            ftl_info = info_client.get_ftl_info()
+
+            # Database stats should be non-negative integers
+            assert isinstance(ftl_info.ftl.database.gravity, int)
+            assert isinstance(ftl_info.ftl.database.groups, int)
+            assert isinstance(ftl_info.ftl.database.lists, int)
+            assert isinstance(ftl_info.ftl.database.clients, int)
+
+            assert ftl_info.ftl.database.gravity >= 0
+            assert ftl_info.ftl.database.groups >= 0
+            assert ftl_info.ftl.database.lists >= 0
+            assert ftl_info.ftl.database.clients >= 0
+
+            # Privacy level should be valid (0-4)
+            assert 0 <= ftl_info.ftl.privacy_level <= 4
+
+            # Query frequency should be non-negative
+            assert ftl_info.ftl.query_frequency >= 0
+
+    def test_get_ftl_info_process_details(self, pihole_container):
+        """Should return valid process details."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            ftl_info = info_client.get_ftl_info()
+
+            # Process ID should be reasonable (1-65535 typically)
+            assert 1 <= ftl_info.ftl.pid <= 65535
+
+            # Uptime should be reasonable (less than a year in seconds)
+            assert 0 <= ftl_info.ftl.uptime <= 31536000  # 1 year in seconds
+
+            # Resource usage should be reasonable percentages
+            assert 0 <= ftl_info.ftl.mem_percent <= 100
+            assert 0 <= ftl_info.ftl.cpu_percent <= 100
+
+            # Allow destructive should be a boolean
+            assert isinstance(ftl_info.ftl.allow_destructive, bool)
+
+    def test_get_ftl_info_client_stats(self, pihole_container):
+        """Should return valid client statistics."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            ftl_info = info_client.get_ftl_info()
+
+            # Client stats should be non-negative
+            assert ftl_info.ftl.clients.total >= 0
+            assert ftl_info.ftl.clients.active >= 0
+
+            # Active clients should not exceed total clients
+            assert ftl_info.ftl.clients.active <= ftl_info.ftl.clients.total
