@@ -46,6 +46,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 |------------------|---------|--------|
 | **Testing** | Integration tests against a live Pi-hole instance | ✅ |
 | | Lint and type checking | ✅ |
+| | GitHub Actions | 📋 |
 | **Authentication** | Session-based authentication | ✅ |
 | | Automatic session management | ✅ |
 | | Context manager support | ✅ |
@@ -63,27 +64,23 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Metrics** | Query statistics | 📋 |
 | | Top clients/domains | 📋 |
 | | Query types over time | 📋 |
-| **DNS Control** | Enable/disable Pi-hole | 📋 |
-| | Restart DNS resolver | 📋 |
+| **DNS Control** | Enable/disable Pi-hole blocking | 📋 |
 | | Custom DNS records (A/CNAME) | ✅ |
 | | Get DNS configuration | ✅ |
 | | DNS blocking status | ✅ |
 | **Domain Management** | Add/remove domains | 📋 |
 | | Exact/regex domain matching | 📋 |
 | | Domain comments and descriptions | 📋 |
-| **List Management** | Get domain lists | ✅ |
-| | Filter lists by type (allow/block) | ✅ |
-| | Filter lists by name | ✅ |
+| **List Management** | Get domain lists (by type, and name) | ✅ |
 | | List metadata and statistics | ✅ |
-| | Add lists | ✅ |
-| | Remove lists | ✅ |
+| | Add/remove lists | ✅ |
 | | Regex list management | 📋 |
 | | Import/export lists | 📋 |
-| **Pi-hole Configuration** | Network settings | 📋 |
-| | DNS settings | 📋 |
-| | Web interface settings | 📋 |
-| | Privacy settings | 📋 |
-| | Get configuration | ✅ |
+| **Pi-hole Configuration** | Get/Update Network settings | 📋 |
+| | Get/Update DNS settings | 📋 |
+| | Get/Update Web interface settings | 📋 |
+| | Get/Update Privacy settings | 📋 |
+| | Get configuration (with filtering) | ✅ |
 | **Actions** | Update gravity | ✅ |
 | | Restart DNS | ✅ |
 | | Flush logs | ✅ |
@@ -93,6 +90,8 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **DHCP** | Get active DHCP leases | ✅ |
 | | Delete DHCP lease | ✅ |
 | **PADD** | Get dashboard data | ✅ |
+| **Other** | Better documentation format (Sphinx?) | 📋 |
+| | Initial Pypi release | 📋 |
 
 ## Supported Pi-hole Versions
 
