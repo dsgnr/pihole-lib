@@ -55,6 +55,11 @@ API_CLIENTS = {
         "class": "PiHolePADD",
         "description": "PADD dashboard operations",
     },
+    "stats": {
+        "module": "stats",
+        "class": "PiHoleStats",
+        "description": "statistics and analytics operations",
+    },
 }
 
 

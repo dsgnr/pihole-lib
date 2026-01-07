@@ -1315,3 +1315,406 @@ class GroupsResponse(BaseModel):
     took: float = Field(
         ..., description="Time in seconds it took to process the request"
     )
+
+
+# History and Stats Models
+
+
+class HistoryEntry(BaseModel):
+    """History entry for activity graph data.
+
+    Attributes:
+        timestamp: Unix timestamp.
+        total: Total number of queries.
+        cached: Number of cached queries.
+        blocked: Number of blocked queries.
+        forwarded: Number of forwarded queries.
+    """
+
+    timestamp: int = Field(..., description="Unix timestamp")
+    total: int = Field(..., description="Total number of queries")
+    cached: int = Field(..., description="Number of cached queries")
+    blocked: int = Field(..., description="Number of blocked queries")
+    forwarded: int = Field(..., description="Number of forwarded queries")
+
+
+class HistoryResponse(BaseModel):
+    """Response for history endpoints.
+
+    Attributes:
+        history: List of history entries.
+        took: Time taken to process the request.
+    """
+
+    history: list[HistoryEntry] = Field(..., description="List of history entries")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class ClientHistoryEntry(BaseModel):
+    """Client history entry for per-client activity data.
+
+    Attributes:
+        timestamp: Unix timestamp.
+        data: Dictionary mapping client IPs/names to query counts.
+    """
+
+    timestamp: int = Field(..., description="Unix timestamp")
+    data: dict[str, int] = Field(
+        ..., description="Dictionary mapping client IPs/names to query counts"
+    )
+
+
+class ClientHistoryResponse(BaseModel):
+    """Response for client history endpoints.
+
+    Attributes:
+        history: List of client history entries.
+        clients: Dictionary mapping client IPs to names.
+        took: Time taken to process the request.
+    """
+
+    history: list[ClientHistoryEntry] = Field(
+        ..., description="List of client history entries"
+    )
+    clients: dict[str, str] = Field(
+        ..., description="Dictionary mapping client IPs to names"
+    )
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class DatabaseHistoryResponse(BaseModel):
+    """Response for database history endpoints.
+
+    Attributes:
+        history: List of history entries (empty if no data).
+        took: Time taken to process the request.
+    """
+
+    history: list[HistoryEntry] = Field(..., description="List of history entries")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class DatabaseClientHistoryResponse(BaseModel):
+    """Response for database client history endpoints.
+
+    Attributes:
+        history: List of client history entries (empty if no data).
+        clients: Dictionary mapping client IPs to names.
+        took: Time taken to process the request.
+    """
+
+    history: list[ClientHistoryEntry] = Field(
+        ..., description="List of client history entries"
+    )
+    clients: dict[str, str] = Field(
+        ..., description="Dictionary mapping client IPs to names"
+    )
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class QueryEntry(BaseModel):
+    """Individual query entry.
+
+    Attributes:
+        timestamp: Unix timestamp of the query.
+        type: Query type (A, AAAA, etc.).
+        domain: Queried domain.
+        client: Client IP or name.
+        status: Query status (FORWARDED, BLOCKED, etc.).
+        destination: Upstream destination or action.
+        reply_type: Type of reply.
+        response_time: Response time in milliseconds.
+        dnssec: DNSSEC status.
+    """
+
+    timestamp: int = Field(..., description="Unix timestamp of the query")
+    type: str = Field(..., description="Query type")
+    domain: str = Field(..., description="Queried domain")
+    client: str = Field(..., description="Client IP or name")
+    status: str = Field(..., description="Query status")
+    destination: str = Field(..., description="Upstream destination or action")
+    reply_type: str = Field(..., description="Type of reply")
+    response_time: float = Field(..., description="Response time in milliseconds")
+    dnssec: str = Field(..., description="DNSSEC status")
+
+
+class QueriesResponse(BaseModel):
+    """Response for queries endpoint.
+
+    Attributes:
+        queries: List of query entries.
+        cursor: Cursor for pagination.
+        records_total: Total number of records.
+        records_filtered: Number of filtered records.
+        draw: Draw counter for DataTables.
+        took: Time taken to process the request.
+    """
+
+    queries: list[QueryEntry] = Field(..., description="List of query entries")
+    cursor: int = Field(..., description="Cursor for pagination")
+    records_total: int = Field(
+        ..., alias="recordsTotal", description="Total number of records"
+    )
+    records_filtered: int = Field(
+        ..., alias="recordsFiltered", description="Number of filtered records"
+    )
+    draw: int = Field(..., description="Draw counter for DataTables")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class QuerySuggestions(BaseModel):
+    """Query filter suggestions.
+
+    Attributes:
+        domain: List of domain suggestions.
+        client_ip: List of client IP suggestions.
+        client_name: List of client name suggestions.
+        upstream: List of upstream suggestions.
+        type: List of query type suggestions.
+        status: List of status suggestions.
+    """
+
+    domain: list[str] = Field(..., description="List of domain suggestions")
+    client_ip: list[str] = Field(..., description="List of client IP suggestions")
+    client_name: list[str] = Field(..., description="List of client name suggestions")
+    upstream: list[str] = Field(..., description="List of upstream suggestions")
+    type: list[str] = Field(..., description="List of query type suggestions")
+    status: list[str] = Field(..., description="List of status suggestions")
+
+
+class QuerySuggestionsResponse(BaseModel):
+    """Response for query suggestions endpoint.
+
+    Attributes:
+        suggestions: Query filter suggestions.
+        took: Time taken to process the request.
+    """
+
+    suggestions: QuerySuggestions = Field(..., description="Query filter suggestions")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class QueryTypesResponse(BaseModel):
+    """Response for query types endpoints.
+
+    Attributes:
+        types: Dictionary mapping query types to counts.
+        took: Time taken to process the request.
+    """
+
+    types: dict[str, int] = Field(
+        ..., description="Dictionary mapping query types to counts"
+    )
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class DatabaseSummaryResponse(BaseModel):
+    """Response for database summary endpoint.
+
+    Attributes:
+        sum_queries: Total number of queries.
+        sum_blocked: Total number of blocked queries.
+        percent_blocked: Percentage of queries blocked.
+        total_clients: Total number of clients.
+        took: Time taken to process the request.
+    """
+
+    sum_queries: int = Field(..., description="Total number of queries")
+    sum_blocked: int = Field(..., description="Total number of blocked queries")
+    percent_blocked: float = Field(..., description="Percentage of queries blocked")
+    total_clients: int = Field(..., description="Total number of clients")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class TopClient(BaseModel):
+    """Top client entry.
+
+    Attributes:
+        ip: Client IP address.
+        name: Client name (if available).
+        count: Number of queries.
+    """
+
+    ip: str = Field(..., description="Client IP address")
+    name: str | None = Field(None, description="Client name")
+    count: int = Field(..., description="Number of queries")
+
+
+class TopClientsResponse(BaseModel):
+    """Response for top clients endpoints.
+
+    Attributes:
+        clients: List of top clients.
+        total_queries: Total number of queries.
+        blocked_queries: Total number of blocked queries.
+        took: Time taken to process the request.
+    """
+
+    clients: list[TopClient] = Field(..., description="List of top clients")
+    total_queries: int = Field(..., description="Total number of queries")
+    blocked_queries: int = Field(..., description="Total number of blocked queries")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class TopDomain(BaseModel):
+    """Top domain entry.
+
+    Attributes:
+        domain: Domain name.
+        count: Number of queries.
+    """
+
+    domain: str = Field(..., description="Domain name")
+    count: int = Field(..., description="Number of queries")
+
+
+class TopDomainsResponse(BaseModel):
+    """Response for top domains endpoints.
+
+    Attributes:
+        domains: List of top domains.
+        total_queries: Total number of queries.
+        blocked_queries: Total number of blocked queries.
+        took: Time taken to process the request.
+    """
+
+    domains: list[TopDomain] = Field(..., description="List of top domains")
+    total_queries: int = Field(..., description="Total number of queries")
+    blocked_queries: int = Field(..., description="Total number of blocked queries")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class UpstreamStatistics(BaseModel):
+    """Upstream server statistics.
+
+    Attributes:
+        response: Average response time.
+        variance: Response time variance.
+    """
+
+    response: float = Field(..., description="Average response time")
+    variance: float = Field(..., description="Response time variance")
+
+
+class UpstreamServer(BaseModel):
+    """Upstream server information.
+
+    Attributes:
+        ip: Server IP address or identifier.
+        name: Server name.
+        port: Server port (-1 for special entries).
+        count: Number of queries sent to this upstream.
+        statistics: Response time statistics (optional).
+    """
+
+    ip: str = Field(..., description="Server IP address or identifier")
+    name: str = Field(..., description="Server name")
+    port: int = Field(..., description="Server port")
+    count: int = Field(..., description="Number of queries sent to this upstream")
+    statistics: UpstreamStatistics | None = Field(
+        None, description="Response time statistics"
+    )
+
+
+class UpstreamsResponse(BaseModel):
+    """Response for upstreams endpoints.
+
+    Attributes:
+        upstreams: List of upstream servers.
+        total_queries: Total number of queries.
+        forwarded_queries: Number of forwarded queries.
+        took: Time taken to process the request.
+    """
+
+    upstreams: list[UpstreamServer] = Field(..., description="List of upstream servers")
+    total_queries: int = Field(..., description="Total number of queries")
+    forwarded_queries: int = Field(..., description="Number of forwarded queries")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class RecentBlockedResponse(BaseModel):
+    """Response for recent blocked domains endpoint.
+
+    Attributes:
+        blocked: List of recently blocked domains.
+        took: Time taken to process the request.
+    """
+
+    blocked: list[str] = Field(..., description="List of recently blocked domains")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class SummaryQueries(BaseModel):
+    """Summary queries information.
+
+    Attributes:
+        total: Total number of queries.
+        blocked: Number of blocked queries.
+        percent_blocked: Percentage of queries blocked.
+        unique_domains: Number of unique domains.
+        forwarded: Number of forwarded queries.
+        cached: Number of cached queries.
+        frequency: Query frequency.
+        types: Dictionary of query types and counts.
+        status: Dictionary of query statuses and counts.
+        replies: Dictionary of reply types and counts.
+    """
+
+    total: int = Field(..., description="Total number of queries")
+    blocked: int = Field(..., description="Number of blocked queries")
+    percent_blocked: float = Field(..., description="Percentage of queries blocked")
+    unique_domains: int = Field(..., description="Number of unique domains")
+    forwarded: int = Field(..., description="Number of forwarded queries")
+    cached: int = Field(..., description="Number of cached queries")
+    frequency: float = Field(..., description="Query frequency")
+    types: dict[str, int] = Field(
+        ..., description="Dictionary of query types and counts"
+    )
+    status: dict[str, int] = Field(
+        ..., description="Dictionary of query statuses and counts"
+    )
+    replies: dict[str, int] = Field(
+        ..., description="Dictionary of reply types and counts"
+    )
+
+
+class SummaryClients(BaseModel):
+    """Summary clients information.
+
+    Attributes:
+        total: Total number of clients.
+        active: Number of active clients.
+    """
+
+    total: int = Field(..., description="Total number of clients")
+    active: int = Field(..., description="Number of active clients")
+
+
+class SummaryGravity(BaseModel):
+    """Summary gravity information.
+
+    Attributes:
+        domains_being_blocked: Number of domains on blocklists.
+        last_update: Last gravity update timestamp.
+    """
+
+    domains_being_blocked: int = Field(
+        ..., description="Number of domains on blocklists"
+    )
+    last_update: int = Field(..., description="Last gravity update timestamp")
+
+
+class SummaryResponse(BaseModel):
+    """Response for summary endpoint.
+
+    Attributes:
+        queries: Query statistics.
+        clients: Client statistics.
+        gravity: Gravity statistics.
+        took: Time taken to process the request.
+    """
+
+    queries: SummaryQueries = Field(..., description="Query statistics")
+    clients: SummaryClients = Field(..., description="Client statistics")
+    gravity: SummaryGravity = Field(..., description="Gravity statistics")
+    took: float = Field(..., description="Time taken to process the request")

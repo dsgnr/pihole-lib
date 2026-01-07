@@ -62,9 +62,16 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | System messages count | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
-| **Metrics** | Query statistics | 📋 |
-| | Top clients/domains | 📋 |
-| | Query types over time | 📋 |
+| **Metrics** | Query statistics | ✅ |
+| | Top clients/domains | ✅ |
+| | Query types over time | ✅ |
+| | Activity history graphs | ✅ |
+| | Recent blocked domains | ✅ |
+| | Upstream server metrics | ✅ |
+| | Database analytics | ✅ |
+| | Long-term database queries | ✅ |
+| | Query filtering and search | ✅ |
+| | Detailed query logs | ✅ |
 | **DNS Control** | Enable/disable Pi-hole blocking | ✅ |
 | | Custom DNS records (A/CNAME) | ✅ |
 | | Get DNS configuration | ✅ |
@@ -853,6 +860,99 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"DNS port: {dashboard.config.dns_port}")
 ```
 
+### Statistics and analytics
+
+```python
+from pihole_lib import PiHoleClient, PiHoleStats
+import time
+
+# Get comprehensive Pi-hole statistics and analytics
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    stats = PiHoleStats(client)
+
+    # Get activity summary
+    summary = stats.get_summary()
+    print(f"Total queries: {summary.queries.total}")
+    print(f"Blocked queries: {summary.queries.blocked}")
+    print(f"Percent blocked: {summary.queries.percent_blocked}%")
+    print(f"Active clients: {summary.clients.active}")
+    print(f"Domains on blocklists: {summary.gravity.domains_being_blocked}")
+
+    # Get activity history (last 24 hours)
+    history = stats.get_history()
+    for entry in history.history:
+        print(f"Time: {entry.timestamp}, Total: {entry.total}, Blocked: {entry.blocked}")
+
+    # Get per-client activity
+    client_history = stats.get_client_history()
+    print(f"Client mappings: {client_history.clients}")
+
+    # Get top domains and clients
+    top_domains = stats.get_top_domains(count=10)
+    for domain in top_domains.domains:
+        print(f"{domain.domain}: {domain.count} queries")
+
+    top_clients = stats.get_top_clients(count=10)
+    for client in top_clients.clients:
+        print(f"{client.name or client.ip}: {client.count} queries")
+
+    # Get blocked domains specifically
+    blocked_domains = stats.get_top_domains(blocked=True, count=5)
+    blocked_clients = stats.get_top_clients(blocked=True, count=5)
+
+    # Get recent queries with filtering
+    recent_queries = stats.get_queries(length=50)
+    print(f"Total records: {recent_queries.records_total}")
+
+    # Filter queries by domain
+    domain_queries = stats.get_queries(domain="example.com")
+
+    # Filter queries by client
+    client_queries = stats.get_queries(client="192.168.1.100")
+
+    # Get query types breakdown
+    query_types = stats.get_query_types()
+    for query_type, count in query_types.types.items():
+        print(f"{query_type}: {count}")
+
+    # Get recently blocked domains
+    recent_blocked = stats.get_recent_blocked(count=10)
+    print(f"Recently blocked: {recent_blocked.blocked}")
+
+    # Get upstream server metrics
+    upstreams = stats.get_upstreams()
+    for upstream in upstreams.upstreams:
+        print(f"{upstream.name}: {upstream.count} queries")
+        if upstream.statistics:
+            print(f"  Response time: {upstream.statistics.response}ms")
+
+    # Get query filter suggestions
+    suggestions = stats.get_query_suggestions()
+    print(f"Available domains: {suggestions.suggestions.domain}")
+    print(f"Available clients: {suggestions.suggestions.client_ip}")
+
+    # Long-term database analytics
+    now = int(time.time())
+    week_ago = now - (7 * 24 * 60 * 60)
+
+    # Get historical data from database
+    db_history = stats.get_database_history(week_ago, now)
+    db_summary = stats.get_database_summary(week_ago, now)
+    db_top_domains = stats.get_database_top_domains(week_ago, now)
+    db_top_clients = stats.get_database_top_clients(week_ago, now)
+    db_query_types = stats.get_database_query_types(week_ago, now)
+    db_upstreams = stats.get_database_upstreams(week_ago, now)
+
+    print(f"Week summary - Total: {db_summary.sum_queries}, Blocked: {db_summary.sum_blocked}")
+
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get statistics directly via client property
+    summary = client.stats.get_summary()
+    top_domains = client.stats.get_top_domains(count=15)
+    recent_blocked = client.stats.get_recent_blocked(count=20)
+```
+
 ### Manual session control
 
 If you need more control over the connection lifecycle:
@@ -1084,6 +1184,38 @@ The PADD class for Pi-hole dashboard data retrieval.
 - `PiHolePADD(client)` - Create a new PADD client using an existing PiHoleClient
 - `get_dashboard_data()` - Get comprehensive Pi-hole dashboard data including query statistics, system information, network details, version information, and configuration summaries. Returns a PADDInfo object with all dashboard data.
 
+### PiHoleStats
+
+The stats class for Pi-hole statistics and analytics operations.
+
+**Methods:**
+- `PiHoleStats(client)` - Create a new stats client using an existing PiHoleClient
+
+**History and Activity:**
+- `get_history()` - Get activity graph data for the last 24 hours. Returns HistoryResponse with timestamp-based query counts.
+- `get_client_history()` - Get per-client activity graph data for the last 24 hours. Returns ClientHistoryResponse with client-specific query counts.
+- `get_database_history(from_timestamp, until_timestamp)` - Get long-term activity data from database for specified time range.
+- `get_database_client_history(from_timestamp, until_timestamp)` - Get long-term per-client activity data from database.
+
+**Query Analysis:**
+- `get_queries(length=100, cursor=None, from_timestamp=None, until_timestamp=None, upstream=None, domain=None, client=None)` - Get detailed query logs with optional filtering and pagination. Returns QueriesResponse with individual query entries.
+- `get_query_suggestions()` - Get available filter suggestions for queries endpoint. Returns QuerySuggestionsResponse with domain, client, upstream, type, and status suggestions.
+
+**Statistics:**
+- `get_summary()` - Get comprehensive Pi-hole activity overview including query stats, client counts, and gravity info. Returns SummaryResponse.
+- `get_query_types()` - Get query types breakdown (A, AAAA, PTR, etc.) for recent queries. Returns QueryTypesResponse.
+- `get_recent_blocked(count=10)` - Get most recently blocked domains. Returns RecentBlockedResponse.
+- `get_top_clients(blocked=None, count=10)` - Get top clients by query count. Use `blocked=True/False` to filter by blocked/permitted queries. Returns TopClientsResponse.
+- `get_top_domains(blocked=None, count=10)` - Get top domains by query count. Use `blocked=True/False` to filter by blocked/permitted queries. Returns TopDomainsResponse.
+- `get_upstreams()` - Get upstream server metrics including response times and query counts. Returns UpstreamsResponse.
+
+**Database Analytics:**
+- `get_database_query_types(from_timestamp, until_timestamp)` - Get query types breakdown from database for specified time range.
+- `get_database_summary(from_timestamp, until_timestamp)` - Get database summary statistics for specified time range.
+- `get_database_top_clients(from_timestamp, until_timestamp)` - Get top clients from database for specified time range.
+- `get_database_top_domains(from_timestamp, until_timestamp)` - Get top domains from database for specified time range.
+- `get_database_upstreams(from_timestamp, until_timestamp)` - Get upstream metrics from database for specified time range.
+
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:
 
@@ -1118,6 +1250,19 @@ with PiHoleClient(base_url, password) as client:
 - `PADDInterface` - Network interface information (IPv4/IPv6 addresses, gateway, traffic)
 - `PADDVersion` - Version information for all Pi-hole components
 - `PADDConfig` - Configuration summary (DHCP, DNS, privacy settings)
+
+**Statistics and Analytics Models:**
+- `HistoryResponse` - Activity graph data with timestamp-based query counts
+- `ClientHistoryResponse` - Per-client activity data with client mappings
+- `QueriesResponse` - Detailed query logs with filtering and pagination
+- `QuerySuggestionsResponse` - Available filter suggestions for queries
+- `SummaryResponse` - Comprehensive Pi-hole activity overview
+- `TopClientsResponse` - Top clients by query count
+- `TopDomainsResponse` - Top domains by query count
+- `UpstreamsResponse` - Upstream server metrics and statistics
+- `QueryTypesResponse` - Query types breakdown (A, AAAA, PTR, etc.)
+- `RecentBlockedResponse` - Recently blocked domains
+- `DatabaseSummaryResponse` - Database summary statistics for time ranges
 
 ## Contributing
 
