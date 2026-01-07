@@ -88,8 +88,6 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Update existing lists | ✅ |
 | | Batch list operations | ✅ |
 | | Domain search in lists | ✅ |
-| | Regex list management | 📋 |
-| | Import/export lists | 📋 |
 | **Group Management** | Get groups | ✅ |
 | | Create/update/delete groups | ✅ |
 | | Batch group operations | ✅ |
