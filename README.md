@@ -86,6 +86,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Flush logs | 📋 |
 | **Teleporter** | Backup configuration | ✅ |
 | | Restore from backup | ✅ |
+| **DHCP** | Get active DHCP leases | ✅ |
 
 ## Supported Pi-hole Versions
 
@@ -405,6 +406,26 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"DNS restart: {'success' if success else 'failed'}")
 ```
 
+### DHCP management
+
+```python
+from pihole_lib import PiHoleClient, PiHoleDHCP
+
+# Manage DHCP leases
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    dhcp = PiHoleDHCP(client)
+
+    # Get currently active DHCP leases
+    leases = dhcp.get_leases()
+    print(f"Found {len(leases.leases)} active DHCP leases")
+
+    for lease in leases.leases:
+        print(f"Device: {lease.name}")
+        print(f"IP: {lease.ip}")
+        print(f"MAC: {lease.hwaddr}")
+        print(f"Client ID: {lease.clientid}")
+```
+
 ### Manual session control
 
 If you need more control over the connection lifecycle:
@@ -587,6 +608,14 @@ The actions class for Pi-hole maintenance and administrative operations.
 - `update_gravity(color=False)` - Update Pi-hole's gravity database (adlists). Returns an iterator that yields lines of output as they're streamed from Pi-hole. Set `color=True` to include ANSI color escape codes in the output.
 - `restart_dns()` - Restart Pi-hole's DNS service (pihole-FTL). Returns True if successful, False otherwise.
 
+### PiHoleDHCP
+
+The DHCP class for Pi-hole DHCP lease management.
+
+**Methods:**
+- `PiHoleDHCP(client)` - Create a new DHCP client using an existing PiHoleClient
+- `get_leases()` - Get currently active DHCP leases. Returns a DHCPLeasesInfo object containing a list of DHCPLease objects with information about each active lease including hostname, IP address, MAC address, client ID, and expiration time.
+
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:
 
@@ -612,6 +641,8 @@ with PiHoleClient(base_url, password) as client:
 - `TeleporterGravityOptions` - Gravity database specific import options
 - `PiHoleList` - Represents a single Pi-hole domain list with metadata
 - `ListType` - Enum for list types (ALLOW or BLOCK)
+- `DHCPLease` - Represents a single DHCP lease with hostname, IP, MAC address, client ID, and expiration
+- `DHCPLeasesInfo` - Container for DHCP lease information
 
 ## Contributing
 

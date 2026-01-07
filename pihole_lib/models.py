@@ -739,3 +739,31 @@ class MessagesCountInfo(BaseModel):
     """
 
     count: int = Field(..., description="Number of system messages")
+
+
+class DHCPLease(BaseModel):
+    """DHCP lease information.
+
+    Attributes:
+        expires: Expiration time (0 = infinite lease, never expires).
+        name: Hostname.
+        hwaddr: Hardware (MAC) address.
+        ip: IP address.
+        clientid: Client ID.
+    """
+
+    expires: int = Field(..., description="Expiration time (0 = infinite lease)")
+    name: str = Field(..., description="Hostname")
+    hwaddr: str = Field(..., description="Hardware (MAC) address")
+    ip: str = Field(..., description="IP address")
+    clientid: str = Field(..., description="Client ID")
+
+
+class DHCPLeasesInfo(BaseModel):
+    """DHCP leases information.
+
+    Attributes:
+        leases: List of DHCP leases.
+    """
+
+    leases: list[DHCPLease] = Field(..., description="List of DHCP leases")

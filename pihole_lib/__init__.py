@@ -54,6 +54,7 @@ from .backup import PiHoleBackup
 from .base import BasePiHoleAPIClient
 from .client import PiHoleClient
 from .config import PiHoleConfig
+from .dhcp import PiHoleDHCP
 from .exceptions import (
     PiHoleAPIError,
     PiHoleAuthenticationError,
@@ -71,6 +72,8 @@ from .models import (
     DatabaseInfo,
     DatabaseOwner,
     DatabaseUser,
+    DHCPLease,
+    DHCPLeasesInfo,
     DockerVersion,
     FTLClientStats,
     FTLDatabaseStats,
@@ -118,6 +121,7 @@ __all__ = [
     "PiHoleLists",
     "PiHoleActions",
     "PiHoleConfig",
+    "PiHoleDHCP",
     "BasePiHoleAPIClient",
     "PiHoleAPIError",
     "PiHoleAuthenticationError",
@@ -130,6 +134,8 @@ __all__ = [
     "DatabaseInfo",
     "DatabaseOwner",
     "DatabaseUser",
+    "DHCPLease",
+    "DHCPLeasesInfo",
     "ListType",
     "LoginInfo",
     "PiHoleAuthSession",
