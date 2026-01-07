@@ -20,6 +20,11 @@ API_ACTION_RESTART_DNS = "/api/action/restartdns"
 API_ACTION_FLUSH_LOGS = "/api/action/flush/logs"
 API_ACTION_FLUSH_NETWORK = "/api/action/flush/network"
 API_CONFIG = "/api/config"
+API_DNS_CONFIG = "/api/config/dns"
+API_DNS_HOSTS = "/api/config/dns/hosts"
+API_DNS_CNAME_RECORDS = "/api/config/dns/cnameRecords"
+API_DNS_UPSTREAMS = "/api/config/dns/upstreams"
+API_DNS_BLOCKING = "/api/dns/blocking"
 
 # HTTP Headers
 HEADER_SESSION_ID = "X-FTL-SID"

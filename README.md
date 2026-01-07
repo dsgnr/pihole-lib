@@ -15,6 +15,7 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
   - [Get login page information](#get-login-page-information)
   - [Backup and restore operations](#backup-and-restore-operations)
   - [Domain lists management](#domain-lists-management)
+  - [Custom DNS records management](#custom-dns-records-management)
   - [Configuration management](#configuration-management)
   - [Actions and maintenance](#actions-and-maintenance)
   - [Manual session control](#manual-session-control)
@@ -64,6 +65,9 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Query types over time | 📋 |
 | **DNS Control** | Enable/disable Pi-hole | 📋 |
 | | Restart DNS resolver | 📋 |
+| | Custom DNS records (A/CNAME) | ✅ |
+| | Get DNS configuration | ✅ |
+| | DNS blocking status | ✅ |
 | **Domain Management** | Add/remove domains | 📋 |
 | | Exact/regex domain matching | 📋 |
 | | Domain comments and descriptions | 📋 |
@@ -332,6 +336,80 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         list_type=ListType.ALLOW
     )
     print(f"Allowlist deletion successful: {success}")
+```
+
+### Custom DNS records management
+
+```python
+from pihole_lib import PiHoleClient, PiHoleDNS
+
+# Manage custom DNS records (A records and CNAME records)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    dns = PiHoleDNS(client)
+
+    # Get DNS configuration
+    config = dns.get_config()
+    print(f"Upstream servers: {config.upstreams}")
+    print(f"DNS port: {config.port}")
+    print(f"Query logging: {config.query_logging}")
+    print(f"DNSSEC: {config.dnssec}")
+    print(f"Blocking active: {config.blocking_active}")
+
+    # Access parsed host records (A records)
+    for host in config.hosts:
+        print(f"A record: {host.domain} -> {host.target}")
+
+    # Access parsed CNAME records
+    for cname in config.cname_records:
+        print(f"CNAME: {cname.domain} -> {cname.target}")
+
+    # Or access all records directly
+    for record in config.records:
+        print(f"{record.record_type}: {record.domain} -> {record.target}")
+
+    # Get all custom DNS records
+    records = dns.get_records()
+    print(f"Found {len(records)} custom DNS records")
+
+    for record in records:
+        if record.record_type == "A":
+            print(f"A: {record.domain} -> {record.target}")
+        elif record.record_type == "CNAME":
+            print(f"CNAME: {record.domain} -> {record.target}")
+
+    # Get only A records
+    a_records = dns.get_records(record_type="A")
+    print(f"Found {len(a_records)} A records")
+
+    # Get only CNAME records
+    cname_records = dns.get_records(record_type="CNAME")
+    print(f"Found {len(cname_records)} CNAME records")
+
+    # Add custom A record
+    success = dns.add_a_record("server.local", "192.168.1.100")
+    if success:
+        print("A record added successfully")
+
+    # Add CNAME record
+    success = dns.add_cname_record("www.local", "server.local")
+    if success:
+        print("CNAME record added successfully")
+
+    # Remove A record
+    success = dns.remove_a_record("server.local", "192.168.1.100")
+    if success:
+        print("A record removed successfully")
+
+    # Remove CNAME record
+    success = dns.remove_cname_record("www.local", "server.local")
+    if success:
+        print("CNAME record removed successfully")
+
+    # Check DNS blocking status
+    status = dns.get_blocking_status()
+    print(f"DNS blocking: {status.blocking}")
+    if status.timer:
+        print(f"Temporarily disabled for {status.timer} seconds")
 ```
 
 ### Configuration management
@@ -675,6 +753,20 @@ The DHCP class for Pi-hole DHCP lease management.
 - `PiHoleDHCP(client)` - Create a new DHCP client using an existing PiHoleClient
 - `get_leases()` - Get currently active DHCP leases. Returns a DHCPLeasesInfo object containing a list of DHCPLease objects with information about each active lease including hostname, IP address, MAC address, client ID, and expiration time.
 - `delete_lease(ip)` - Delete a currently active DHCP lease by IP address. Returns True if successful. Requires DHCP server to be enabled.
+
+### PiHoleDNS
+
+The DNS class for Pi-hole custom DNS record management.
+
+**Methods:**
+- `PiHoleDNS(client)` - Create a new DNS client using an existing PiHoleClient
+- `get_config()` - Get complete DNS configuration including upstream servers, custom records, and settings. Returns a DNSConfig object with properties like `upstreams`, `records` (list of DNSRecord objects), `hosts` (filtered A records), `cname_records` (filtered CNAME records), `port`, `query_logging`, `dnssec`, `blocking`, and `blocking_active`.
+- `get_records(record_type=None)` - Get all custom DNS records (A records and CNAME records). Use `record_type="A"` for A records only, `record_type="CNAME"` for CNAME records only, or `record_type=None` for all records. Returns a list of DNSRecord objects.
+- `add_a_record(domain, ip)` - Add a custom A record for local domain resolution. Returns True if successful.
+- `remove_a_record(domain, ip)` - Remove a custom A record. Returns True if successful.
+- `add_cname_record(domain, target)` - Add a custom CNAME record for domain aliasing. Returns True if successful.
+- `remove_cname_record(domain, target)` - Remove a custom CNAME record. Returns True if successful.
+- `get_blocking_status()` - Get DNS blocking status. Returns a DNSBlockingStatus object with current blocking state and any temporary disable timer.
 
 ### PiHolePADD
 

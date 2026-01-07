@@ -1,6 +1,7 @@
 """Data models for Pi-hole API responses."""
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -1110,3 +1111,109 @@ class PADDInfo(BaseModel):
     percent_cpu: float = Field(..., alias="%cpu", description="CPU usage percentage")
     pid: int = Field(..., description="Process ID")
     sensors: PADDSensors = Field(..., description="Temperature sensor information")
+
+
+class DNSRecord(BaseModel):
+    """DNS record information."""
+
+    domain: str
+    """Domain name."""
+
+    target: str
+    """Target (IP address for A records, domain for CNAME records)."""
+
+    record_type: str
+    """Record type ('A' or 'CNAME')."""
+
+
+class DNSConfig(BaseModel):
+    """DNS configuration information."""
+
+    upstreams: list[str]
+    """List of upstream DNS servers."""
+
+    records: list[DNSRecord]
+    """List of custom DNS records (A records and CNAME records)."""
+
+    port: int
+    """DNS port number."""
+
+    query_logging: bool = Field(alias="queryLogging")
+    """Whether DNS query logging is enabled."""
+
+    dnssec: bool
+    """Whether DNSSEC validation is enabled."""
+
+    blocking: dict[str, Any]
+    """DNS blocking configuration."""
+
+    @property
+    def blocking_active(self) -> bool:
+        """Whether DNS blocking is active."""
+        return bool(self.blocking.get("active", False))
+
+    @property
+    def hosts(self) -> list[DNSRecord]:
+        """List of A records (host entries)."""
+        return [record for record in self.records if record.record_type == "A"]
+
+    @property
+    def cname_records(self) -> list[DNSRecord]:
+        """List of CNAME records."""
+        return [record for record in self.records if record.record_type == "CNAME"]
+
+    @classmethod
+    def from_raw_config(cls, raw_config: dict[str, Any]) -> "DNSConfig":
+        """Create DNSConfig from raw API response.
+
+        Args:
+            raw_config: Raw DNS configuration from API
+
+        Returns:
+            DNSConfig object with parsed DNS records
+        """
+        records = []
+
+        # Parse hosts (format: "ip domain")
+        for host_entry in raw_config.get("hosts", []):
+            if " " in host_entry:
+                ip, domain = host_entry.split(" ", 1)
+                records.append(DNSRecord(domain=domain, target=ip, record_type="A"))
+
+        # Parse CNAME records (format: "domain,target")
+        for cname_entry in raw_config.get("cnameRecords", []):
+            if "," in cname_entry:
+                domain, target = cname_entry.split(",", 1)
+                records.append(
+                    DNSRecord(domain=domain, target=target, record_type="CNAME")
+                )
+
+        # Create the config with parsed records
+        return cls(
+            upstreams=raw_config.get("upstreams", []),
+            records=records,
+            port=raw_config.get("port", 53),
+            queryLogging=raw_config.get("queryLogging", False),
+            dnssec=raw_config.get("dnssec", False),
+            blocking=raw_config.get("blocking", {}),
+        )
+
+
+class DNSConfigInfo(BaseModel):
+    """DNS configuration response information."""
+
+    config: dict
+    """DNS configuration data (raw dict to handle nested structure)."""
+
+
+class DNSBlockingStatus(BaseModel):
+    """DNS blocking status information."""
+
+    blocking: str
+    """Blocking status ('enabled' or 'disabled')."""
+
+    timer: int | None
+    """Timer for temporary disable (seconds remaining, None if permanent)."""
+
+    took: float
+    """Time taken to process the request in seconds."""
