@@ -87,6 +87,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | **Teleporter** | Backup configuration | ✅ |
 | | Restore from backup | ✅ |
 | **DHCP** | Get active DHCP leases | ✅ |
+| **PADD** | Get dashboard data | ✅ |
 
 ## Supported Pi-hole Versions
 
@@ -426,6 +427,45 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         print(f"Client ID: {lease.clientid}")
 ```
 
+### PADD dashboard data
+
+```python
+from pihole_lib import PiHoleClient, PiHolePADD
+
+# Get comprehensive dashboard data
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    padd = PiHolePADD(client)
+
+    # Get dashboard data
+    dashboard = padd.get_dashboard_data()
+
+    print(f"Pi-hole Status: {dashboard.blocking}")
+    print(f"Active clients: {dashboard.active_clients}")
+    print(f"Gravity database size: {dashboard.gravity_size}")
+
+    # Query statistics
+    print(f"Total queries: {dashboard.queries.total}")
+    print(f"Blocked queries: {dashboard.queries.blocked}")
+    print(f"Percent blocked: {dashboard.queries.percent_blocked}%")
+
+    # System information
+    print(f"System uptime: {dashboard.system.uptime} seconds")
+    print(f"Memory usage: {dashboard.system.memory.ram.percent_used}%")
+    print(f"CPU usage: {dashboard.system.cpu.percent_cpu}%")
+
+    # Network information
+    print(f"IPv4 address: {dashboard.iface.v4.addr}")
+    print(f"Gateway: {dashboard.iface.v4.gw_addr}")
+
+    # Version information
+    print(f"Pi-hole core: {dashboard.version.core.local.version}")
+    print(f"FTL version: {dashboard.version.ftl.local.version}")
+
+    # Configuration summary
+    print(f"DHCP active: {dashboard.config.dhcp_active}")
+    print(f"DNS port: {dashboard.config.dns_port}")
+```
+
 ### Manual session control
 
 If you need more control over the connection lifecycle:
@@ -616,6 +656,14 @@ The DHCP class for Pi-hole DHCP lease management.
 - `PiHoleDHCP(client)` - Create a new DHCP client using an existing PiHoleClient
 - `get_leases()` - Get currently active DHCP leases. Returns a DHCPLeasesInfo object containing a list of DHCPLease objects with information about each active lease including hostname, IP address, MAC address, client ID, and expiration time.
 
+### PiHolePADD
+
+The PADD class for Pi-hole dashboard data retrieval.
+
+**Methods:**
+- `PiHolePADD(client)` - Create a new PADD client using an existing PiHoleClient
+- `get_dashboard_data()` - Get comprehensive Pi-hole dashboard data including query statistics, system information, network details, version information, and configuration summaries. Returns a PADDInfo object with all dashboard data.
+
 **Context Manager:**
 The client supports Python's `with` statement for automatic resource management:
 
@@ -643,6 +691,13 @@ with PiHoleClient(base_url, password) as client:
 - `ListType` - Enum for list types (ALLOW or BLOCK)
 - `DHCPLease` - Represents a single DHCP lease with hostname, IP, MAC address, client ID, and expiration
 - `DHCPLeasesInfo` - Container for DHCP lease information
+- `PADDInfo` - Comprehensive Pi-hole dashboard data including statistics, system info, network details, and configuration
+- `PADDQueries` - Query statistics (total, blocked, percent blocked)
+- `PADDCache` - Cache information (size, inserted, evicted)
+- `PADDSystem` - System resource information (uptime, memory, CPU, processes)
+- `PADDInterface` - Network interface information (IPv4/IPv6 addresses, gateway, traffic)
+- `PADDVersion` - Version information for all Pi-hole components
+- `PADDConfig` - Configuration summary (DHCP, DNS, privacy settings)
 
 ## Contributing
 

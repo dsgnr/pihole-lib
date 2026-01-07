@@ -767,3 +767,346 @@ class DHCPLeasesInfo(BaseModel):
     """
 
     leases: list[DHCPLease] = Field(..., description="List of DHCP leases")
+
+
+class PADDQueries(BaseModel):
+    """PADD queries information.
+
+    Attributes:
+        total: Total number of queries.
+        blocked: Number of blocked queries.
+        percent_blocked: Percentage of queries that were blocked.
+    """
+
+    total: int = Field(..., description="Total number of queries")
+    blocked: int = Field(..., description="Number of blocked queries")
+    percent_blocked: float = Field(..., description="Percentage of queries blocked")
+
+
+class PADDCache(BaseModel):
+    """PADD cache information.
+
+    Attributes:
+        size: Cache size limit.
+        inserted: Number of entries inserted into cache.
+        evicted: Number of entries evicted from cache.
+    """
+
+    size: int = Field(..., description="Cache size limit")
+    inserted: int = Field(..., description="Number of entries inserted")
+    evicted: int = Field(..., description="Number of entries evicted")
+
+
+class PADDMemoryRAM(BaseModel):
+    """PADD RAM memory information.
+
+    Attributes:
+        total: Total RAM in KB.
+        free: Free RAM in KB.
+        used: Used RAM in KB.
+        available: Available RAM in KB.
+        percent_used: Percentage of RAM used.
+    """
+
+    total: int = Field(..., description="Total RAM in KB")
+    free: int = Field(..., description="Free RAM in KB")
+    used: int = Field(..., description="Used RAM in KB")
+    available: int = Field(..., description="Available RAM in KB")
+    percent_used: float = Field(
+        ..., alias="%used", description="Percentage of RAM used"
+    )
+
+
+class PADDMemorySwap(BaseModel):
+    """PADD swap memory information.
+
+    Attributes:
+        total: Total swap in KB.
+        free: Free swap in KB.
+        used: Used swap in KB.
+        percent_used: Percentage of swap used.
+    """
+
+    total: int = Field(..., description="Total swap in KB")
+    free: int = Field(..., description="Free swap in KB")
+    used: int = Field(..., description="Used swap in KB")
+    percent_used: float = Field(
+        ..., alias="%used", description="Percentage of swap used"
+    )
+
+
+class PADDMemory(BaseModel):
+    """PADD memory information.
+
+    Attributes:
+        ram: RAM information.
+        swap: Swap information.
+    """
+
+    ram: PADDMemoryRAM = Field(..., description="RAM information")
+    swap: PADDMemorySwap = Field(..., description="Swap information")
+
+
+class PADDCPULoad(BaseModel):
+    """PADD CPU load information.
+
+    Attributes:
+        raw: Raw load averages (1, 5, 15 minutes).
+        percent: Load averages as percentages.
+    """
+
+    raw: list[float] = Field(..., description="Raw load averages")
+    percent: list[float] = Field(..., description="Load averages as percentages")
+
+
+class PADDCPU(BaseModel):
+    """PADD CPU information.
+
+    Attributes:
+        nprocs: Number of CPU cores.
+        percent_cpu: CPU usage percentage.
+        load: Load average information.
+    """
+
+    nprocs: int = Field(..., description="Number of CPU cores")
+    percent_cpu: float = Field(..., alias="%cpu", description="CPU usage percentage")
+    load: PADDCPULoad = Field(..., description="Load average information")
+
+
+class PADDFTL(BaseModel):
+    """PADD FTL resource usage.
+
+    Attributes:
+        percent_mem: FTL memory usage percentage.
+        percent_cpu: FTL CPU usage percentage.
+    """
+
+    percent_mem: float = Field(
+        ..., alias="%mem", description="FTL memory usage percentage"
+    )
+    percent_cpu: float = Field(
+        ..., alias="%cpu", description="FTL CPU usage percentage"
+    )
+
+
+class PADDSystem(BaseModel):
+    """PADD system information.
+
+    Attributes:
+        uptime: System uptime in seconds.
+        memory: Memory information.
+        procs: Number of processes.
+        cpu: CPU information.
+        ftl: FTL resource usage.
+    """
+
+    uptime: int = Field(..., description="System uptime in seconds")
+    memory: PADDMemory = Field(..., description="Memory information")
+    procs: int = Field(..., description="Number of processes")
+    cpu: PADDCPU = Field(..., description="CPU information")
+    ftl: PADDFTL = Field(..., description="FTL resource usage")
+
+
+class PADDNetworkBytes(BaseModel):
+    """PADD network bytes information.
+
+    Attributes:
+        value: Byte value.
+        unit: Unit (e.g., 'K', 'M', 'G').
+    """
+
+    value: float = Field(..., description="Byte value")
+    unit: str = Field(..., description="Unit")
+
+
+class PADDNetworkInterface(BaseModel):
+    """PADD network interface information.
+
+    Attributes:
+        addr: IP address (can be None).
+        rx_bytes: Received bytes information (optional).
+        tx_bytes: Transmitted bytes information (optional).
+        num_addrs: Number of addresses.
+        name: Interface name.
+        gw_addr: Gateway address (can be None).
+    """
+
+    addr: str | None = Field(None, description="IP address")
+    rx_bytes: PADDNetworkBytes | None = Field(None, description="Received bytes")
+    tx_bytes: PADDNetworkBytes | None = Field(None, description="Transmitted bytes")
+    num_addrs: int = Field(..., description="Number of addresses")
+    name: str = Field(..., description="Interface name")
+    gw_addr: str | None = Field(None, description="Gateway address")
+
+
+class PADDInterface(BaseModel):
+    """PADD interface information.
+
+    Attributes:
+        v4: IPv4 interface information.
+        v6: IPv6 interface information.
+    """
+
+    v4: PADDNetworkInterface = Field(..., description="IPv4 interface")
+    v6: PADDNetworkInterface = Field(..., description="IPv6 interface")
+
+
+class PADDVersionComponent(BaseModel):
+    """PADD version component information.
+
+    Attributes:
+        version: Version string.
+        branch: Git branch (optional).
+        hash: Git commit hash.
+        date: Build date (optional).
+    """
+
+    version: str = Field(..., description="Version string")
+    branch: str | None = Field(None, description="Git branch")
+    hash: str = Field(..., description="Git commit hash")
+    date: str | None = Field(None, description="Build date")
+
+
+class PADDVersionRemote(BaseModel):
+    """PADD remote version information.
+
+    Attributes:
+        version: Version string.
+        hash: Git commit hash.
+    """
+
+    version: str = Field(..., description="Version string")
+    hash: str = Field(..., description="Git commit hash")
+
+
+class PADDVersionInfo(BaseModel):
+    """PADD version component info.
+
+    Attributes:
+        local: Local version information.
+        remote: Remote version information.
+    """
+
+    local: PADDVersionComponent = Field(..., description="Local version")
+    remote: PADDVersionRemote = Field(..., description="Remote version")
+
+
+class PADDVersionDocker(BaseModel):
+    """PADD Docker version information.
+
+    Attributes:
+        local: Local Docker version.
+        remote: Remote Docker version.
+    """
+
+    local: str = Field(..., description="Local Docker version")
+    remote: str = Field(..., description="Remote Docker version")
+
+
+class PADDVersion(BaseModel):
+    """PADD version information.
+
+    Attributes:
+        core: Pi-hole core version.
+        web: Pi-hole web version.
+        ftl: FTL version.
+        docker: Docker version.
+    """
+
+    core: PADDVersionInfo = Field(..., description="Pi-hole core version")
+    web: PADDVersionInfo = Field(..., description="Pi-hole web version")
+    ftl: PADDVersionInfo = Field(..., description="FTL version")
+    docker: PADDVersionDocker = Field(..., description="Docker version")
+
+
+class PADDConfig(BaseModel):
+    """PADD configuration information.
+
+    Attributes:
+        dhcp_active: Whether DHCP is active.
+        dhcp_start: DHCP start address.
+        dhcp_end: DHCP end address.
+        dhcp_ipv6: Whether DHCP IPv6 is enabled.
+        dns_domain: DNS domain.
+        dns_port: DNS port.
+        dns_num_upstreams: Number of upstream DNS servers.
+        dns_dnssec: Whether DNSSEC is enabled.
+        dns_revServer_active: Whether reverse DNS server is active.
+        privacy_level: Privacy level setting.
+    """
+
+    dhcp_active: bool = Field(..., description="Whether DHCP is active")
+    dhcp_start: str = Field(..., description="DHCP start address")
+    dhcp_end: str = Field(..., description="DHCP end address")
+    dhcp_ipv6: bool = Field(..., description="Whether DHCP IPv6 is enabled")
+    dns_domain: str = Field(..., description="DNS domain")
+    dns_port: int = Field(..., description="DNS port")
+    dns_num_upstreams: int = Field(..., description="Number of upstream DNS servers")
+    dns_dnssec: bool = Field(..., description="Whether DNSSEC is enabled")
+    dns_revServer_active: bool = Field(
+        ..., description="Whether reverse DNS server is active"
+    )
+    privacy_level: int = Field(..., description="Privacy level setting")
+
+
+class PADDSensors(BaseModel):
+    """PADD sensors information.
+
+    Attributes:
+        cpu_temp: CPU temperature (can be None).
+        hot_limit: Hot temperature limit.
+        unit: Temperature unit.
+    """
+
+    cpu_temp: float | None = Field(None, description="CPU temperature")
+    hot_limit: int = Field(..., description="Hot temperature limit")
+    unit: str = Field(..., description="Temperature unit")
+
+
+class PADDInfo(BaseModel):
+    """Pi-hole PADD (Pi-hole API Dashboard Data) information.
+
+    This contains comprehensive dashboard data including statistics,
+    system information, network details, and configuration.
+
+    Attributes:
+        active_clients: Number of active clients.
+        gravity_size: Size of gravity database.
+        top_domain: Top queried domain (can be None).
+        top_blocked: Top blocked domain (can be None).
+        top_client: Top client (can be None).
+        recent_blocked: Recently blocked domain (can be None).
+        blocking: Blocking status ('enabled' or 'disabled').
+        queries: Query statistics.
+        cache: Cache information.
+        system: System resource information.
+        node_name: Node/hostname.
+        host_model: Host model (can be None).
+        iface: Network interface information.
+        version: Version information for all components.
+        config: Configuration summary.
+        percent_mem: Memory usage percentage.
+        percent_cpu: CPU usage percentage.
+        pid: Process ID.
+        sensors: Temperature sensor information.
+    """
+
+    active_clients: int = Field(..., description="Number of active clients")
+    gravity_size: int = Field(..., description="Size of gravity database")
+    top_domain: str | None = Field(None, description="Top queried domain")
+    top_blocked: str | None = Field(None, description="Top blocked domain")
+    top_client: str | None = Field(None, description="Top client")
+    recent_blocked: str | None = Field(None, description="Recently blocked domain")
+    blocking: str = Field(..., description="Blocking status")
+    queries: PADDQueries = Field(..., description="Query statistics")
+    cache: PADDCache = Field(..., description="Cache information")
+    system: PADDSystem = Field(..., description="System information")
+    node_name: str = Field(..., description="Node/hostname")
+    host_model: str | None = Field(None, description="Host model")
+    iface: PADDInterface = Field(..., description="Network interface information")
+    version: PADDVersion = Field(..., description="Version information")
+    config: PADDConfig = Field(..., description="Configuration summary")
+    percent_mem: float = Field(..., alias="%mem", description="Memory usage percentage")
+    percent_cpu: float = Field(..., alias="%cpu", description="CPU usage percentage")
+    pid: int = Field(..., description="Process ID")
+    sensors: PADDSensors = Field(..., description="Temperature sensor information")
