@@ -3,6 +3,7 @@
 import pytest
 
 from pihole_lib import PiHoleClient, PiHoleConfig
+from pihole_lib.exceptions import PiHoleAPIError
 
 from .constants import PIHOLE_BASE_URL, PIHOLE_TEST_PASSWORD
 
@@ -215,3 +216,279 @@ class TestPiHoleConfigElementIntegration:
         ) as client:
             config = PiHoleConfig(client)
             assert config.BASE_URL == "/api/config"
+
+
+class TestPiHoleConfigUpdateIntegration:
+    """Integration tests for PiHoleConfig update methods."""
+
+    def test_update_config_dns_upstreams(self, pihole_container):
+        """Test updating DNS upstreams configuration."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original configuration
+            original_config = config.get_config("dns/upstreams")
+            original_upstreams = original_config["dns"]["upstreams"]
+
+            # Update with new upstreams
+            new_upstreams = ["1.1.1.1", "1.0.0.1"]
+            update_config = {"dns": {"upstreams": new_upstreams}}
+
+            updated_config = config.update_config(update_config)
+
+            # Verify the update was applied
+            assert "dns" in updated_config
+            assert updated_config["dns"]["upstreams"] == new_upstreams
+
+            # Verify by getting config again
+            current_config = config.get_config("dns/upstreams")
+            assert current_config["dns"]["upstreams"] == new_upstreams
+
+            # Restore original configuration
+            restore_config = {"dns": {"upstreams": original_upstreams}}
+            config.update_config(restore_config)
+
+    def test_update_config_dns_query_logging(self, pihole_container):
+        """Test updating DNS query logging configuration."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original configuration
+            original_config = config.get_config("dns")
+            original_logging = original_config["dns"]["queryLogging"]
+
+            # Toggle query logging
+            new_logging = not original_logging
+            update_config = {"dns": {"queryLogging": new_logging}}
+
+            updated_config = config.update_config(update_config)
+
+            # Verify the update was applied
+            assert updated_config["dns"]["queryLogging"] == new_logging
+
+            # Restore original configuration
+            restore_config = {"dns": {"queryLogging": original_logging}}
+            config.update_config(restore_config)
+
+    def test_update_config_no_restart(self, pihole_container):
+        """Test updating configuration without restart."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original configuration
+            original_config = config.get_config("dns/upstreams")
+            original_upstreams = original_config["dns"]["upstreams"]
+
+            # Update without restart
+            new_upstreams = ["8.8.8.8", "8.8.4.4"]
+            update_config = {"dns": {"upstreams": new_upstreams}}
+
+            updated_config = config.update_config(update_config, restart=False)
+
+            # Verify the update was applied
+            assert updated_config["dns"]["upstreams"] == new_upstreams
+
+            # Restore original configuration with restart
+            restore_config = {"dns": {"upstreams": original_upstreams}}
+            config.update_config(restore_config, restart=True)
+
+    def test_update_config_multiple_sections(self, pihole_container):
+        """Test updating multiple configuration sections at once."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original configurations
+            original_dns = config.get_config("dns")
+            original_upstreams = original_dns["dns"]["upstreams"]
+            original_logging = original_dns["dns"]["queryLogging"]
+
+            # Update multiple sections
+            new_upstreams = ["9.9.9.9", "149.112.112.112"]
+            new_logging = not original_logging
+
+            update_config = {
+                "dns": {
+                    "upstreams": new_upstreams,
+                    "queryLogging": new_logging,
+                }
+            }
+
+            updated_config = config.update_config(update_config)
+
+            # Verify both updates were applied
+            assert updated_config["dns"]["upstreams"] == new_upstreams
+            assert updated_config["dns"]["queryLogging"] == new_logging
+
+            # Restore original configuration
+            restore_config = {
+                "dns": {
+                    "upstreams": original_upstreams,
+                    "queryLogging": original_logging,
+                }
+            }
+            config.update_config(restore_config)
+
+
+class TestPiHoleConfigItemManagementIntegration:
+    """Integration tests for PiHoleConfig item management methods."""
+
+    def test_add_remove_upstream_dns_server(self, pihole_container):
+        """Test adding and removing upstream DNS servers."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original upstreams
+            original_config = config.get_config("dns/upstreams")
+            original_upstreams = original_config["dns"]["upstreams"]
+
+            # Add a new upstream
+            test_upstream = "1.1.1.1"
+            if test_upstream not in original_upstreams:
+                success = config.add_config_item("dns/upstreams", test_upstream)
+                assert success is True
+
+                # Verify it was added
+                current_config = config.get_config("dns/upstreams")
+                current_upstreams = current_config["dns"]["upstreams"]
+                assert test_upstream in current_upstreams
+
+                # Remove the upstream
+                success = config.remove_config_item("dns/upstreams", test_upstream)
+                assert success is True
+
+                # Verify it was removed
+                final_config = config.get_config("dns/upstreams")
+                final_upstreams = final_config["dns"]["upstreams"]
+                assert test_upstream not in final_upstreams
+
+    def test_add_remove_dns_host_entry(self, pihole_container):
+        """Test adding and removing DNS host entries."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original hosts
+            original_config = config.get_config("dns")
+            original_hosts = original_config["dns"]["hosts"]
+
+            # Add a new host entry
+            test_host = "192.168.1.100 testserver.local"
+            if test_host not in original_hosts:
+                success = config.add_config_item("dns/hosts", test_host)
+                assert success is True
+
+                # Verify it was added
+                current_config = config.get_config("dns")
+                current_hosts = current_config["dns"]["hosts"]
+                assert test_host in current_hosts
+
+                # Remove the host entry
+                success = config.remove_config_item("dns/hosts", test_host)
+                assert success is True
+
+                # Verify it was removed
+                final_config = config.get_config("dns")
+                final_hosts = final_config["dns"]["hosts"]
+                assert test_host not in final_hosts
+
+    def test_add_remove_config_item_no_restart(self, pihole_container):
+        """Test adding and removing config items without restart."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Get original upstreams
+            original_config = config.get_config("dns/upstreams")
+            original_upstreams = original_config["dns"]["upstreams"]
+
+            # Add upstream without restart
+            test_upstream = "8.8.8.8"
+            if test_upstream not in original_upstreams:
+                success = config.add_config_item(
+                    "dns/upstreams", test_upstream, restart=False
+                )
+                assert success is True
+
+                # Remove upstream without restart
+                success = config.remove_config_item(
+                    "dns/upstreams", test_upstream, restart=False
+                )
+                assert success is True
+
+    def test_add_config_item_special_characters(self, pihole_container):
+        """Test adding config items with special characters."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Test with host entry containing spaces
+            test_host = "192.168.1.200 test-server.example.com"
+
+            # Add the host entry
+            success = config.add_config_item("dns/hosts", test_host)
+            assert success is True
+
+            # Verify it was added
+            current_config = config.get_config("dns")
+            current_hosts = current_config["dns"]["hosts"]
+            assert test_host in current_hosts
+
+            # Remove the host entry
+            success = config.remove_config_item("dns/hosts", test_host)
+            assert success is True
+
+            # Verify it was removed
+            final_config = config.get_config("dns")
+            final_hosts = final_config["dns"]["hosts"]
+            assert test_host not in final_hosts
+
+    def test_remove_nonexistent_config_item(self, pihole_container):
+        """Test removing a config item that doesn't exist."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            config = PiHoleConfig(client)
+
+            # Try to remove a non-existent upstream - should raise an exception
+            with pytest.raises(PiHoleAPIError, match="Endpoint not found"):
+                config.remove_config_item("dns/upstreams", "999.999.999.999")
+
+    def test_config_with_property_access(self, pihole_container):
+        """Test configuration management using property access on PiHoleClient."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            # Get configuration using property access
+            config_data = client.config.get_config()
+            assert isinstance(config_data, dict)
+            assert "dns" in config_data
+
+            # Get DNS configuration
+            dns_config = client.config.get_config("dns")
+            assert "dns" in dns_config
+
+            # Update configuration
+            original_upstreams = dns_config["dns"]["upstreams"]
+            new_upstreams = ["1.1.1.1", "1.0.0.1"]
+
+            if original_upstreams != new_upstreams:
+                update_config = {"dns": {"upstreams": new_upstreams}}
+                updated_config = client.config.update_config(update_config)
+                assert updated_config["dns"]["upstreams"] == new_upstreams
+
+                # Restore original
+                restore_config = {"dns": {"upstreams": original_upstreams}}
+                client.config.update_config(restore_config)

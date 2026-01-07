@@ -98,11 +98,13 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Batch client operations | ✅ |
 | | Client suggestions | ✅ |
 | | Client identification (IP/MAC/hostname/interface) | ✅ |
-| **Pi-hole Configuration** | Get/Update Network settings | 📋 |
-| | Get/Update DNS settings | 📋 |
-| | Get/Update Web interface settings | 📋 |
-| | Get/Update Privacy settings | 📋 |
-| | Get configuration (with filtering) | ✅ |
+| **Pi-hole Configuration** | Get configuration (with filtering) | ✅ |
+| | Update configuration (PATCH) | ✅ |
+| | Add/remove config array items | ✅ |
+| | DNS settings management | ✅ |
+| | DHCP settings management | ✅ |
+| | Web server settings management | ✅ |
+| | Batch configuration updates | ✅ |
 | **Actions** | Update gravity | ✅ |
 | | Restart DNS | ✅ |
 | | Flush logs | ✅ |
@@ -1163,6 +1165,112 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     # Get only webserver configuration
     web_only = config.get_config('webserver')
     print(f"Web domain: {web_only['webserver']['domain']}")
+
+    # UPDATE CONFIGURATION
+    # Update DNS settings
+    new_dns_config = {
+        "dns": {
+            "upstreams": ["1.1.1.1", "1.0.0.1"],
+            "queryLogging": True,
+            "dnssec": True
+        }
+    }
+    updated_config = config.update_config(new_dns_config)
+    print(f"Updated DNS upstreams: {updated_config['dns']['upstreams']}")
+
+    # Update DHCP settings
+    dhcp_config = {
+        "dhcp": {
+            "active": True,
+            "start": "192.168.1.100",
+            "end": "192.168.1.200",
+            "router": "192.168.1.1",
+            "netmask": "255.255.255.0",
+            "leaseTime": "24h"
+        }
+    }
+    updated_config = config.update_config(dhcp_config)
+    print(f"DHCP now active: {updated_config['dhcp']['active']}")
+
+    # Update multiple sections at once
+    multi_config = {
+        "dns": {
+            "upstreams": ["8.8.8.8", "8.8.4.4"],
+            "port": 53
+        },
+        "webserver": {
+            "port": "80o,443os"
+        }
+    }
+    updated_config = config.update_config(multi_config)
+
+    # Update without restarting FTL (for batch operations)
+    config.update_config({"dns": {"upstreams": ["1.1.1.1"]}}, restart=False)
+    config.update_config({"dns": {"port": 5353}}, restart=False)
+    # Restart FTL with the final update
+    config.update_config({"dns": {"queryLogging": False}}, restart=True)
+
+    # ADD/REMOVE INDIVIDUAL CONFIG ITEMS
+    # Add upstream DNS server
+    success = config.add_config_item("dns/upstreams", "9.9.9.9")
+    print(f"Added upstream: {success}")
+
+    # Add custom DNS host entry
+    success = config.add_config_item("dns/hosts", "192.168.1.10 myserver.local")
+    print(f"Added host entry: {success}")
+
+    # Add web server header
+    success = config.add_config_item(
+        "webserver/headers",
+        "X-Custom-Header: MyValue"
+    )
+    print(f"Added header: {success}")
+
+    # Add DHCP static host entry
+    success = config.add_config_item(
+        "dhcp/hosts",
+        "12:34:56:78:9A:BC,192.168.1.50,laptop"
+    )
+    print(f"Added DHCP host: {success}")
+
+    # Remove upstream DNS server
+    success = config.remove_config_item("dns/upstreams", "9.9.9.9")
+    print(f"Removed upstream: {success}")
+
+    # Remove custom DNS host entry
+    success = config.remove_config_item("dns/hosts", "192.168.1.10 myserver.local")
+    print(f"Removed host entry: {success}")
+
+    # Add/remove without restarting FTL
+    success = config.add_config_item("dns/upstreams", "8.8.8.8", restart=False)
+    success = config.remove_config_item("dns/upstreams", "8.8.8.8", restart=False)
+
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get configuration - no need to import PiHoleConfig
+    config_data = client.config.get_config()
+    print(f"DNS upstreams: {config_data['dns']['upstreams']}")
+
+    # Get specific configuration element
+    dns_config = client.config.get_config("dns")
+    print(f"DNS settings: {dns_config['dns']}")
+
+    # Update configuration
+    new_config = {
+        "dns": {
+            "upstreams": ["1.1.1.1", "1.0.0.1"],
+            "queryLogging": True
+        }
+    }
+    updated_config = client.config.update_config(new_config)
+    print(f"Updated upstreams: {updated_config['dns']['upstreams']}")
+
+    # Add/remove config items
+    success = client.config.add_config_item("dns/upstreams", "8.8.8.8")
+    print(f"Added upstream: {success}")
+
+    success = client.config.remove_config_item("dns/upstreams", "8.8.8.8")
+    print(f"Removed upstream: {success}")
 ```
 
 ### Actions and maintenance
