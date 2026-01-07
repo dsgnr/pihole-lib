@@ -701,3 +701,31 @@ class SystemInfo(BaseModel):
     """
 
     system: SystemDetails = Field(..., description="System details")
+
+
+class Message(BaseModel):
+    """Pi-hole system message.
+
+    Attributes:
+        id: Message ID (integer).
+        timestamp: Message timestamp (Unix timestamp).
+        type: Message type (e.g., 'info', 'warning', 'error').
+        plain: Plain text message content.
+        html: HTML-formatted message content.
+    """
+
+    id: int = Field(..., description="Message ID (integer)")
+    timestamp: int = Field(..., description="Message timestamp (Unix timestamp)")
+    type: str = Field(..., description="Message type")
+    plain: str = Field(..., description="Plain text message content")
+    html: str = Field(..., description="HTML-formatted message content")
+
+
+class MessagesInfo(BaseModel):
+    """Pi-hole messages information.
+
+    Attributes:
+        messages: List of system messages.
+    """
+
+    messages: list[Message] = Field(..., description="List of system messages")

@@ -975,3 +975,131 @@ class TestPiHoleInfoSystemInfo:
         assert result.system.cpu.percent_cpu == 5.0
         assert result.system.ftl.percent_mem == 0.1
         assert result.system.ftl.percent_cpu == 0.05
+
+
+class TestPiHoleInfoMessagesInfo:
+    """Test info client get_messages functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_messages_empty(self, mock_request):
+        """Should successfully get empty messages list."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "messages": [],
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_messages()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/messages",
+        )
+
+        # Verify the response structure
+        assert len(result.messages) == 0
+        assert isinstance(result.messages, list)
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_messages_with_content(self, mock_request):
+        """Should successfully get messages with content."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "messages": [
+                {
+                    "id": 1,
+                    "timestamp": 1767779556,
+                    "type": "info",
+                    "plain": "Pi-hole started successfully",
+                    "html": "<strong>Pi-hole</strong> started successfully",
+                },
+                {
+                    "id": 2,
+                    "timestamp": 1767779600,
+                    "type": "warning",
+                    "plain": "High memory usage detected",
+                    "html": "<span class='warning'>High memory usage detected</span>",
+                },
+                {
+                    "id": 3,
+                    "timestamp": 1767779700,
+                    "type": "error",
+                    "plain": "Failed to update gravity database",
+                    "html": "<span class='error'>Failed to update gravity database</span>",
+                },
+            ],
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_messages()
+
+        # Verify the response structure
+        assert len(result.messages) == 3
+
+        # Verify first message
+        msg1 = result.messages[0]
+        assert msg1.id == 1
+        assert msg1.timestamp == 1767779556
+        assert msg1.type == "info"
+        assert msg1.plain == "Pi-hole started successfully"
+        assert msg1.html == "<strong>Pi-hole</strong> started successfully"
+
+        # Verify second message
+        msg2 = result.messages[1]
+        assert msg2.id == 2
+        assert msg2.timestamp == 1767779600
+        assert msg2.type == "warning"
+        assert msg2.plain == "High memory usage detected"
+        assert msg2.html == "<span class='warning'>High memory usage detected</span>"
+
+        # Verify third message
+        msg3 = result.messages[2]
+        assert msg3.id == 3
+        assert msg3.timestamp == 1767779700
+        assert msg3.type == "error"
+        assert msg3.plain == "Failed to update gravity database"
+        assert (
+            msg3.html == "<span class='error'>Failed to update gravity database</span>"
+        )
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_messages_single_message(self, mock_request):
+        """Should handle single message response."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "messages": [
+                {
+                    "id": 100,
+                    "timestamp": 1767800000,
+                    "type": "info",
+                    "plain": "New Pi-hole version available: v6.5",
+                    "html": "New <strong>Pi-hole</strong> version available: <em>v6.5</em>",
+                }
+            ],
+            "took": 0.0005,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_messages()
+
+        assert len(result.messages) == 1
+        message = result.messages[0]
+        assert message.id == 100
+        assert message.type == "info"
+        assert "v6.5" in message.plain
+        assert "v6.5" in message.html
+        assert "<strong>" in message.html
+        assert "<em>" in message.html

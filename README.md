@@ -55,6 +55,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Host system information | ✅ |
 | | Version information | ✅ |
 | | System resource information | ✅ |
+| | System messages | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -190,6 +191,13 @@ print(f"Processes: {system_info.system.procs}")
 print(f"FTL Memory: {system_info.system.ftl.percent_mem:.2f}%")
 print(f"Load Average: {system_info.system.cpu.load.raw}")
 
+# Get system messages
+messages_info = info.get_messages()
+print(f"Total messages: {len(messages_info.messages)}")
+for message in messages_info.messages:
+    print(f"[{message.type.upper()}] {message.plain}")
+    print(f"  ID: {message.id}, Time: {message.timestamp}")
+
 client.close()
 
 # Or use within client context manager
@@ -215,6 +223,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     system_info = info.get_system_info()
     print(f"RAM Usage: {system_info.system.memory.ram.percent_used:.1f}%")
+
+    messages_info = info.get_messages()
+    print(f"Messages: {len(messages_info.messages)}")
 ```
 
 ### Backup and restore operations
@@ -525,6 +536,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `get_host_info()` - Get host system information (uname details, hardware model, DMI/SMBIOS data)
 - `get_version_info()` - Get version information (core, web, FTL, Docker versions with local/remote comparison)
 - `get_system_info()` - Get system resource information (uptime, memory, CPU, processes, FTL resource usage)
+- `get_messages()` - Get system messages (notifications, warnings, errors with plain text and HTML content)
 
 ### PiHoleBackup
 

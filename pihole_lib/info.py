@@ -9,6 +9,7 @@ from .constants import (
     API_INFO_FTL,
     API_INFO_HOST,
     API_INFO_LOGIN,
+    API_INFO_MESSAGES,
     API_INFO_SYSTEM,
     API_INFO_VERSION,
 )
@@ -18,6 +19,7 @@ from .models import (
     FTLInfo,
     HostInfo,
     LoginInfo,
+    MessagesInfo,
     SystemInfo,
     VersionInfo,
 )
@@ -300,3 +302,41 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return SystemInfo(**data)
+
+    def get_messages(self) -> MessagesInfo:
+        """Get system messages.
+
+        Request Pi-hole diagnosis messages.
+
+        Returns:
+            MessagesInfo: System messages including message ID, timestamp, type,
+                         plain text content, and HTML-formatted content.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                messages_info = info.get_messages()
+                print(f"Total messages: {len(messages_info.messages)}")
+
+                for message in messages_info.messages:
+                    print(f"[{message.type.upper()}] {message.plain}")
+                    print(f"  ID: {message.id}")
+                    print(f"  Time: {message.timestamp}")
+                    print(f"  HTML: {message.html}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_MESSAGES,
+        )
+
+        data = response.json()
+        return MessagesInfo(**data)

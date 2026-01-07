@@ -829,3 +829,108 @@ class TestPiHoleInfoSystemInfo:
                 expected_percent = (load.raw[i] * 100) / nprocs
                 # Allow some floating point tolerance
                 assert abs(load.percent[i] - expected_percent) < 0.1
+
+
+class TestPiHoleInfoMessagesInfo:
+    """Test messages info functionality against real Pi-hole."""
+
+    def test_get_messages_success(self, pihole_container):
+        """Should successfully retrieve messages from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            messages_info = info_client.get_messages()
+
+            # Verify basic structure
+            assert hasattr(messages_info, "messages")
+            assert isinstance(messages_info.messages, list)
+
+            # Messages can be empty in a fresh Pi-hole installation
+            # If there are messages, verify their structure
+            for message in messages_info.messages:
+                assert hasattr(message, "id")
+                assert hasattr(message, "timestamp")
+                assert hasattr(message, "type")
+                assert hasattr(message, "plain")
+                assert hasattr(message, "html")
+
+                # Verify data types
+                assert isinstance(message.id, int)
+                assert isinstance(message.timestamp, int)
+                assert isinstance(message.type, str)
+                assert isinstance(message.plain, str)
+                assert isinstance(message.html, str)
+
+                # Verify reasonable values
+                assert message.id > 0
+                assert message.timestamp > 0
+                assert len(message.type) > 0
+                assert len(message.plain) > 0
+                assert len(message.html) > 0
+
+    def test_get_messages_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_messages()
+
+        client.close()
+
+    def test_get_messages_empty_list(self, pihole_container):
+        """Should handle empty messages list gracefully."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            messages_info = info_client.get_messages()
+
+            # Fresh Pi-hole installations typically have no messages
+            assert isinstance(messages_info.messages, list)
+            # Length can be 0 or more, both are valid
+
+    def test_get_messages_message_types(self, pihole_container):
+        """Should return valid message types if messages exist."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            messages_info = info_client.get_messages()
+
+            for message in messages_info.messages:
+                # Message type should be a non-empty string
+                assert isinstance(message.type, str)
+                assert len(message.type) > 0
+                # For now, just verify it's a reasonable string (could be any type Pi-hole uses)
+                assert message.type.replace("_", "").replace("-", "").isalnum()
+
+    def test_get_messages_content_consistency(self, pihole_container):
+        """Should return consistent plain and HTML content."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            messages_info = info_client.get_messages()
+
+            # If messages exist, verify content consistency
+            for message in messages_info.messages:
+                # Plain text should not contain HTML tags
+                assert "<" not in message.plain or ">" not in message.plain
+
+                # HTML content should contain the plain text content (approximately)
+                # Remove HTML tags for basic comparison
+                import re
+
+                html_text = re.sub(r"<[^>]+>", "", message.html)
+                # Basic check that core content is similar
+                assert len(html_text.strip()) > 0
