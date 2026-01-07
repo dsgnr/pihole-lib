@@ -15,6 +15,7 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
   - [Get login page information](#get-login-page-information)
   - [Backup and restore operations](#backup-and-restore-operations)
   - [Domain lists management](#domain-lists-management)
+  - [Domain management](#domain-management)
   - [Groups management](#groups-management)
   - [Custom DNS records and blocking management](#custom-dns-records-and-blocking-management)
   - [Configuration management](#configuration-management)
@@ -76,9 +77,11 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Custom DNS records (A/CNAME) | ✅ |
 | | Get DNS configuration | ✅ |
 | | DNS blocking status | ✅ |
-| **Domain Management** | Add/remove domains | 📋 |
-| | Exact/regex domain matching | 📋 |
-| | Domain comments and descriptions | 📋 |
+| **Domain Management** | Add/remove domains | ✅ |
+| | Exact/regex domain matching | ✅ |
+| | Domain comments and descriptions | ✅ |
+| | Batch domain operations | ✅ |
+| | Move domains between lists | ✅ |
 | **List Management** | Get domain lists (by type, and name) | ✅ |
 | | List metadata and statistics | ✅ |
 | | Add/remove lists | ✅ |
@@ -559,6 +562,96 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         list_type=ListType.BLOCK
     )
     print(f"Blocklist deletion successful: {success}")
+```
+
+### Domain management
+
+```python
+from pihole_lib import PiHoleClient, DomainType, DomainKind
+
+with PiHoleClient("http://192.168.1.100", password="secret") as client:
+    domains = client.domains
+
+    # Get all domains
+    all_domains = domains.get_domains()
+    print(f"Total domains: {len(all_domains)}")
+
+    # Get domains by type
+    allowed_domains = domains.get_domains(domain_type=DomainType.ALLOW)
+    blocked_domains = domains.get_domains(domain_type=DomainType.DENY)
+    print(f"Allowed: {len(allowed_domains)}, Blocked: {len(blocked_domains)}")
+
+    # Get domains by kind
+    exact_domains = domains.get_domains(domain_kind=DomainKind.EXACT)
+    regex_domains = domains.get_domains(domain_kind=DomainKind.REGEX)
+    print(f"Exact: {len(exact_domains)}, Regex: {len(regex_domains)}")
+
+    # Get specific domain
+    domain = domains.get_domain("example.com", DomainType.ALLOW, DomainKind.EXACT)
+    if domain:
+        print(f"Found domain: {domain.domain} (enabled: {domain.enabled})")
+
+    # Add a new blocked domain
+    result = domains.add_domain(
+        domain="badsite.com",
+        domain_type=DomainType.DENY,
+        domain_kind=DomainKind.EXACT,
+        comment="Malicious site",
+        groups=[0],
+        enabled=True
+    )
+    print(f"Added domain: {result.processed.success}")
+
+    # Add a regex pattern
+    result = domains.add_domain(
+        domain=r".*\.ads\..*",
+        domain_type=DomainType.DENY,
+        domain_kind=DomainKind.REGEX,
+        comment="Block ads subdomains"
+    )
+    print(f"Added regex pattern: {result.processed.success}")
+
+    # Update a domain
+    result = domains.update_domain(
+        domain="example.com",
+        domain_type=DomainType.ALLOW,
+        domain_kind=DomainKind.EXACT,
+        comment="Updated comment",
+        enabled=False
+    )
+    print(f"Updated domain: {result.processed.success}")
+
+    # Move domain from allow to deny list
+    result = domains.update_domain(
+        domain="example.com",
+        domain_type=DomainType.ALLOW,
+        domain_kind=DomainKind.EXACT,
+        new_type=DomainType.DENY,
+        new_kind=DomainKind.EXACT
+    )
+    print(f"Moved domain: {result.processed.success}")
+
+    # Delete a domain
+    domains.delete_domain("badsite.com", DomainType.DENY, DomainKind.EXACT)
+    print("Domain deleted")
+
+    # Batch delete multiple domains
+    from pihole_lib import DomainBatchDeleteItem
+
+    batch_items = [
+        DomainBatchDeleteItem(
+            item="site1.com",
+            type=DomainType.DENY,
+            kind=DomainKind.EXACT
+        ),
+        DomainBatchDeleteItem(
+            item="site2.com",
+            type=DomainType.DENY,
+            kind=DomainKind.EXACT
+        )
+    ]
+    result = domains.batch_delete_domains(batch_items)
+    print(f"Batch delete completed successfully: {result}")
 ```
 
 ### Custom DNS records and blocking management
@@ -1165,6 +1258,33 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 - `ListsResponse` - Contains lists array, processing results, and timing information (returned by update_list)
 - `SearchResponse` - Contains search results, parameters used, and result counts (returned by search_domains)
 - `BatchDeleteItem` - Specifies item address and type for batch deletion operations
+
+### PiHoleDomains
+
+The domains class for Pi-hole individual domain management (allow/deny lists).
+
+**Methods:**
+- `PiHoleDomains(client)` - Create a new domains client using an existing PiHoleClient
+
+**Domain Operations:**
+- `get_domains(domain_type=None, domain_kind=None, domain=None)` - Get domains with optional filtering by type (allow/deny), kind (exact/regex), or specific domain name. Returns list of Domain objects.
+- `get_domain(domain, domain_type, domain_kind)` - Get a specific domain by exact match. Returns Domain object if found, None otherwise.
+- `add_domain(domain, domain_type, domain_kind, comment=None, groups=None, enabled=True)` - Add a new domain. Returns DomainMutationResponse object with processing results.
+- `update_domain(domain, domain_type, domain_kind, new_type=None, new_kind=None, comment=None, groups=None, enabled=None)` - Update an existing domain. Can move domains between lists using new_type/new_kind. Returns DomainMutationResponse object.
+- `delete_domain(domain, domain_type, domain_kind)` - Delete a domain. No return value on success.
+- `batch_delete_domains(domains)` - Delete multiple domains in a single request. Takes list of DomainBatchDeleteItem objects. Returns True if successful.
+
+**Domain Types and Kinds:**
+- `DomainType.ALLOW` - Allowed domains (bypass blocking)
+- `DomainType.DENY` - Denied domains (blocked)
+- `DomainKind.EXACT` - Exact domain matching
+- `DomainKind.REGEX` - Regular expression pattern matching
+
+**Response Objects:**
+- `Domain` - Represents a domain entry with name, type, kind, comment, groups, enabled status, and timestamps
+- `DomainMutationResponse` - Contains domains array and processing results (returned by add_domain and update_domain)
+- `DomainsResponse` - Contains list of domains (returned by get_domains)
+- `DomainBatchDeleteItem` - Specifies domain, type, and kind for batch deletion operations
 
 ### PiHoleGroups
 

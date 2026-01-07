@@ -47,8 +47,20 @@ Examples:
             enabled=True
         )
 
+        # Domain operations
+        all_domains = client.domains.get_domains()
+        print(f"Found {len(all_domains)} domains")
+
+        # Add a new domain
+        client.domains.add_domain(
+            domain="badsite.com",
+            domain_type=DomainType.DENY,
+            domain_kind=DomainKind.EXACT,
+            comment="Blocked site"
+        )
+
     # Alternative usage with explicit class imports
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, PiHoleDomains
 
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
         # Configuration management
@@ -80,6 +92,11 @@ Examples:
             list_type=ListType.BLOCK,
             comment="Ad servers blocklist"
         )
+
+        # Domain operations
+        domains = PiHoleDomains(client)
+        all_domains = domains.get_domains()
+        print(f"Found {len(all_domains)} domains")
     ```
 """
 
@@ -90,6 +107,7 @@ from .client import PiHoleClient
 from .config import PiHoleConfig
 from .dhcp import PiHoleDHCP
 from .dns import PiHoleDNS
+from .domains import PiHoleDomains
 from .exceptions import (
     PiHoleAPIError,
     PiHoleAuthenticationError,
@@ -123,6 +141,16 @@ from .models import (
     DNSConfigInfo,
     DNSRecord,
     DockerVersion,
+    Domain,
+    DomainBatchDeleteItem,
+    DomainKind,
+    DomainMutationResponse,
+    DomainProcessedError,
+    DomainProcessedResult,
+    DomainProcessedSuccess,
+    DomainRequest,
+    DomainsResponse,
+    DomainType,
     FTLClientStats,
     FTLDatabaseStats,
     FTLDnsmasqStats,
@@ -227,6 +255,7 @@ __all__ = [
     "PiHoleConfig",
     "PiHoleDHCP",
     "PiHoleDNS",
+    "PiHoleDomains",
     "PiHoleGroups",
     "PiHolePADD",
     "PiHoleStats",
@@ -248,6 +277,16 @@ __all__ = [
     "DNSConfig",
     "DNSConfigInfo",
     "DNSRecord",
+    "Domain",
+    "DomainBatchDeleteItem",
+    "DomainKind",
+    "DomainMutationResponse",
+    "DomainProcessedError",
+    "DomainProcessedResult",
+    "DomainProcessedSuccess",
+    "DomainRequest",
+    "DomainsResponse",
+    "DomainType",
     "Group",
     "GroupProcessedError",
     "GroupProcessedResult",

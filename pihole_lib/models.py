@@ -1884,3 +1884,161 @@ class SummaryResponse(BaseModel):
     clients: SummaryClients = Field(..., description="Client statistics")
     gravity: SummaryGravity = Field(..., description="Gravity statistics")
     took: float = Field(..., description="Time taken to process the request")
+
+
+class DomainType(str, Enum):
+    """Pi-hole domain types."""
+
+    ALLOW = "allow"
+    DENY = "deny"
+
+
+class DomainKind(str, Enum):
+    """Pi-hole domain kinds."""
+
+    EXACT = "exact"
+    REGEX = "regex"
+
+
+class Domain(BaseModel):
+    """Pi-hole domain entry.
+
+    Attributes:
+        domain: The domain name or regex pattern.
+        unicode: Unicode representation of the domain.
+        type: Type of domain (allow or deny).
+        kind: Kind of domain (exact or regex).
+        comment: User-provided free-text comment for this domain.
+        groups: Array of group IDs.
+        enabled: Status of domain.
+        id: Database ID.
+        date_added: Unix timestamp of item addition.
+        date_modified: Unix timestamp of last item modification.
+    """
+
+    domain: str = Field(..., description="The domain name or regex pattern")
+    unicode: str = Field(..., description="Unicode representation of the domain")
+    type: DomainType = Field(..., description="Type of domain")
+    kind: DomainKind = Field(..., description="Kind of domain")
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this domain"
+    )
+    groups: list[int] = Field(..., description="Array of group IDs")
+    enabled: bool = Field(True, description="Status of domain")
+    id: int = Field(..., description="Database ID")
+    date_added: int = Field(..., description="Unix timestamp of item addition")
+    date_modified: int = Field(
+        ..., description="Unix timestamp of last item modification"
+    )
+
+
+class DomainsResponse(BaseModel):
+    """Response for domains endpoints.
+
+    Attributes:
+        domains: List of domain entries.
+        took: Time taken to process the request.
+    """
+
+    domains: list[Domain] = Field(..., description="List of domain entries")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class DomainRequest(BaseModel):
+    """Request for adding/updating domains.
+
+    Attributes:
+        domain: The domain name or regex pattern.
+        type: Type of domain (allow or deny). Used for moving domains.
+        kind: Kind of domain (exact or regex). Used for moving domains.
+        comment: User-provided free-text comment for this domain.
+        groups: Array of group IDs.
+        enabled: Status of domain.
+    """
+
+    domain: str | None = Field(None, description="The domain name or regex pattern")
+    type: DomainType | None = Field(None, description="Type of domain")
+    kind: DomainKind | None = Field(None, description="Kind of domain")
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this domain"
+    )
+    groups: list[int] | None = Field(None, description="Array of group IDs")
+    enabled: bool | None = Field(None, description="Status of domain")
+
+
+class DomainBatchDeleteItem(BaseModel):
+    """Item for batch domain deletion.
+
+    Attributes:
+        item: Domain to delete.
+        type: Type of domain to delete.
+        kind: Kind of domain to delete.
+    """
+
+    item: str = Field(..., description="Domain to delete")
+    type: DomainType = Field(..., description="Type of domain to delete")
+    kind: DomainKind = Field(..., description="Kind of domain to delete")
+
+
+class DomainProcessedSuccess(BaseModel):
+    """Successful domain processing result.
+
+    Attributes:
+        item: The domain that was processed.
+    """
+
+    item: str = Field(..., description="The domain that was processed")
+
+
+class DomainProcessedError(BaseModel):
+    """Failed domain processing result.
+
+    Attributes:
+        item: The domain that failed to process.
+        error: Error message.
+    """
+
+    item: str = Field(..., description="The domain that failed to process")
+    error: str = Field(..., description="Error message")
+
+
+class DomainProcessedResult(BaseModel):
+    """Domain processing results.
+
+    Attributes:
+        success: List of successfully processed domains.
+        errors: List of failed domain processing attempts.
+    """
+
+    success: list[DomainProcessedSuccess] = Field(
+        ..., description="List of successfully processed domains"
+    )
+    errors: list[DomainProcessedError] = Field(
+        ..., description="List of failed domain processing attempts"
+    )
+
+
+class DomainMutationResponse(BaseModel):
+    """Response for domain mutation operations (add, update, delete).
+
+    Attributes:
+        domains: List of domain entries after the operation.
+        processed: Processing results.
+        took: Time taken to process the request.
+    """
+
+    domains: list[Domain] = Field(
+        ..., description="List of domain entries after the operation"
+    )
+    processed: DomainProcessedResult = Field(..., description="Processing results")
+    took: float = Field(..., description="Time taken to process the request")
+
+
+class DomainBatchDeleteResponse(BaseModel):
+    """Response for batch domain deletion.
+
+    Attributes:
+        took: Time taken to process the request.
+    """
+
+    took: float = Field(..., description="Time taken to process the request")

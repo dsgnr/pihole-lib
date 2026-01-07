@@ -60,6 +60,11 @@ API_CLIENTS = {
         "class": "PiHoleStats",
         "description": "statistics and analytics operations",
     },
+    "domains": {
+        "module": "domains",
+        "class": "PiHoleDomains",
+        "description": "domain management operations",
+    },
 }
 
 
