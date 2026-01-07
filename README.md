@@ -65,7 +65,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Filter lists by name | ✅ |
 | | List metadata and statistics | ✅ |
 | | Add lists | ✅ |
-| | Remove lists | 📋 |
+| | Remove lists | ✅ |
 | | Regex list management | 📋 |
 | | Import/export lists | 📋 |
 | **FTL Information** | FTL version and status | 📋 |
@@ -214,6 +214,20 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         comment="Allow example.com"
     )
     print(f"Added allowlist, API returned {len(allow_lists)} lists")
+
+    # Delete a blocklist
+    success = lists.delete_list(
+        address="https://hosts-file.net/ad_servers.txt",
+        list_type=ListType.BLOCK
+    )
+    print(f"Blocklist deletion successful: {success}")
+
+    # Delete an allowlist
+    success = lists.delete_list(
+        address="example.com",
+        list_type=ListType.ALLOW
+    )
+    print(f"Allowlist deletion successful: {success}")
 ```
 
 ### Configuration management
@@ -441,6 +455,7 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 - `PiHoleLists(client)` - Create a new lists client using an existing PiHoleClient
 - `get_lists(list_name=None, list_type=None)` - Get domain lists with optional filtering by name or type
 - `add_list(address, list_type, comment=None, groups=None, enabled=True)` - Add a new domain list
+- `delete_list(address, list_type)` - Delete a domain list. Returns True if successful, raises exceptions on failure.
 
 **List Types:**
 - `ListType.ALLOW` - Allow lists (domains that bypass blocking)

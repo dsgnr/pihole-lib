@@ -3,7 +3,11 @@
 import pytest
 
 from pihole_lib import PiHoleClient, PiHoleLists
-from pihole_lib.exceptions import PiHoleConnectionError, PiHoleServerError
+from pihole_lib.exceptions import (
+    PiHoleAPIError,
+    PiHoleConnectionError,
+    PiHoleServerError,
+)
 from pihole_lib.models import ListType
 
 from .constants import (
@@ -424,3 +428,188 @@ class TestPiHoleListsAddList:
 
             assert matching_lists[0].enabled is False
             print(f"Added disabled list with ID: {matching_lists[0].id}")
+
+
+class TestPiHoleListsDeleteList:
+    """Test list deletion functionality against real Pi-hole."""
+
+    def test_delete_list_success(self, pihole_container):
+        """Should successfully delete a list."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            lists_client = PiHoleLists(client)
+
+            import time
+
+            # Add a test list first
+            test_address = f"delete-test-{int(time.time())}.example.com"
+            add_result = lists_client.add_list(
+                address=test_address,
+                list_type=ListType.BLOCK,
+                comment="Test list for deletion",
+            )
+
+            assert isinstance(add_result, list)
+            assert len(add_result) > 0
+
+            # Find the added list
+            added_list = None
+            for lst in add_result:
+                if lst.address == test_address:
+                    added_list = lst
+                    break
+
+            assert added_list is not None
+            print(f"Added list for deletion test: {added_list.id}")
+
+            # Delete the list - should return True
+            result = lists_client.delete_list(
+                address=test_address, list_type=ListType.BLOCK
+            )
+
+            assert result is True
+            print(f"Successfully deleted list: {test_address}")
+
+            # Verify the list was deleted
+            remaining_lists = lists_client.get_lists()
+            deleted_list_found = any(
+                lst.address == test_address for lst in remaining_lists
+            )
+            assert deleted_list_found is False
+
+    def test_delete_list_allow_type(self, pihole_container):
+        """Should successfully delete an allow list."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            lists_client = PiHoleLists(client)
+
+            import time
+
+            # Add a test allow list first
+            test_address = f"delete-allow-test-{int(time.time())}.example.com"
+            add_result = lists_client.add_list(
+                address=test_address,
+                list_type=ListType.ALLOW,
+                comment="Test allow list for deletion",
+            )
+
+            assert isinstance(add_result, list)
+            assert len(add_result) > 0
+
+            # Delete the allow list - should return True
+            result = lists_client.delete_list(
+                address=test_address, list_type=ListType.ALLOW
+            )
+
+            assert result is True
+
+            # Verify the list was deleted
+            remaining_lists = lists_client.get_lists()
+            deleted_list_found = any(
+                lst.address == test_address for lst in remaining_lists
+            )
+            assert deleted_list_found is False
+
+    def test_delete_list_nonexistent(self, pihole_container):
+        """Should raise exception when trying to delete a nonexistent list."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            lists_client = PiHoleLists(client)
+
+            import time
+
+            # Try to delete a list that doesn't exist
+            nonexistent_address = f"nonexistent-{int(time.time())}.example.com"
+
+            with pytest.raises(PiHoleAPIError):
+                lists_client.delete_list(
+                    address=nonexistent_address, list_type=ListType.BLOCK
+                )
+
+            print(
+                f"Correctly raised exception for nonexistent list: {nonexistent_address}"
+            )
+
+    def test_delete_list_wrong_type(self, pihole_container):
+        """Should raise exception when trying to delete with wrong type."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            lists_client = PiHoleLists(client)
+
+            import time
+
+            # Add a block list
+            test_address = f"wrong-type-test-{int(time.time())}.example.com"
+            add_result = lists_client.add_list(
+                address=test_address,
+                list_type=ListType.BLOCK,
+                comment="Test list for wrong type deletion",
+            )
+
+            assert isinstance(add_result, list)
+            assert len(add_result) > 0
+
+            # Try to delete it as an allow list (wrong type) - should raise exception
+            with pytest.raises(PiHoleAPIError):
+                lists_client.delete_list(
+                    address=test_address,
+                    list_type=ListType.ALLOW,  # Wrong type
+                )
+
+            print("Correctly raised exception for wrong type deletion")
+
+            # Clean up - delete with correct type
+            result = lists_client.delete_list(
+                address=test_address, list_type=ListType.BLOCK
+            )
+            assert result is True
+
+    def test_delete_list_url_with_special_characters(self, pihole_container):
+        """Should handle URLs with paths and hyphens."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            lists_client = PiHoleLists(client)
+
+            import time
+
+            # Add a list with a realistic URL (no query parameters)
+            timestamp = int(time.time())
+            test_address = f"https://example-{timestamp}.com/blocklist.txt"
+            add_result = lists_client.add_list(
+                address=test_address,
+                list_type=ListType.BLOCK,
+                comment="Test list with URL path",
+            )
+
+            assert isinstance(add_result, list)
+            assert len(add_result) > 0
+
+            # Delete the list - should return True
+            result = lists_client.delete_list(
+                address=test_address, list_type=ListType.BLOCK
+            )
+
+            assert result is True
+            print(f"Successfully deleted list with URL path: {test_address}")
+
+    def test_delete_list_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        lists_client = PiHoleLists(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            lists_client.delete_list(
+                address="test.example.com",
+                list_type=ListType.BLOCK,
+            )
+
+        client.close()

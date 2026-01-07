@@ -244,3 +244,105 @@ class TestPiHoleListsAddList:
                 "enabled": True,  # Default enabled
             },
         )
+
+
+class TestPiHoleListsDeleteList:
+    """Test list deletion functionality (no network calls)."""
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_delete_list_success(self, mock_request):
+        """Should successfully delete a list."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        lists_client = PiHoleLists(client)
+
+        mock_response = Mock()
+        mock_response.status_code = 204  # No Content
+        mock_request.return_value = mock_response
+
+        result = lists_client.delete_list(
+            address="https://example.com/blocklist.txt", list_type=ListType.BLOCK
+        )
+
+        assert result is True
+
+        mock_request.assert_called_once_with(
+            client,
+            "DELETE",
+            "/api/lists/https://example.com/blocklist.txt",
+            params={"type": "block"},
+        )
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_delete_list_allow_type(self, mock_request):
+        """Should handle allow list deletion."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        lists_client = PiHoleLists(client)
+
+        mock_response = Mock()
+        mock_response.status_code = 204
+        mock_request.return_value = mock_response
+
+        result = lists_client.delete_list(
+            address="example.com", list_type=ListType.ALLOW
+        )
+
+        assert result is True
+
+        mock_request.assert_called_once_with(
+            client,
+            "DELETE",
+            "/api/lists/example.com",
+            params={"type": "allow"},
+        )
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_delete_list_connection_error(self, mock_request):
+        """Should propagate connection errors from make_pihole_request."""
+        from pihole_lib.exceptions import PiHoleConnectionError
+
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        lists_client = PiHoleLists(client)
+
+        mock_request.side_effect = PiHoleConnectionError("Connection failed")
+
+        with pytest.raises(PiHoleConnectionError, match="Connection failed"):
+            lists_client.delete_list(address="test.com", list_type=ListType.BLOCK)
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_delete_list_server_error(self, mock_request):
+        """Should propagate server errors from make_pihole_request."""
+        from pihole_lib.exceptions import PiHoleServerError
+
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        lists_client = PiHoleLists(client)
+
+        mock_request.side_effect = PiHoleServerError("Server error")
+
+        with pytest.raises(PiHoleServerError, match="Server error"):
+            lists_client.delete_list(address="error.com", list_type=ListType.BLOCK)
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_delete_list_url_with_path(self, mock_request):
+        """Should handle URLs with paths."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        lists_client = PiHoleLists(client)
+
+        mock_response = Mock()
+        mock_response.status_code = 204
+        mock_request.return_value = mock_response
+
+        # Test with URL containing path
+        url_with_path = "https://example.com/blocklist.txt"
+
+        result = lists_client.delete_list(
+            address=url_with_path, list_type=ListType.BLOCK
+        )
+
+        assert result is True
+
+        mock_request.assert_called_once_with(
+            client,
+            "DELETE",
+            f"/api/lists/{url_with_path}",
+            params={"type": "block"},
+        )

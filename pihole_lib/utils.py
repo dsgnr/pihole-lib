@@ -26,7 +26,7 @@ def handle_pihole_response(response: requests.Response) -> None:
         PiHoleServerError: Server error (5xx status codes).
         PiHoleAPIError: Other API errors (4xx status codes).
     """
-    if response.status_code == 200:
+    if response.status_code in (200, 204):
         return  # Success, no error handling needed
 
     # Handle authentication-related errors (common in Pi-hole)

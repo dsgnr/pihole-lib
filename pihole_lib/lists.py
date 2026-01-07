@@ -148,6 +148,51 @@ class PiHoleLists(BasePiHoleAPIClient):
 
         return [PiHoleList(**list_data) for list_data in response_data["lists"]]
 
+    def delete_list(self, address: str, list_type: ListType) -> bool:
+        """Delete a domain list from Pi-hole.
+
+        Args:
+            address: Address of the list to delete.
+            list_type: Type of list (ListType.ALLOW or ListType.BLOCK).
+
+        Returns:
+            True if the list was successfully deleted or raises.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error or list not found.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            # Delete a blocklist
+            success = lists.delete_list(
+                address="https://example.com/domains.txt",
+                list_type=ListType.BLOCK
+            )
+            print(f"Deletion successful: {success}")
+
+            # Delete an allowlist
+            success = lists.delete_list(
+                address="example.com",
+                list_type=ListType.ALLOW
+            )
+            ```
+        """
+        endpoint = f"{API_LISTS}/{address}"
+        params = {"type": list_type.value}
+
+        response = make_pihole_request(
+            self._client,
+            "DELETE",
+            endpoint,
+            params=params,
+        )
+
+        # Pi-hole returns 204 No Content on successful deletion
+        return response.status_code == 204
+
     def _check_api_errors(self, response_data: dict, address: str) -> None:
         """Check for API errors in the response and raise appropriate exceptions.
 
