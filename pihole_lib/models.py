@@ -300,6 +300,114 @@ class FTLStats(BaseModel):
     dnsmasq: FTLDnsmasqStats = Field(..., description="Dnsmasq statistics")
 
 
+class HostUname(BaseModel):
+    """Host system uname information.
+
+    Attributes:
+        domainname: Domain name.
+        machine: Machine hardware name.
+        nodename: Network node hostname.
+        release: Operating system release.
+        sysname: Operating system name.
+        version: Operating system version.
+    """
+
+    domainname: str = Field(..., description="Domain name")
+    machine: str = Field(..., description="Machine hardware name")
+    nodename: str = Field(..., description="Network node hostname")
+    release: str = Field(..., description="Operating system release")
+    sysname: str = Field(..., description="Operating system name")
+    version: str = Field(..., description="Operating system version")
+
+
+class HostDMIBios(BaseModel):
+    """Host DMI BIOS information.
+
+    Attributes:
+        vendor: BIOS vendor.
+    """
+
+    vendor: str | None = Field(None, description="BIOS vendor")
+
+
+class HostDMIBoard(BaseModel):
+    """Host DMI board information.
+
+    Attributes:
+        name: Board name.
+        vendor: Board vendor.
+        version: Board version.
+    """
+
+    name: str | None = Field(None, description="Board name")
+    vendor: str | None = Field(None, description="Board vendor")
+    version: str | None = Field(None, description="Board version")
+
+
+class HostDMIProduct(BaseModel):
+    """Host DMI product information.
+
+    Attributes:
+        name: Product name.
+        family: Product family.
+        version: Product version.
+    """
+
+    name: str | None = Field(None, description="Product name")
+    family: str | None = Field(None, description="Product family")
+    version: str | None = Field(None, description="Product version")
+
+
+class HostDMISystem(BaseModel):
+    """Host DMI system information.
+
+    Attributes:
+        vendor: System vendor.
+    """
+
+    vendor: str | None = Field(None, description="System vendor")
+
+
+class HostDMI(BaseModel):
+    """Host DMI/SMBIOS information.
+
+    Attributes:
+        bios: BIOS information.
+        board: Board information.
+        product: Product information.
+        sys: System information.
+    """
+
+    bios: HostDMIBios = Field(..., description="BIOS information")
+    board: HostDMIBoard = Field(..., description="Board information")
+    product: HostDMIProduct = Field(..., description="Product information")
+    sys: HostDMISystem = Field(..., description="System information")
+
+
+class HostDetails(BaseModel):
+    """Host system details.
+
+    Attributes:
+        uname: System uname information.
+        model: Hardware model.
+        dmi: DMI/SMBIOS information.
+    """
+
+    uname: HostUname = Field(..., description="System uname information")
+    model: str | None = Field(None, description="Hardware model")
+    dmi: HostDMI = Field(..., description="DMI/SMBIOS information")
+
+
+class HostInfo(BaseModel):
+    """Pi-hole host system information.
+
+    Attributes:
+        host: Host system details.
+    """
+
+    host: HostDetails = Field(..., description="Host system details")
+
+
 class FTLInfo(BaseModel):
     """Pi-hole FTL (Faster Than Light) information.
 

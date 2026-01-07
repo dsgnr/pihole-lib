@@ -420,3 +420,121 @@ class TestPiHoleInfoFTLInfo:
 
             # Active clients should not exceed total clients
             assert ftl_info.ftl.clients.active <= ftl_info.ftl.clients.total
+
+
+class TestPiHoleInfoHostInfo:
+    """Test host info functionality against real Pi-hole."""
+
+    def test_get_host_info_success(self, pihole_container):
+        """Should successfully retrieve host info from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            host_info = info_client.get_host_info()
+
+            # Verify basic structure
+            assert hasattr(host_info, "host")
+            assert hasattr(host_info.host, "uname")
+            assert hasattr(host_info.host, "model")
+            assert hasattr(host_info.host, "dmi")
+
+            # Verify uname structure and types
+            assert hasattr(host_info.host.uname, "domainname")
+            assert hasattr(host_info.host.uname, "machine")
+            assert hasattr(host_info.host.uname, "nodename")
+            assert hasattr(host_info.host.uname, "release")
+            assert hasattr(host_info.host.uname, "sysname")
+            assert hasattr(host_info.host.uname, "version")
+
+            assert isinstance(host_info.host.uname.domainname, str)
+            assert isinstance(host_info.host.uname.machine, str)
+            assert isinstance(host_info.host.uname.nodename, str)
+            assert isinstance(host_info.host.uname.release, str)
+            assert isinstance(host_info.host.uname.sysname, str)
+            assert isinstance(host_info.host.uname.version, str)
+
+            # Verify reasonable values
+            assert len(host_info.host.uname.machine) > 0  # Should have architecture
+            assert len(host_info.host.uname.nodename) > 0  # Should have hostname
+            assert len(host_info.host.uname.release) > 0  # Should have kernel release
+            assert host_info.host.uname.sysname == "Linux"  # Pi-hole runs on Linux
+            assert len(host_info.host.uname.version) > 0  # Should have kernel version
+
+            # Verify DMI structure
+            assert hasattr(host_info.host.dmi, "bios")
+            assert hasattr(host_info.host.dmi, "board")
+            assert hasattr(host_info.host.dmi, "product")
+            assert hasattr(host_info.host.dmi, "sys")
+
+            # Model can be None (especially in containers)
+            assert host_info.host.model is None or isinstance(host_info.host.model, str)
+
+    def test_get_host_info_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_host_info()
+
+        client.close()
+
+    def test_get_host_info_container_environment(self, pihole_container):
+        """Should handle container environment specifics."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            host_info = info_client.get_host_info()
+
+            # Container-specific checks
+            # Hostname is typically a container ID (hex string)
+            assert len(host_info.host.uname.nodename) > 0
+
+            # Architecture should be valid
+            assert host_info.host.uname.machine in [
+                "x86_64",
+                "aarch64",
+                "armv7l",
+                "i386",
+            ]
+
+            # Kernel release should contain version info
+            assert "." in host_info.host.uname.release  # Should have version numbers
+
+            # Model is typically None in containers
+            assert host_info.host.model is None
+
+            # DMI info is typically None in containers
+            assert host_info.host.dmi.bios.vendor is None
+            assert host_info.host.dmi.sys.vendor is None
+
+    def test_get_host_info_system_details(self, pihole_container):
+        """Should return valid system details."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            host_info = info_client.get_host_info()
+
+            # System name should be Linux
+            assert host_info.host.uname.sysname == "Linux"
+
+            # Domain name is often "(none)" in containers
+            assert isinstance(host_info.host.uname.domainname, str)
+
+            # Version should contain build information
+            assert "#" in host_info.host.uname.version  # Kernel build info
+            assert "SMP" in host_info.host.uname.version  # Symmetric multiprocessing
+
+            # Release should be a valid kernel version
+            version_parts = host_info.host.uname.release.split(".")
+            assert len(version_parts) >= 2  # At least major.minor

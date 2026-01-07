@@ -52,6 +52,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Client information | ✅ |
 | | Database information | ✅ |
 | | FTL runtime information | ✅ |
+| | Host system information | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -157,6 +158,15 @@ print(f"Total clients: {ftl_info.ftl.clients.total}")
 print(f"Active clients: {ftl_info.ftl.clients.active}")
 print(f"DNS queries forwarded: {ftl_info.ftl.dnsmasq.dns_queries_forwarded}")
 
+# Get host system information
+host_info = info.get_host_info()
+print(f"Hostname: {host_info.host.uname.nodename}")
+print(f"OS: {host_info.host.uname.sysname} {host_info.host.uname.release}")
+print(f"Architecture: {host_info.host.uname.machine}")
+print(f"Hardware model: {host_info.host.model}")
+if host_info.host.dmi.sys.vendor:
+    print(f"System vendor: {host_info.host.dmi.sys.vendor}")
+
 client.close()
 
 # Or use within client context manager
@@ -173,6 +183,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     ftl_info = info.get_ftl_info()
     print(f"Process ID: {ftl_info.ftl.pid}")
+
+    host_info = info.get_host_info()
+    print(f"Hostname: {host_info.host.uname.nodename}")
 ```
 
 ### Backup and restore operations
@@ -480,6 +493,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `get_client_info()` - Get client request information (IP address, HTTP version, method, headers)
 - `get_database_info()` - Get database information (file size, permissions, ownership, query counts, SQLite version)
 - `get_ftl_info()` - Get FTL runtime information (process details, resource usage, database stats, dnsmasq stats)
+- `get_host_info()` - Get host system information (uname details, hardware model, DMI/SMBIOS data)
 
 ### PiHoleBackup
 

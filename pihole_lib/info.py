@@ -3,8 +3,14 @@
 from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_INFO_CLIENT, API_INFO_DATABASE, API_INFO_FTL, API_INFO_LOGIN
-from .models import ClientInfo, DatabaseInfo, FTLInfo, LoginInfo
+from .constants import (
+    API_INFO_CLIENT,
+    API_INFO_DATABASE,
+    API_INFO_FTL,
+    API_INFO_HOST,
+    API_INFO_LOGIN,
+)
+from .models import ClientInfo, DatabaseInfo, FTLInfo, HostInfo, LoginInfo
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -169,3 +175,40 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return FTLInfo(**data)
+
+    def get_host_info(self) -> HostInfo:
+        """Get host system information.
+
+        This API hook returns a collection of host infos.
+
+        Returns:
+            HostInfo: Host system information including uname details, hardware model,
+                     and DMI/SMBIOS data.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                host_info = info.get_host_info()
+                print(f"Hostname: {host_info.host.uname.nodename}")
+                print(f"OS: {host_info.host.uname.sysname} {host_info.host.uname.release}")
+                print(f"Architecture: {host_info.host.uname.machine}")
+                print(f"Hardware model: {host_info.host.model}")
+                if host_info.host.dmi.sys.vendor:
+                    print(f"System vendor: {host_info.host.dmi.sys.vendor}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_HOST,
+        )
+
+        data = response.json()
+        return HostInfo(**data)

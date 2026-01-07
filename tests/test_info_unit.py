@@ -480,3 +480,151 @@ class TestPiHoleInfoFTLInfo:
         assert result.ftl.uptime == 0.0
         assert result.ftl.database.gravity == 0
         assert result.ftl.clients.total == 0
+
+
+class TestPiHoleInfoHostInfo:
+    """Test info client get_host_info functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_host_info_success(self, mock_request):
+        """Should successfully get host info."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "host": {
+                "uname": {
+                    "domainname": "(none)",
+                    "machine": "x86_64",
+                    "nodename": "pihole-server",
+                    "release": "5.15.0-56-generic",
+                    "sysname": "Linux",
+                    "version": "#62-Ubuntu SMP Tue Nov 22 19:54:14 UTC 2022",
+                },
+                "model": "Dell OptiPlex 7090",
+                "dmi": {
+                    "bios": {"vendor": "Dell Inc."},
+                    "board": {
+                        "name": "0K240Y",
+                        "vendor": "Dell Inc.",
+                        "version": "A01",
+                    },
+                    "product": {
+                        "name": "OptiPlex 7090",
+                        "family": "OptiPlex",
+                        "version": "",
+                    },
+                    "sys": {"vendor": "Dell Inc."},
+                },
+            },
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_host_info()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/host",
+        )
+
+        # Verify the response structure
+        assert result.host.uname.domainname == "(none)"
+        assert result.host.uname.machine == "x86_64"
+        assert result.host.uname.nodename == "pihole-server"
+        assert result.host.uname.release == "5.15.0-56-generic"
+        assert result.host.uname.sysname == "Linux"
+        assert (
+            result.host.uname.version == "#62-Ubuntu SMP Tue Nov 22 19:54:14 UTC 2022"
+        )
+        assert result.host.model == "Dell OptiPlex 7090"
+        assert result.host.dmi.bios.vendor == "Dell Inc."
+        assert result.host.dmi.board.name == "0K240Y"
+        assert result.host.dmi.board.vendor == "Dell Inc."
+        assert result.host.dmi.board.version == "A01"
+        assert result.host.dmi.product.name == "OptiPlex 7090"
+        assert result.host.dmi.product.family == "OptiPlex"
+        assert result.host.dmi.product.version == ""
+        assert result.host.dmi.sys.vendor == "Dell Inc."
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_host_info_minimal_response(self, mock_request):
+        """Should handle minimal host info response with null values."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "host": {
+                "uname": {
+                    "domainname": "(none)",
+                    "machine": "aarch64",
+                    "nodename": "raspberrypi",
+                    "release": "6.1.21-v8+",
+                    "sysname": "Linux",
+                    "version": "#1642 SMP PREEMPT Mon Apr  3 17:24:16 BST 2023",
+                },
+                "model": None,
+                "dmi": {
+                    "bios": {"vendor": None},
+                    "board": {"name": None, "vendor": None, "version": None},
+                    "product": {"name": None, "family": None, "version": None},
+                    "sys": {"vendor": None},
+                },
+            },
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_host_info()
+
+        assert result.host.uname.machine == "aarch64"
+        assert result.host.uname.nodename == "raspberrypi"
+        assert result.host.uname.sysname == "Linux"
+        assert result.host.model is None
+        assert result.host.dmi.bios.vendor is None
+        assert result.host.dmi.board.name is None
+        assert result.host.dmi.product.name is None
+        assert result.host.dmi.sys.vendor is None
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_host_info_container_response(self, mock_request):
+        """Should handle container host info response."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "host": {
+                "uname": {
+                    "domainname": "(none)",
+                    "machine": "aarch64",
+                    "nodename": "716096fc064e",
+                    "release": "6.10.14-linuxkit",
+                    "sysname": "Linux",
+                    "version": "#1 SMP Sat May 17 08:28:57 UTC 2025",
+                },
+                "model": None,
+                "dmi": {
+                    "bios": {"vendor": None},
+                    "board": {"name": None, "vendor": None, "version": None},
+                    "product": {"name": None, "family": None, "version": None},
+                    "sys": {"vendor": None},
+                },
+            },
+            "took": 0.0001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_host_info()
+
+        # Container-specific assertions
+        assert (
+            result.host.uname.nodename == "716096fc064e"
+        )  # Container ID-like hostname
+        assert "linuxkit" in result.host.uname.release  # Docker/container kernel
+        assert result.host.model is None  # Containers don't have hardware models
+        assert result.host.dmi.sys.vendor is None  # No DMI info in containers
