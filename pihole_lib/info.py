@@ -9,9 +9,18 @@ from .constants import (
     API_INFO_FTL,
     API_INFO_HOST,
     API_INFO_LOGIN,
+    API_INFO_SYSTEM,
     API_INFO_VERSION,
 )
-from .models import ClientInfo, DatabaseInfo, FTLInfo, HostInfo, LoginInfo, VersionInfo
+from .models import (
+    ClientInfo,
+    DatabaseInfo,
+    FTLInfo,
+    HostInfo,
+    LoginInfo,
+    SystemInfo,
+    VersionInfo,
+)
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -252,3 +261,42 @@ class PiHoleInfo(BasePiHoleAPIClient):
 
         data = response.json()
         return VersionInfo(**data)
+
+    def get_system_info(self) -> SystemInfo:
+        """Get system resource information.
+
+        This API hook returns comprehensive system resource information including
+        memory usage, CPU statistics, process count, and FTL resource usage.
+
+        Returns:
+            SystemInfo: System resource information including uptime, memory usage,
+                       CPU statistics, process count, and FTL resource usage.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            with PiHoleClient("http://192.168.1.100", password="secret") as client:
+                info = PiHoleInfo(client)
+                system_info = info.get_system_info()
+                print(f"Uptime: {system_info.system.uptime} seconds")
+                print(f"RAM Usage: {system_info.system.memory.ram.percent_used:.1f}%")
+                print(f"CPU Cores: {system_info.system.cpu.nprocs}")
+                print(f"CPU Usage: {system_info.system.cpu.percent_cpu:.1f}%")
+                print(f"Processes: {system_info.system.procs}")
+                print(f"FTL Memory: {system_info.system.ftl.percent_mem:.2f}%")
+                print(f"Load Average: {system_info.system.cpu.load.raw}")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            API_INFO_SYSTEM,
+        )
+
+        data = response.json()
+        return SystemInfo(**data)

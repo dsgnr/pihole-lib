@@ -801,3 +801,177 @@ class TestPiHoleInfoVersionInfo:
         assert "beta" in result.version.web.local.version
         assert "dev" in result.version.ftl.local.version
         assert result.version.docker.local == "dev"
+
+
+class TestPiHoleInfoSystemInfo:
+    """Test info client get_system_info functionality (no network calls)."""
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_system_info_success(self, mock_request):
+        """Should successfully get system info."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "system": {
+                "uptime": 4240,
+                "memory": {
+                    "ram": {
+                        "total": 8025428,
+                        "free": 7235000,
+                        "used": 327224,
+                        "available": 7540972,
+                        "%used": 4.077340174256127,
+                    },
+                    "swap": {"total": 1048572, "free": 1048572, "used": 0, "%used": 0},
+                },
+                "procs": 283,
+                "cpu": {
+                    "nprocs": 10,
+                    "%cpu": 183.17999267578125,
+                    "load": {
+                        "raw": [0.16015625, 0.26513671875, 0.265625],
+                        "percent": [1.6015625, 2.6513671875, 2.65625],
+                    },
+                },
+                "ftl": {"%mem": 0.10985083878040314, "%cpu": 0.2199999988079071},
+            },
+            "took": 0.001,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_system_info()
+
+        # Verify the request was made correctly
+        mock_request.assert_called_once_with(
+            client,
+            "GET",
+            "/api/info/system",
+        )
+
+        # Verify the response structure
+        assert result.system.uptime == 4240
+        assert result.system.procs == 283
+
+        # Verify memory information
+        assert result.system.memory.ram.total == 8025428
+        assert result.system.memory.ram.free == 7235000
+        assert result.system.memory.ram.used == 327224
+        assert result.system.memory.ram.available == 7540972
+        assert result.system.memory.ram.percent_used == 4.077340174256127
+
+        assert result.system.memory.swap.total == 1048572
+        assert result.system.memory.swap.free == 1048572
+        assert result.system.memory.swap.used == 0
+        assert result.system.memory.swap.percent_used == 0
+
+        # Verify CPU information
+        assert result.system.cpu.nprocs == 10
+        assert result.system.cpu.percent_cpu == 183.17999267578125
+        assert result.system.cpu.load.raw == [0.16015625, 0.26513671875, 0.265625]
+        assert result.system.cpu.load.percent == [1.6015625, 2.6513671875, 2.65625]
+
+        # Verify FTL information
+        assert result.system.ftl.percent_mem == 0.10985083878040314
+        assert result.system.ftl.percent_cpu == 0.2199999988079071
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_system_info_high_usage(self, mock_request):
+        """Should handle system info with high resource usage."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "system": {
+                "uptime": 86400,
+                "memory": {
+                    "ram": {
+                        "total": 4194304,
+                        "free": 419430,
+                        "used": 3774874,
+                        "available": 1048576,
+                        "%used": 90.0,
+                    },
+                    "swap": {
+                        "total": 2097152,
+                        "free": 1048576,
+                        "used": 1048576,
+                        "%used": 50.0,
+                    },
+                },
+                "procs": 500,
+                "cpu": {
+                    "nprocs": 4,
+                    "%cpu": 400.0,
+                    "load": {
+                        "raw": [3.5, 2.8, 2.1],
+                        "percent": [87.5, 70.0, 52.5],
+                    },
+                },
+                "ftl": {"%mem": 5.5, "%cpu": 15.2},
+            },
+            "took": 0.002,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_system_info()
+
+        # Verify high usage values
+        assert result.system.uptime == 86400
+        assert result.system.procs == 500
+        assert result.system.memory.ram.percent_used == 90.0
+        assert result.system.memory.swap.percent_used == 50.0
+        assert result.system.cpu.nprocs == 4
+        assert result.system.cpu.percent_cpu == 400.0
+        assert result.system.cpu.load.raw == [3.5, 2.8, 2.1]
+        assert result.system.ftl.percent_mem == 5.5
+        assert result.system.ftl.percent_cpu == 15.2
+
+    @patch("pihole_lib.info.make_pihole_request")
+    def test_get_system_info_minimal_usage(self, mock_request):
+        """Should handle system info with minimal resource usage."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+        info_client = PiHoleInfo(client)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "system": {
+                "uptime": 60,
+                "memory": {
+                    "ram": {
+                        "total": 1048576,
+                        "free": 1000000,
+                        "used": 48576,
+                        "available": 1000000,
+                        "%used": 4.6,
+                    },
+                    "swap": {"total": 0, "free": 0, "used": 0, "%used": 0},
+                },
+                "procs": 50,
+                "cpu": {
+                    "nprocs": 1,
+                    "%cpu": 5.0,
+                    "load": {
+                        "raw": [0.01, 0.02, 0.03],
+                        "percent": [1.0, 2.0, 3.0],
+                    },
+                },
+                "ftl": {"%mem": 0.1, "%cpu": 0.05},
+            },
+            "took": 0.0005,
+        }
+        mock_request.return_value = mock_response
+
+        result = info_client.get_system_info()
+
+        # Verify minimal usage values
+        assert result.system.uptime == 60
+        assert result.system.procs == 50
+        assert result.system.memory.ram.percent_used == 4.6
+        assert result.system.memory.swap.total == 0
+        assert result.system.cpu.nprocs == 1
+        assert result.system.cpu.percent_cpu == 5.0
+        assert result.system.ftl.percent_mem == 0.1
+        assert result.system.ftl.percent_cpu == 0.05

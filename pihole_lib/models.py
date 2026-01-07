@@ -581,3 +581,123 @@ class PiHoleAuthSession(BaseModel):
     csrf: str = Field(..., description="CSRF protection token")
     validity: int = Field(..., description="Session duration in seconds")
     message: str | None = Field(None, description="Optional message from Pi-hole")
+
+
+class SystemRAM(BaseModel):
+    """System RAM information.
+
+    Attributes:
+        total: Total RAM in KB.
+        free: Free RAM in KB.
+        used: Used RAM in KB.
+        available: Available RAM in KB.
+        percent_used: Percentage of RAM used.
+    """
+
+    total: int = Field(..., description="Total RAM in KB")
+    free: int = Field(..., description="Free RAM in KB")
+    used: int = Field(..., description="Used RAM in KB")
+    available: int = Field(..., description="Available RAM in KB")
+    percent_used: float = Field(
+        ..., alias="%used", description="Percentage of RAM used"
+    )
+
+
+class SystemSwap(BaseModel):
+    """System swap information.
+
+    Attributes:
+        total: Total swap in KB.
+        free: Free swap in KB.
+        used: Used swap in KB.
+        percent_used: Percentage of swap used.
+    """
+
+    total: int = Field(..., description="Total swap in KB")
+    free: int = Field(..., description="Free swap in KB")
+    used: int = Field(..., description="Used swap in KB")
+    percent_used: float = Field(
+        ..., alias="%used", description="Percentage of swap used"
+    )
+
+
+class SystemMemory(BaseModel):
+    """System memory information.
+
+    Attributes:
+        ram: RAM information.
+        swap: Swap information.
+    """
+
+    ram: SystemRAM = Field(..., description="RAM information")
+    swap: SystemSwap = Field(..., description="Swap information")
+
+
+class SystemCPULoad(BaseModel):
+    """System CPU load information.
+
+    Attributes:
+        raw: Raw load averages (1, 5, 15 minutes).
+        percent: Load averages as percentages.
+    """
+
+    raw: list[float] = Field(..., description="Raw load averages (1, 5, 15 minutes)")
+    percent: list[float] = Field(..., description="Load averages as percentages")
+
+
+class SystemCPU(BaseModel):
+    """System CPU information.
+
+    Attributes:
+        nprocs: Number of CPU cores.
+        percent_cpu: CPU usage percentage.
+        load: Load average information.
+    """
+
+    nprocs: int = Field(..., description="Number of CPU cores")
+    percent_cpu: float = Field(..., alias="%cpu", description="CPU usage percentage")
+    load: SystemCPULoad = Field(..., description="Load average information")
+
+
+class SystemFTL(BaseModel):
+    """System FTL resource usage.
+
+    Attributes:
+        percent_mem: FTL memory usage percentage.
+        percent_cpu: FTL CPU usage percentage.
+    """
+
+    percent_mem: float = Field(
+        ..., alias="%mem", description="FTL memory usage percentage"
+    )
+    percent_cpu: float = Field(
+        ..., alias="%cpu", description="FTL CPU usage percentage"
+    )
+
+
+class SystemDetails(BaseModel):
+    """System details.
+
+    Attributes:
+        uptime: System uptime in seconds.
+        memory: Memory information.
+        procs: Number of processes.
+        cpu: CPU information.
+        ftl: FTL resource usage.
+    """
+
+    uptime: int = Field(..., description="System uptime in seconds")
+    memory: SystemMemory = Field(..., description="Memory information")
+    procs: int = Field(..., description="Number of processes")
+    cpu: SystemCPU = Field(..., description="CPU information")
+    ftl: SystemFTL = Field(..., description="FTL resource usage")
+
+
+class SystemInfo(BaseModel):
+    """Pi-hole system information.
+
+    Attributes:
+        system: System details.
+    """
+
+    system: SystemDetails = Field(..., description="System details")

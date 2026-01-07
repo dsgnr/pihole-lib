@@ -678,3 +678,154 @@ class TestPiHoleInfoVersionInfo:
                 # Hashes should be alphanumeric
                 assert component.local.hash.isalnum()
                 assert component.remote.hash.isalnum()
+
+
+class TestPiHoleInfoSystemInfo:
+    """Test system info functionality against real Pi-hole."""
+
+    def test_get_system_info_success(self, pihole_container):
+        """Should successfully retrieve system info from Pi-hole."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            system_info = info_client.get_system_info()
+
+            # Verify basic structure
+            assert hasattr(system_info, "system")
+            assert hasattr(system_info.system, "uptime")
+            assert hasattr(system_info.system, "memory")
+            assert hasattr(system_info.system, "procs")
+            assert hasattr(system_info.system, "cpu")
+            assert hasattr(system_info.system, "ftl")
+
+            # Verify memory structure
+            assert hasattr(system_info.system.memory, "ram")
+            assert hasattr(system_info.system.memory, "swap")
+            assert hasattr(system_info.system.memory.ram, "total")
+            assert hasattr(system_info.system.memory.ram, "free")
+            assert hasattr(system_info.system.memory.ram, "used")
+            assert hasattr(system_info.system.memory.ram, "available")
+            assert hasattr(system_info.system.memory.ram, "percent_used")
+
+            # Verify CPU structure
+            assert hasattr(system_info.system.cpu, "nprocs")
+            assert hasattr(system_info.system.cpu, "percent_cpu")
+            assert hasattr(system_info.system.cpu, "load")
+            assert hasattr(system_info.system.cpu.load, "raw")
+            assert hasattr(system_info.system.cpu.load, "percent")
+
+            # Verify FTL structure
+            assert hasattr(system_info.system.ftl, "percent_mem")
+            assert hasattr(system_info.system.ftl, "percent_cpu")
+
+            # Verify data types
+            assert isinstance(system_info.system.uptime, int)
+            assert isinstance(system_info.system.procs, int)
+            assert isinstance(system_info.system.memory.ram.total, int)
+            assert isinstance(system_info.system.memory.ram.percent_used, float)
+            assert isinstance(system_info.system.cpu.nprocs, int)
+            assert isinstance(system_info.system.cpu.load.raw, list)
+
+    def test_get_system_info_connection_error(self):
+        """Network errors should raise connection error."""
+        client = PiHoleClient(
+            base_url=TEST_INVALID_HOST_URL,
+            password=PIHOLE_TEST_PASSWORD,
+            timeout=1,  # Short timeout
+        )
+        info_client = PiHoleInfo(client)
+
+        with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
+            info_client.get_system_info()
+
+        client.close()
+
+    def test_get_system_info_reasonable_values(self, pihole_container):
+        """Should return reasonable system values."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            system_info = info_client.get_system_info()
+
+            # Uptime should be positive
+            assert system_info.system.uptime > 0
+
+            # Process count should be reasonable
+            assert 10 <= system_info.system.procs <= 10000
+
+            # Memory values should be reasonable
+            assert system_info.system.memory.ram.total > 0
+            assert system_info.system.memory.ram.free >= 0
+            assert system_info.system.memory.ram.used >= 0
+            assert system_info.system.memory.ram.available >= 0
+            assert 0 <= system_info.system.memory.ram.percent_used <= 100
+
+            # Swap values should be non-negative
+            assert system_info.system.memory.swap.total >= 0
+            assert system_info.system.memory.swap.free >= 0
+            assert system_info.system.memory.swap.used >= 0
+            assert 0 <= system_info.system.memory.swap.percent_used <= 100
+
+            # CPU values should be reasonable
+            assert system_info.system.cpu.nprocs > 0
+            assert system_info.system.cpu.percent_cpu >= 0
+            assert len(system_info.system.cpu.load.raw) == 3
+            assert len(system_info.system.cpu.load.percent) == 3
+
+            # FTL resource usage should be reasonable
+            assert system_info.system.ftl.percent_mem >= 0
+            assert system_info.system.ftl.percent_cpu >= 0
+
+    def test_get_system_info_memory_consistency(self, pihole_container):
+        """Should return consistent memory information."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            system_info = info_client.get_system_info()
+
+            ram = system_info.system.memory.ram
+            swap = system_info.system.memory.swap
+
+            # RAM consistency checks
+            assert ram.used + ram.free <= ram.total + 1000  # Allow small discrepancy
+            assert ram.available <= ram.total
+            assert ram.used >= 0
+
+            # Swap consistency checks
+            if swap.total > 0:
+                assert (
+                    swap.used + swap.free <= swap.total + 100
+                )  # Allow small discrepancy
+                assert swap.used >= 0
+                assert swap.free >= 0
+
+    def test_get_system_info_load_averages(self, pihole_container):
+        """Should return valid load average information."""
+        with PiHoleClient(
+            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            info_client = PiHoleInfo(client)
+
+            system_info = info_client.get_system_info()
+
+            load = system_info.system.cpu.load
+
+            # Load averages should be non-negative
+            for raw_load in load.raw:
+                assert raw_load >= 0
+
+            for percent_load in load.percent:
+                assert percent_load >= 0
+
+            # Raw and percent should be related (percent = raw * 100 / nprocs)
+            nprocs = system_info.system.cpu.nprocs
+            for i in range(3):
+                expected_percent = (load.raw[i] * 100) / nprocs
+                # Allow some floating point tolerance
+                assert abs(load.percent[i] - expected_percent) < 0.1

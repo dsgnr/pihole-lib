@@ -54,6 +54,7 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | FTL runtime information | ✅ |
 | | Host system information | ✅ |
 | | Version information | ✅ |
+| | System resource information | ✅ |
 | **Error Handling** | Comprehensive error handling | ✅ |
 | | Specific exception types | ✅ |
 | **Metrics** | Query statistics | 📋 |
@@ -179,6 +180,16 @@ print(f"Docker: {version_info.version.docker.local}")
 if version_info.version.core.local.version != version_info.version.core.remote.version:
     print("Core update available!")
 
+# Get system resource information
+system_info = info.get_system_info()
+print(f"Uptime: {system_info.system.uptime} seconds")
+print(f"RAM Usage: {system_info.system.memory.ram.percent_used:.1f}%")
+print(f"CPU Cores: {system_info.system.cpu.nprocs}")
+print(f"CPU Usage: {system_info.system.cpu.percent_cpu:.1f}%")
+print(f"Processes: {system_info.system.procs}")
+print(f"FTL Memory: {system_info.system.ftl.percent_mem:.2f}%")
+print(f"Load Average: {system_info.system.cpu.load.raw}")
+
 client.close()
 
 # Or use within client context manager
@@ -201,6 +212,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
     version_info = info.get_version_info()
     print(f"Pi-hole Core: {version_info.version.core.local.version}")
+
+    system_info = info.get_system_info()
+    print(f"RAM Usage: {system_info.system.memory.ram.percent_used:.1f}%")
 ```
 
 ### Backup and restore operations
@@ -510,6 +524,7 @@ The info class for accessing Pi-hole information endpoints that don't require au
 - `get_ftl_info()` - Get FTL runtime information (process details, resource usage, database stats, dnsmasq stats)
 - `get_host_info()` - Get host system information (uname details, hardware model, DMI/SMBIOS data)
 - `get_version_info()` - Get version information (core, web, FTL, Docker versions with local/remote comparison)
+- `get_system_info()` - Get system resource information (uptime, memory, CPU, processes, FTL resource usage)
 
 ### PiHoleBackup
 
