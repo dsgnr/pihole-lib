@@ -17,6 +17,8 @@ API_TELEPORTER = "/api/teleporter"
 API_LISTS = "/api/lists"
 API_ACTION_GRAVITY = "/api/action/gravity"
 API_ACTION_RESTART_DNS = "/api/action/restartdns"
+API_ACTION_FLUSH_LOGS = "/api/action/flush/logs"
+API_ACTION_FLUSH_NETWORK = "/api/action/flush/network"
 API_CONFIG = "/api/config"
 
 # HTTP Headers

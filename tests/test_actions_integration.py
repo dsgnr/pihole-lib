@@ -112,3 +112,25 @@ class TestPiHoleActionsIntegration:
 
             assert len(gravity_lines) > 0
             assert all(isinstance(line, str) for line in gravity_lines)
+
+    def test_flush_logs_integration(self, pihole_container):
+        """Test DNS logs flush against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            actions = PiHoleActions(client)
+
+            # Flush DNS logs
+            result = actions.flush_logs()
+            assert result is True
+
+    def test_flush_network_integration(self, pihole_container):
+        """Test network table flush against real Pi-hole instance."""
+        with PiHoleClient(
+            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
+        ) as client:
+            actions = PiHoleActions(client)
+
+            # Flush network table
+            result = actions.flush_network()
+            assert result is True

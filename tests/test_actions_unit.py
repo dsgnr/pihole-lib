@@ -298,3 +298,93 @@ class TestRestartDns:
 
         # Verify the response (should be False when status is missing)
         assert result is False
+
+
+class TestPiHoleActionsFlush:
+    """Test flush methods."""
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_logs_success(self, mock_request, actions_client):
+        """Test successful DNS logs flush."""
+        # Mock successful response
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "success", "took": 0.001}
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = actions_client.flush_logs()
+
+        # Verify request was made correctly
+        mock_request.assert_called_once_with(
+            actions_client._client,
+            "POST",
+            "/api/action/flush/logs",
+        )
+
+        # Verify result
+        assert result is True
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_logs_failure(self, mock_request, actions_client):
+        """Test DNS logs flush failure."""
+        # Mock failure response
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "error", "took": 0.001}
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = actions_client.flush_logs()
+
+        # Verify result
+        assert result is False
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_logs_connection_error(self, mock_request, actions_client):
+        """Test DNS logs flush with connection error."""
+        mock_request.side_effect = PiHoleConnectionError("Connection failed")
+
+        with pytest.raises(PiHoleConnectionError):
+            actions_client.flush_logs()
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_network_success(self, mock_request, actions_client):
+        """Test successful network table flush."""
+        # Mock successful response
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "success", "took": 0.001}
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = actions_client.flush_network()
+
+        # Verify request was made correctly
+        mock_request.assert_called_once_with(
+            actions_client._client,
+            "POST",
+            "/api/action/flush/network",
+        )
+
+        # Verify result
+        assert result is True
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_network_failure(self, mock_request, actions_client):
+        """Test network table flush failure."""
+        # Mock failure response
+        mock_response = Mock()
+        mock_response.json.return_value = {"status": "error", "took": 0.001}
+        mock_request.return_value = mock_response
+
+        # Call method
+        result = actions_client.flush_network()
+
+        # Verify result
+        assert result is False
+
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_network_authentication_error(self, mock_request, actions_client):
+        """Test network table flush with authentication error."""
+        mock_request.side_effect = PiHoleAuthenticationError("Authentication failed")
+
+        with pytest.raises(PiHoleAuthenticationError):
+            actions_client.flush_network()

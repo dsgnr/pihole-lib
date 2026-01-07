@@ -63,7 +63,6 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Top clients/domains | 📋 |
 | | Query types over time | 📋 |
 | **DNS Control** | Enable/disable Pi-hole | 📋 |
-| | Flush network table | 📋 |
 | | Restart DNS resolver | 📋 |
 | **Domain Management** | Add/remove domains | 📋 |
 | | Exact/regex domain matching | 📋 |
@@ -83,7 +82,8 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Get configuration | ✅ |
 | **Actions** | Update gravity | ✅ |
 | | Restart DNS | ✅ |
-| | Flush logs | 📋 |
+| | Flush logs | ✅ |
+| | Flush network table | ✅ |
 | **Teleporter** | Backup configuration | ✅ |
 | | Restore from backup | ✅ |
 | **DHCP** | Get active DHCP leases | ✅ |
@@ -405,6 +405,16 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print("Restarting DNS service...")
     success = actions.restart_dns()
     print(f"DNS restart: {'success' if success else 'failed'}")
+
+    # Flush DNS logs
+    print("Flushing DNS logs...")
+    success = actions.flush_logs()
+    print(f"DNS logs flush: {'success' if success else 'failed'}")
+
+    # Flush network table
+    print("Flushing network table...")
+    success = actions.flush_network()
+    print(f"Network table flush: {'success' if success else 'failed'}")
 ```
 
 ### DHCP management
@@ -647,6 +657,8 @@ The actions class for Pi-hole maintenance and administrative operations.
 - `PiHoleActions(client)` - Create a new actions client using an existing PiHoleClient
 - `update_gravity(color=False)` - Update Pi-hole's gravity database (adlists). Returns an iterator that yields lines of output as they're streamed from Pi-hole. Set `color=True` to include ANSI color escape codes in the output.
 - `restart_dns()` - Restart Pi-hole's DNS service (pihole-FTL). Returns True if successful, False otherwise.
+- `flush_logs()` - Flush Pi-hole's DNS logs, including emptying the log file and purging recent data from database and memory. Returns True if successful, False otherwise.
+- `flush_network()` - Flush Pi-hole's network table, removing all known devices and their addresses. Returns True if successful, False otherwise.
 
 ### PiHoleDHCP
 

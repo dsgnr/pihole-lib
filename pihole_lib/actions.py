@@ -4,7 +4,12 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from .base import BasePiHoleAPIClient
-from .constants import API_ACTION_GRAVITY, API_ACTION_RESTART_DNS
+from .constants import (
+    API_ACTION_FLUSH_LOGS,
+    API_ACTION_FLUSH_NETWORK,
+    API_ACTION_GRAVITY,
+    API_ACTION_RESTART_DNS,
+)
 from .utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -111,6 +116,75 @@ class PiHoleActions(BasePiHoleAPIClient):
             self._client,
             "POST",
             API_ACTION_RESTART_DNS,
+        )
+
+        result: dict[str, str | float] = response.json()
+        return result.get("status") == "success"
+
+    def flush_logs(self) -> bool:
+        """Flush Pi-hole's DNS logs.
+
+        This endpoint flushes the DNS logs, including emptying the DNS log file
+        and purging the most recent 24 hours from both the database and FTL's
+        internal memory.
+
+        Returns:
+            True if the flush was successful, False otherwise.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            # Flush DNS logs
+            success = actions.flush_logs()
+            if success:
+                print("DNS logs flushed successfully")
+            else:
+                print("DNS logs flush failed")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "POST",
+            API_ACTION_FLUSH_LOGS,
+        )
+
+        result: dict[str, str | float] = response.json()
+        return result.get("status") == "success"
+
+    def flush_network(self) -> bool:
+        """Flush Pi-hole's network table.
+
+        This endpoint flushes the network table, including removing both all
+        known devices and their associated addresses.
+
+        Returns:
+            True if the flush was successful, False otherwise.
+
+        Raises:
+            PiHoleConnectionError: Connection failed.
+            PiHoleAuthenticationError: Authentication failed.
+            PiHoleServerError: Server error.
+            PiHoleAPIError: Other API errors.
+
+        Examples:
+            ```python
+            # Flush network table
+            success = actions.flush_network()
+            if success:
+                print("Network table flushed successfully")
+            else:
+                print("Network table flush failed")
+            ```
+        """
+        response = make_pihole_request(
+            self._client,
+            "POST",
+            API_ACTION_FLUSH_NETWORK,
         )
 
         result: dict[str, str | float] = response.json()
