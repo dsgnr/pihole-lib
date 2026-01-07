@@ -5,9 +5,40 @@ Handles authentication and session management.
 
 Examples:
     ```python
-    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig, ListType
+    from pihole_lib import PiHoleClient, ListType
 
-    # For authenticated operations
+    # Simplified usage with property access (recommended)
+    with PiHoleClient("http://192.168.1.100", password="secret") as client:
+        # Get system information
+        login_info = client.info.get_login_info()
+        print(f"Pi-hole version: {login_info.version}")
+
+        # Configuration management
+        current_config = client.config.get_config()
+        print(f"DNS upstreams: {current_config['dns']['upstreams']}")
+
+        # Update gravity database (adlists)
+        for line in client.actions.update_gravity():
+            print(line.strip())
+
+        # Backup operations
+        backup_file = client.backup.export_backup("/path/to/backups")
+        print(f"Backup saved to: {backup_file}")
+
+        # Lists operations
+        all_lists = client.lists.get_lists()
+        print(f"Found {len(all_lists)} lists")
+
+        # Add a new blocklist
+        client.lists.add_list(
+            address="https://hosts-file.net/ad_servers.txt",
+            list_type=ListType.BLOCK,
+            comment="Ad servers blocklist"
+        )
+
+    # Alternative usage with explicit class imports
+    from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig
+
     with PiHoleClient("http://192.168.1.100", password="secret") as client:
         # Configuration management
         config = PiHoleConfig(client)
@@ -16,12 +47,8 @@ Examples:
 
         # Actions operations
         actions = PiHoleActions(client)
-
-        # Update gravity database (adlists)
         for line in actions.update_gravity():
             print(line.strip())
-
-        # Client is authenticated and ready for API operations
 
         # Get system information
         info = PiHoleInfo(client)
@@ -29,23 +56,19 @@ Examples:
 
         # Backup operations
         backup = PiHoleBackup(client)
-        backup_file = backup.export_backup("/path/to/backups")  # Directory path
-        print(f"Backup saved to: {backup_file}")  # Timestamped filename
+        backup_file = backup.export_backup("/path/to/backups")
+        print(f"Backup saved to: {backup_file}")
 
         # Lists operations
         lists = PiHoleLists(client)
-
-        # Get existing lists
         all_lists = lists.get_lists()
         print(f"Found {len(all_lists)} lists")
 
-        # Add a new blocklist
         result_lists = lists.add_list(
             address="https://hosts-file.net/ad_servers.txt",
             list_type=ListType.BLOCK,
             comment="Ad servers blocklist"
         )
-        print(f"Added list")
     ```
 """
 

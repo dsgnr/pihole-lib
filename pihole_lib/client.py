@@ -8,6 +8,84 @@ from .constants import API_AUTH, DEFAULT_TIMEOUT, HEADER_SESSION_ID
 from .exceptions import PiHoleAuthenticationError
 from .utils import make_pihole_request
 
+# Dynamic API client configuration
+# Maps property names to their corresponding module and class information
+API_CLIENTS = {
+    "info": {
+        "module": "info",
+        "class": "PiHoleInfo",
+        "description": "system information operations",
+    },
+    "actions": {
+        "module": "actions",
+        "class": "PiHoleActions",
+        "description": "system actions",
+    },
+    "backup": {
+        "module": "backup",
+        "class": "PiHoleBackup",
+        "description": "backup operations",
+    },
+    "config": {
+        "module": "config",
+        "class": "PiHoleConfig",
+        "description": "configuration management",
+    },
+    "dhcp": {
+        "module": "dhcp",
+        "class": "PiHoleDHCP",
+        "description": "DHCP operations",
+    },
+    "dns": {
+        "module": "dns",
+        "class": "PiHoleDNS",
+        "description": "DNS operations",
+    },
+    "lists": {
+        "module": "lists",
+        "class": "PiHoleLists",
+        "description": "domain list operations",
+    },
+    "padd": {
+        "module": "padd",
+        "class": "PiHolePADD",
+        "description": "PADD dashboard operations",
+    },
+}
+
+
+def _create_api_property(property_name: str, config: dict[str, str]) -> property:
+    """Create a dynamic property for an API client.
+
+    Args:
+        property_name: Name of the property (e.g., 'info', 'actions')
+        config: Configuration dict with 'module', 'class', and 'description'
+
+    Returns:
+        Property object that lazy-loads the API client
+    """
+    cache_attr = f"_{property_name}"
+    module_name = config["module"]
+    class_name = config["class"]
+    description = config["description"]
+
+    def getter(self: "PiHoleClient") -> Any:
+        # Check if already cached
+        if not hasattr(self, cache_attr) or getattr(self, cache_attr) is None:
+            # Dynamic import and instantiation
+            module = __import__(f"pihole_lib.{module_name}", fromlist=[class_name])
+            api_class = getattr(module, class_name)
+            setattr(self, cache_attr, api_class(self))
+        return getattr(self, cache_attr)
+
+    getter.__doc__ = f"""Get Pi-hole {property_name} API client.
+
+        Returns:
+            {class_name} instance for {description}.
+        """
+
+    return property(getter)
+
 
 class PiHoleClient:
     """Pi-hole API client.
@@ -17,9 +95,27 @@ class PiHoleClient:
 
     Examples:
         ```python
+        # Basic usage with property access
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
-            # Perform operations
-            pass
+            # Get system information
+            login_info = client.info.get_login_info()
+
+            # Perform actions
+            for line in client.actions.update_gravity():
+                print(line.strip())
+
+            # Manage lists
+            all_lists = client.lists.get_lists()
+
+            # Configuration management
+            current_config = client.config.get_config()
+
+        # Alternative usage with explicit class imports
+        from pihole_lib import PiHoleInfo, PiHoleActions
+
+        with PiHoleClient("http://192.168.1.100", password="secret") as client:
+            info = PiHoleInfo(client)
+            actions = PiHoleActions(client)
         ```
     """
 
@@ -44,6 +140,10 @@ class PiHoleClient:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
         self._session: requests.Session | None = None
+
+        # Initialize cache attributes for all API clients
+        for property_name in API_CLIENTS:
+            setattr(self, f"_{property_name}", None)
 
     def __enter__(self) -> "PiHoleClient":
         """Enter context manager and authenticate.
@@ -156,3 +256,8 @@ class PiHoleClient:
             Session ID if authenticated, None otherwise.
         """
         return self._session_id
+
+
+# Dynamically create properties for all API clients
+for prop_name, prop_config in API_CLIENTS.items():
+    setattr(PiHoleClient, prop_name, _create_api_property(prop_name, prop_config))

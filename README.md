@@ -110,23 +110,118 @@ pip install pihole-lib
 ```python
 from pihole_lib import PiHoleClient
 
-# Connect to your Pi-hole
+# Simplified usage with property access (recommended)
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"Connected with session: {client.get_session_id()}")
 
     # Update gravity database
-    from pihole_lib import PiHoleActions
+    for line in client.actions.update_gravity():
+        print(line.strip())
+
+    # Get system information
+    login_info = client.info.get_login_info()
+    print(f"Pi-hole version: {login_info.version}")
+
+    # Manage lists
+    all_lists = client.lists.get_lists()
+    print(f"Found {len(all_lists)} lists")
+
+    # Session closed when exiting context
+
+# Alternative usage with explicit class imports
+from pihole_lib import PiHoleActions
+
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     actions = PiHoleActions(client)
     for line in actions.update_gravity():
         print(line.strip())
-
-    # Session closed when exiting context
 ```
 
 ### Get login page information
 
 ```python
-from pihole_lib import PiHoleClient, PiHoleInfo
+from pihole_lib import PiHoleClient
+
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get login page information (no authentication required for this endpoint)
+    login_info = client.info.get_login_info()
+    print(f"HTTPS Port: {login_info.https_port}")  # 443 or 0 if disabled
+    print(f"DNS Status: {login_info.dns}")         # True if DNS is running
+
+    # Get client request information
+    client_info = client.info.get_client_info()
+    print(f"Client IP: {client_info.remote_addr}")
+    print(f"HTTP Version: {client_info.http_version}")
+    print(f"Method: {client_info.method}")
+    print(f"Headers: {len(client_info.headers)} headers")
+    for header in client_info.headers:
+        print(f"  {header.name}: {header.value}")
+
+    # Get database information
+    database_info = client.info.get_database_info()
+    print(f"Database size: {database_info.size} bytes")
+    print(f"SQLite version: {database_info.sqlite_version}")
+    print(f"Queries in memory: {database_info.queries}")
+    print(f"Queries on disk: {database_info.queries_disk}")
+    print(f"File owner: {database_info.owner.user.name}")
+    print(f"File group: {database_info.owner.group.name}")
+    print(f"File permissions: {database_info.mode}")
+
+    # Get FTL runtime information
+    ftl_info = client.info.get_ftl_info()
+    print(f"Process ID: {ftl_info.ftl.pid}")
+    print(f"Uptime: {ftl_info.ftl.uptime} seconds")
+    print(f"Memory usage: {ftl_info.ftl.mem_percent}%")
+    print(f"CPU usage: {ftl_info.ftl.cpu_percent}%")
+    print(f"Gravity domains: {ftl_info.ftl.database.gravity}")
+    print(f"Total clients: {ftl_info.ftl.clients.total}")
+    print(f"Active clients: {ftl_info.ftl.clients.active}")
+    print(f"DNS queries forwarded: {ftl_info.ftl.dnsmasq.dns_queries_forwarded}")
+
+    # Get host system information
+    host_info = client.info.get_host_info()
+    print(f"Hostname: {host_info.host.uname.nodename}")
+    print(f"OS: {host_info.host.uname.sysname} {host_info.host.uname.release}")
+    print(f"Architecture: {host_info.host.uname.machine}")
+    print(f"Hardware model: {host_info.host.model}")
+    if host_info.host.dmi.sys.vendor:
+        print(f"System vendor: {host_info.host.dmi.sys.vendor}")
+
+    # Get version information
+    version_info = client.info.get_version_info()
+    print(f"Pi-hole Core: {version_info.version.core.local.version}")
+    print(f"Web Interface: {version_info.version.web.local.version}")
+    print(f"FTL: {version_info.version.ftl.local.version}")
+    print(f"Docker: {version_info.version.docker.local}")
+
+    # Check if updates are available
+    if version_info.version.core.local.version != version_info.version.core.remote.version:
+        print("Core update available!")
+
+    # Get system resource information
+    system_info = client.info.get_system_info()
+    print(f"Uptime: {system_info.system.uptime} seconds")
+    print(f"RAM Usage: {system_info.system.memory.ram.percent_used:.1f}%")
+    print(f"CPU Cores: {system_info.system.cpu.nprocs}")
+    print(f"CPU Usage: {system_info.system.cpu.percent_cpu:.1f}%")
+    print(f"Processes: {system_info.system.procs}")
+    print(f"FTL Memory: {system_info.system.ftl.percent_mem:.2f}%")
+    print(f"Load Average: {system_info.system.cpu.load.raw}")
+
+    # Get system messages
+    messages_info = client.info.get_messages()
+    print(f"Total messages: {len(messages_info.messages)}")
+    for message in messages_info.messages:
+        print(f"[{message.type.upper()}] {message.plain}")
+        print(f"  ID: {message.id}, Time: {message.timestamp}")
+
+    # Get messages count
+    messages_count = client.info.get_messages_count()
+    print(f"Message count: {messages_count.count}")
+
+# Alternative usage with explicit class imports
+from pihole_lib import PiHoleInfo
 
 # Create a client
 client = PiHoleClient("http://192.168.1.100", password="your-password")
@@ -245,9 +340,34 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 ### Backup and restore operations
 
 ```python
-from pihole_lib import PiHoleClient, PiHoleBackup, TeleporterImportOptions
+from pihole_lib import PiHoleClient, TeleporterImportOptions
 
-# Backup and restore with authentication
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Export current Pi-hole configuration (filename auto-generated with timestamp)
+    backup_file = client.backup.export_backup("/path/to/backups")
+    print(f"Backup created: {backup_file}")
+    # Example output: /path/to/backups/pi-hole_pihole_teleporter_2024-01-15_14-30-25_UTC.zip
+
+    # Import/restore from backup with custom options
+    import_options = TeleporterImportOptions(
+        config=True,           # Import configuration files
+        dhcp_leases=False,     # Skip DHCP leases
+        gravity=TeleporterGravityOptions(
+            group=True,        # Import groups
+            adlist=True,       # Import adlists
+            client=False       # Skip clients
+        )
+    )
+
+    result = client.backup.import_backup(backup_file, import_options)
+    print(f"Imported {len(result)} files")
+    for file in result:
+        print(f"  - {file}")
+
+# Alternative usage with explicit class imports
+from pihole_lib import PiHoleBackup
+
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     backup = PiHoleBackup(client)
 
@@ -276,9 +396,66 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 ### Domain lists management
 
 ```python
-from pihole_lib import PiHoleClient, PiHoleLists, ListType
+from pihole_lib import PiHoleClient, ListType
 
-# Manage domain lists (blocklists and allowlists)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get all lists
+    all_lists = client.lists.get_lists()
+    print(f"Found {len(all_lists)} total lists")
+
+    # Get only block lists
+    block_lists = client.lists.get_lists(list_type=ListType.BLOCK)
+    print(f"Found {len(block_lists)} block lists")
+
+    # Get only allow lists
+    allow_lists = client.lists.get_lists(list_type=ListType.ALLOW)
+    print(f"Found {len(allow_lists)} allow lists")
+
+    # Get specific list by name
+    specific_list = client.lists.get_lists(list_name="my_blocklist")
+    if specific_list:
+        list_info = specific_list[0]
+        print(f"List: {list_info.address}")
+        print(f"Type: {list_info.type.value}")
+        print(f"Enabled: {list_info.enabled}")
+        print(f"Domains: {list_info.number}")
+        print(f"Invalid domains: {list_info.invalid_domains}")
+
+    # Add a new blocklist
+    new_lists = client.lists.add_list(
+        address="https://hosts-file.net/ad_servers.txt",
+        list_type=ListType.BLOCK,
+        comment="Ad servers blocklist",
+        groups=[0],
+        enabled=True
+    )
+    print(f"Added list, API returned {len(new_lists)} lists")
+
+    # Add an allowlist for a specific domain
+    allow_lists = client.lists.add_list(
+        address="example.com",
+        list_type=ListType.ALLOW,
+        comment="Allow example.com"
+    )
+    print(f"Added allowlist, API returned {len(allow_lists)} lists")
+
+    # Delete a blocklist
+    success = client.lists.delete_list(
+        address="https://hosts-file.net/ad_servers.txt",
+        list_type=ListType.BLOCK
+    )
+    print(f"Blocklist deletion successful: {success}")
+
+    # Delete an allowlist
+    success = client.lists.delete_list(
+        address="example.com",
+        list_type=ListType.ALLOW
+    )
+    print(f"Allowlist deletion successful: {success}")
+
+# Alternative usage with explicit class imports
+from pihole_lib import PiHoleLists
+
 with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     lists = PiHoleLists(client)
 
