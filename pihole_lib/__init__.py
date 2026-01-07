@@ -36,6 +36,17 @@ Examples:
             comment="Ad servers blocklist"
         )
 
+        # Groups operations
+        all_groups = client.groups.get_groups()
+        print(f"Found {len(all_groups.groups)} groups")
+
+        # Create a new group
+        new_group = client.groups.create_group(
+            name="family_devices",
+            comment="Devices for family members",
+            enabled=True
+        )
+
     # Alternative usage with explicit class imports
     from pihole_lib import PiHoleClient, PiHoleInfo, PiHoleBackup, PiHoleLists, PiHoleActions, PiHoleConfig
 
@@ -85,6 +96,7 @@ from .exceptions import (
     PiHoleConnectionError,
     PiHoleServerError,
 )
+from .groups import PiHoleGroups
 from .info import PiHoleInfo
 from .lists import PiHoleLists
 from .models import (
@@ -110,6 +122,12 @@ from .models import (
     FTLDnsmasqStats,
     FTLInfo,
     FTLStats,
+    Group,
+    GroupProcessedError,
+    GroupProcessedResult,
+    GroupProcessedSuccess,
+    GroupRequest,
+    GroupsResponse,
     HostDetails,
     HostDMI,
     HostDMIBios,
@@ -172,6 +190,7 @@ __all__ = [
     "PiHoleConfig",
     "PiHoleDHCP",
     "PiHoleDNS",
+    "PiHoleGroups",
     "PiHolePADD",
     "BasePiHoleAPIClient",
     "PiHoleAPIError",
@@ -191,6 +210,12 @@ __all__ = [
     "DNSConfig",
     "DNSConfigInfo",
     "DNSRecord",
+    "Group",
+    "GroupProcessedError",
+    "GroupProcessedResult",
+    "GroupProcessedSuccess",
+    "GroupRequest",
+    "GroupsResponse",
     "ListType",
     "LoginInfo",
     "PADDCache",

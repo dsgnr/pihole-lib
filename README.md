@@ -15,6 +15,7 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
   - [Get login page information](#get-login-page-information)
   - [Backup and restore operations](#backup-and-restore-operations)
   - [Domain lists management](#domain-lists-management)
+  - [Groups management](#groups-management)
   - [Custom DNS records and blocking management](#custom-dns-records-and-blocking-management)
   - [Configuration management](#configuration-management)
   - [Actions and maintenance](#actions-and-maintenance)
@@ -76,6 +77,9 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Add/remove lists | ✅ |
 | | Regex list management | 📋 |
 | | Import/export lists | 📋 |
+| **Group Management** | Get groups | ✅ |
+| | Create/update/delete groups | ✅ |
+| | Batch group operations | ✅ |
 | **Pi-hole Configuration** | Get/Update Network settings | 📋 |
 | | Get/Update DNS settings | 📋 |
 | | Get/Update Web interface settings | 📋 |
@@ -614,6 +618,92 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     print(f"Blocking permanently enabled: {status.blocking}")
 ```
 
+### Groups management
+
+```python
+from pihole_lib import PiHoleClient, PiHoleGroups
+
+# Manage Pi-hole groups
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    groups = PiHoleGroups(client)
+
+    # Get all groups
+    all_groups = groups.get_groups()
+    print(f"Found {len(all_groups.groups)} groups")
+
+    for group in all_groups.groups:
+        print(f"Group: {group.name} (ID: {group.id})")
+        print(f"  Comment: {group.comment}")
+        print(f"  Enabled: {group.enabled}")
+
+    # Get specific group
+    specific_group = groups.get_groups(name="Default")
+    if specific_group.groups:
+        group = specific_group.groups[0]
+        print(f"Default group ID: {group.id}")
+
+    # Create a new group
+    new_group = groups.create_group(
+        name="family_devices",
+        comment="Devices used by family members",
+        enabled=True
+    )
+
+    if new_group.processed and new_group.processed.errors:
+        for error in new_group.processed.errors:
+            print(f"Error creating {error.item}: {error.error}")
+    else:
+        print(f"Created group: {new_group.groups[0].name}")
+
+    # Update a group
+    updated_group = groups.update_group(
+        name="family_devices",
+        new_name="family_devices_updated",
+        comment="Updated comment for family devices",
+        enabled=False
+    )
+    print(f"Updated group: {updated_group.groups[0].name}")
+
+    # Delete a group
+    success = groups.delete_group("family_devices_updated")
+    if success:
+        print("Group deleted successfully")
+
+    # Batch operations
+    # Create multiple groups
+    test_groups = ["group1", "group2", "group3"]
+    for group_name in test_groups:
+        groups.create_group(
+            name=group_name,
+            comment=f"Test group {group_name}",
+            enabled=True
+        )
+
+    # Batch delete groups
+    delete_result = groups.delete_groups(test_groups)
+    if delete_result.processed:
+        print(f"Successfully deleted: {len(delete_result.processed.success)} groups")
+        for error in delete_result.processed.errors:
+            print(f"Failed to delete {error.item}: {error.error}")
+
+# Simplified usage with property access (recommended)
+with PiHoleClient("http://192.168.1.100", password="your-password") as client:
+    # Get all groups - no need to import PiHoleGroups
+    all_groups = client.groups.get_groups()
+    print(f"Found {len(all_groups.groups)} groups")
+
+    # Create a group
+    new_group = client.groups.create_group(
+        name="test_group",
+        comment="Test group via property access",
+        enabled=True
+    )
+
+    # Delete the group
+    success = client.groups.delete_group("test_group")
+    print(f"Group deleted: {success}")
+```
+
 ### Configuration management
 
 ```python
@@ -927,6 +1017,19 @@ The lists class for Pi-hole domain list management (blocklists and allowlists).
 **List Types:**
 - `ListType.ALLOW` - Allow lists (domains that bypass blocking)
 - `ListType.BLOCK` - Block lists (domains that are blocked)
+
+### PiHoleGroups
+
+The groups class for Pi-hole group management.
+
+**Methods:**
+- `PiHoleGroups(client)` - Create a new groups client using an existing PiHoleClient
+- `get_groups(name=None)` - Get groups with optional filtering by name. Returns GroupsResponse object with groups array and metadata.
+- `create_group(name, comment=None, enabled=True)` - Create a new group. Returns GroupsResponse object with created group and processing results.
+- `create_groups(groups)` - Create multiple groups from a list of GroupRequest objects. Returns GroupsResponse object with processing results.
+- `update_group(name, new_name=None, comment=None, enabled=True)` - Update an existing group. Can rename by providing new_name. Returns GroupsResponse object.
+- `delete_group(name)` - Delete a single group by name. Returns True if successful.
+- `delete_groups(group_names)` - Delete multiple groups by names. Returns GroupsResponse object with processing results.
 
 ### PiHoleConfig
 

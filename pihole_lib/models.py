@@ -1217,3 +1217,99 @@ class DNSBlockingStatus(BaseModel):
 
     took: float
     """Time taken to process the request in seconds."""
+
+
+class Group(BaseModel):
+    """Pi-hole group information.
+
+    Attributes:
+        name: Group name.
+        comment: User-provided free-text comment for this group.
+        enabled: Status of group.
+        id: Database ID.
+        date_added: Unix timestamp of group addition.
+        date_modified: Unix timestamp of last group modification.
+    """
+
+    name: str = Field(..., description="Group name")
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this group"
+    )
+    enabled: bool = Field(True, description="Status of group")
+    id: int = Field(..., description="Database ID")
+    date_added: int = Field(..., description="Unix timestamp of group addition")
+    date_modified: int = Field(
+        ..., description="Unix timestamp of last group modification"
+    )
+
+
+class GroupRequest(BaseModel):
+    """Request model for creating or updating a group.
+
+    Attributes:
+        name: Group name.
+        comment: User-provided free-text comment for this group.
+        enabled: Status of group.
+    """
+
+    name: str = Field(..., description="Group name")
+    comment: str | None = Field(
+        None, description="User-provided free-text comment for this group"
+    )
+    enabled: bool = Field(True, description="Status of group")
+
+
+class GroupProcessedSuccess(BaseModel):
+    """Success item in group processing result.
+
+    Attributes:
+        item: Group that was successfully processed.
+    """
+
+    item: str = Field(..., description="Group that was successfully processed")
+
+
+class GroupProcessedError(BaseModel):
+    """Error item in group processing result.
+
+    Attributes:
+        item: Group that could not be processed.
+        error: Error message.
+    """
+
+    item: str = Field(..., description="Group that could not be processed")
+    error: str = Field(..., description="Error message")
+
+
+class GroupProcessedResult(BaseModel):
+    """Processing result for group operations.
+
+    Attributes:
+        success: Array of groups that were successfully processed.
+        errors: Array of errors that occurred during processing.
+    """
+
+    success: list[GroupProcessedSuccess] = Field(
+        default_factory=list, description="Successfully processed groups"
+    )
+    errors: list[GroupProcessedError] = Field(
+        default_factory=list, description="Processing errors"
+    )
+
+
+class GroupsResponse(BaseModel):
+    """Response model for group operations.
+
+    Attributes:
+        groups: Array of group objects.
+        processed: Processing result (null for GET operations).
+        took: Time in seconds it took to process the request.
+    """
+
+    groups: list[Group] = Field(..., description="Array of group objects")
+    processed: GroupProcessedResult | None = Field(
+        None, description="Processing result"
+    )
+    took: float = Field(
+        ..., description="Time in seconds it took to process the request"
+    )

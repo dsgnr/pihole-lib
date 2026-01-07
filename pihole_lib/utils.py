@@ -62,7 +62,7 @@ def make_pihole_request(
     client: "PiHoleClient",
     method: str,
     endpoint: str,
-    json: dict[str, Any] | None = None,
+    json: dict[str, Any] | list[dict[str, Any]] | None = None,
     files: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
     stream: bool = False,
@@ -105,3 +105,27 @@ def make_pihole_request(
         return response
     except requests.RequestException as e:
         raise PiHoleConnectionError(f"Connection failed: {e}") from e
+
+
+def check_api_errors(
+    response_data: dict, item_name: str, operation: str = "process"
+) -> None:
+    """Check for API errors in the response and raise appropriate exceptions.
+
+    Args:
+        response_data: The response data from the API.
+        item_name: The item name that was being processed.
+        operation: The operation being performed (e.g., "create", "add").
+
+    Raises:
+        PiHoleServerError: If Pi-hole reports an error.
+    """
+    processed = response_data.get("processed")
+    if processed and processed.get("errors"):
+        errors = processed["errors"]
+        for error in errors:
+            if error.get("item") == item_name:
+                error_msg = error.get("error", "Unknown error")
+                raise PiHoleServerError(
+                    f"Failed to {operation} '{item_name}': {error_msg}"
+                )

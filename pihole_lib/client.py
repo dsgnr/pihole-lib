@@ -46,6 +46,11 @@ API_CLIENTS = {
         "class": "PiHoleLists",
         "description": "domain list operations",
     },
+    "groups": {
+        "module": "groups",
+        "class": "PiHoleGroups",
+        "description": "group management operations",
+    },
     "padd": {
         "module": "padd",
         "class": "PiHolePADD",

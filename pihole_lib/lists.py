@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from .base import BasePiHoleAPIClient
 from .constants import API_LISTS, DEFAULT_GROUP_ID
 from .models import AddListRequest, ListType, PiHoleList
-from .utils import make_pihole_request
+from .utils import check_api_errors, make_pihole_request
 
 if TYPE_CHECKING:
     pass
@@ -144,7 +144,7 @@ class PiHoleLists(BasePiHoleAPIClient):
         response_data = response.json()
 
         # Check for Pi-hole errors in the response
-        self._check_api_errors(response_data, address)
+        check_api_errors(response_data, address, "add list")
 
         return [PiHoleList(**list_data) for list_data in response_data["lists"]]
 
@@ -192,25 +192,3 @@ class PiHoleLists(BasePiHoleAPIClient):
 
         # Pi-hole returns 204 No Content on successful deletion
         return response.status_code == 204
-
-    def _check_api_errors(self, response_data: dict, address: str) -> None:
-        """Check for API errors in the response and raise appropriate exceptions.
-
-        Args:
-            response_data: The response data from the API.
-            address: The address that was being processed.
-
-        Raises:
-            PiHoleServerError: If Pi-hole reports an error.
-        """
-        processed = response_data.get("processed")
-        if processed and processed.get("errors"):
-            errors = processed["errors"]
-            for error in errors:
-                if error.get("item") == address:
-                    error_msg = error.get("error", "Unknown error")
-                    from .exceptions import PiHoleServerError
-
-                    raise PiHoleServerError(
-                        f"Failed to add list '{address}': {error_msg}"
-                    )

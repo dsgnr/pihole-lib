@@ -25,6 +25,7 @@ API_DNS_HOSTS = "/api/config/dns/hosts"
 API_DNS_CNAME_RECORDS = "/api/config/dns/cnameRecords"
 API_DNS_UPSTREAMS = "/api/config/dns/upstreams"
 API_DNS_BLOCKING = "/api/dns/blocking"
+API_GROUPS = "/api/groups"
 
 # HTTP Headers
 HEADER_SESSION_ID = "X-FTL-SID"
