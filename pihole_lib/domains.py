@@ -23,8 +23,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
     including adding, updating, deleting, and retrieving domains with various
     filtering options.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, DomainType, DomainKind
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -74,7 +74,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                     kind=DomainKind.EXACT
                 )
             ])
-        ```
+
     """
 
     BASE_URL = "/api/domains"
@@ -100,8 +100,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleServerError: Server error.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get all domains
             all_domains = domains.get_domains()
 
@@ -119,7 +119,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                 domain_type=DomainType.ALLOW,
                 domain_kind=DomainKind.EXACT
             )
-            ```
+
         """
         # Build the URL path based on filters
         path_parts = [self.BASE_URL]
@@ -160,8 +160,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleServerError: Server error.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get specific allowed exact domain
             domain = domains.get_domain(
                 "example.com",
@@ -173,7 +173,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                 print(f"Found domain: {domain.domain}")
             else:
                 print("Domain not found")
-            ```
+
         """
         domains_list = self.get_domains(domain_type, domain_kind, domain)
         # Return the first match (should be unique)
@@ -206,8 +206,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleServerError: Server error.
 
-        Examples:
-            ```python
+        Examples::
+
             # Add an exact blocked domain
             result = domains.add_domain(
                 domain="badsite.com",
@@ -225,7 +225,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                 domain_kind=DomainKind.REGEX,
                 comment="Block ads subdomains"
             )
-            ```
+
         """
         if groups is None:
             groups = [0]
@@ -279,8 +279,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleServerError: Server error.
 
-        Examples:
-            ```python
+        Examples::
+
             # Update domain comment and disable it
             result = domains.update_domain(
                 domain="example.com",
@@ -298,7 +298,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                 new_type=DomainType.DENY,
                 new_kind=DomainKind.EXACT
             )
-            ```
+
         """
         # URL encode the domain for safe transmission
         encoded_domain = quote(domain, safe="")
@@ -337,8 +337,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleServerError: Server error.
 
-        Examples:
-            ```python
+        Examples::
+
             # Delete an exact blocked domain
             domains.delete_domain(
                 "badsite.com",
@@ -352,7 +352,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                 DomainType.DENY,
                 DomainKind.REGEX
             )
-            ```
+
         """
         # URL encode the domain for safe transmission
         encoded_domain = quote(domain, safe="")
@@ -376,8 +376,8 @@ class PiHoleDomains(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleServerError: Server error.
 
-        Examples:
-            ```python
+        Examples::
+
             # Delete multiple domains
             success = domains.batch_delete_domains([
                 DomainBatchDeleteItem(
@@ -397,7 +397,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
                 )
             ])
             print(f"Batch delete successful: {success}")
-            ```
+
         """
         url_path = f"{self.BASE_URL}:batchDelete"
 

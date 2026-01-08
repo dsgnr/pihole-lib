@@ -13,8 +13,8 @@ class PiHoleDHCP(BasePiHoleAPIClient):
 
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleDHCP
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -26,7 +26,7 @@ class PiHoleDHCP(BasePiHoleAPIClient):
 
             for lease in leases.leases:
                 print(f"{lease.name} ({lease.ip}) - {lease.hwaddr}")
-        ```
+
     """
 
     BASE_URL = "/api/dhcp"
@@ -42,8 +42,8 @@ class PiHoleDHCP(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get active DHCP leases
             leases = dhcp.get_leases()
             print(f"Found {len(leases.leases)} active leases")
@@ -54,7 +54,7 @@ class PiHoleDHCP(BasePiHoleAPIClient):
                 print(f"IP: {lease.ip}")
                 print(f"MAC: {lease.hwaddr}")
                 print(f"Client ID: {lease.clientid}")
-            ```
+
         """
         response_data = make_pihole_request(
             self._client,
@@ -80,8 +80,8 @@ class PiHoleDHCP(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails (e.g., invalid IP, lease not found).
 
-        Examples:
-            ```python
+        Examples::
+
             # Delete a specific DHCP lease
             success = dhcp.delete_lease("192.168.1.100")
             if success:
@@ -93,7 +93,7 @@ class PiHoleDHCP(BasePiHoleAPIClient):
                 first_lease_ip = leases.leases[0].ip
                 success = dhcp.delete_lease(first_lease_ip)
                 print(f"Deleted lease for {first_lease_ip}: {success}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,

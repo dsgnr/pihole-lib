@@ -1,4 +1,4 @@
-.PHONY: help install test test-cov lint format type-check clean build publish pre-commit check docker-up docker-down docker-logs
+.PHONY: help install test test-cov lint format type-check clean build publish pre-commit check docker-up docker-down docker-logs docs docs-clean docs-apidoc
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -26,7 +26,7 @@ type-check: ## Run type checking
 
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
-	@rm -rf build/ dist/ *.egg-info/ .coverage htmlcov/ .pytest_cache/ .mypy_cache/ .ruff_cache/
+	@rm -rf build/ dist/ *.egg-info/ .coverage htmlcov/ .pytest_cache/ .mypy_cache/ .ruff_cache/ docs/_build/ docs/lib/
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@echo "Clean complete."
@@ -50,3 +50,12 @@ docker-down: ## Stop Pi-hole test container
 
 docker-logs: ## Show Pi-hole container logs
 	docker-compose -f tests/docker-compose.test.yml logs -f pihole
+
+docs-apidoc: ## Generate API documentation
+	poetry run sphinx-apidoc -o docs/lib pihole_lib
+
+docs: docs-apidoc ## Build documentation
+	poetry run sphinx-build -b html docs docs/_build/html
+
+docs-clean: ## Clean documentation build artifacts
+	rm -rf docs/_build docs/lib

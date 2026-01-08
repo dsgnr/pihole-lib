@@ -20,8 +20,8 @@ class PiHoleLists(BasePiHoleAPIClient):
     Handles domain list operations using the Lists endpoint.
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleLists, ListType
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -37,7 +37,7 @@ class PiHoleLists(BasePiHoleAPIClient):
                 list_type=ListType.BLOCK,
                 comment="Ad servers"
             )
-        ```
+
     """
 
     BASE_URL = "/api/lists"
@@ -65,8 +65,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get all lists
             all_lists = lists.get_lists()
 
@@ -77,7 +77,7 @@ class PiHoleLists(BasePiHoleAPIClient):
             specific_lists = lists.get_lists(list_name="my_blocklist")
             if specific_lists:
                 my_list = specific_lists[0]
-            ```
+
         """
         endpoint = f"{self.BASE_URL}/{list_name}" if list_name else self.BASE_URL
         params = {"type": list_type.value} if list_type else None
@@ -118,8 +118,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleAuthenticationError: Authentication failed.
 
-        Examples:
-            ```python
+        Examples::
+
             # Add a blocklist
             new_lists = lists.add_list(
                 address="https://example.com/domains.txt",
@@ -135,7 +135,7 @@ class PiHoleLists(BasePiHoleAPIClient):
                 address="example.com",
                 list_type=ListType.ALLOW
             )
-            ```
+
         """
         request_data = AddListRequest(
             address=address,
@@ -176,8 +176,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             PiHoleServerError: Server error or list not found.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Delete a blocklist
             success = lists.delete_list(
                 address="https://example.com/domains.txt",
@@ -190,7 +190,7 @@ class PiHoleLists(BasePiHoleAPIClient):
                 address="example.com",
                 list_type=ListType.ALLOW
             )
-            ```
+
         """
         endpoint = f"{self.BASE_URL}/{address}"
         params = {"type": list_type.value}
@@ -220,8 +220,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             from pihole_lib.models import BatchDeleteItem
 
             # Delete multiple lists
@@ -232,7 +232,7 @@ class PiHoleLists(BasePiHoleAPIClient):
 
             success = lists.batch_delete_lists(items_to_delete)
             print(f"Batch deletion successful: {success}")
-            ```
+
         """
         # Convert BatchDeleteItem objects to dictionaries
         items_data = [item.model_dump() for item in items]
@@ -277,8 +277,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             PiHoleServerError: Server error or list not found.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Update a list's comment and disable it
             response = lists.update_list(
                 address="example.com",
@@ -296,7 +296,7 @@ class PiHoleLists(BasePiHoleAPIClient):
                 print(f"Updated list: {updated_list.address}")
                 print(f"New comment: {updated_list.comment}")
                 print(f"Enabled: {updated_list.enabled}")
-            ```
+
         """
         request_data = UpdateListRequest(
             comment=comment,
@@ -351,8 +351,8 @@ class PiHoleLists(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Exact search
             response = lists.search_domains("example.com")
             print(f"Found {response.search.results.total} results")
@@ -374,7 +374,7 @@ class PiHoleLists(BasePiHoleAPIClient):
             print(f"Search parameters: {response.search.parameters}")
             print(f"Domain matches: {response.search.results.domains.exact}")
             print(f"Gravity matches: {response.search.results.gravity.block}")
-            ```
+
         """
         endpoint = f"/api/search/{domain}"
         params = {

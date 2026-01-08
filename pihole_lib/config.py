@@ -13,8 +13,8 @@ class PiHoleConfig(BasePiHoleAPIClient):
     Handles configuration endpoints for Pi-hole settings.
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleConfig
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -39,7 +39,7 @@ class PiHoleConfig(BasePiHoleAPIClient):
 
             # Remove upstream DNS server
             config.remove_config_item("dns/upstreams", "8.8.8.8")
-        ```
+
     """
 
     BASE_URL = "/api/config"
@@ -68,8 +68,8 @@ class PiHoleConfig(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get full configuration
             config_data = config.get_config()
             dns_config = config_data['dns']
@@ -90,7 +90,7 @@ class PiHoleConfig(BasePiHoleAPIClient):
             # Get web server configuration
             web_config = config.get_config('webserver')
             print(f"Web domain: {web_config['webserver']['domain']}")
-            ```
+
         """
         # Build the endpoint URL
         endpoint = self.BASE_URL if element is None else f"{self.BASE_URL}/{element}"
@@ -146,8 +146,8 @@ class PiHoleConfig(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Update DNS settings
             new_config = {
                 "dns": {
@@ -188,7 +188,7 @@ class PiHoleConfig(BasePiHoleAPIClient):
             config.update_config({"dns": {"port": 5353}}, restart=False)
             # Restart FTL manually later or with the final update
             config.update_config({"dns": {"queryLogging": False}}, restart=True)
-            ```
+
         """
         params = {"restart": restart}
         payload = {"config": config}
@@ -230,8 +230,8 @@ class PiHoleConfig(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Add upstream DNS server
             success = config.add_config_item("dns/upstreams", "1.1.1.1")
             print(f"Added upstream: {success}")
@@ -253,7 +253,7 @@ class PiHoleConfig(BasePiHoleAPIClient):
 
             # Add without restarting FTL
             success = config.add_config_item("dns/upstreams", "8.8.8.8", restart=False)
-            ```
+
         """
         # URL encode the element and value for safe transmission
         encoded_element = quote(element, safe="")
@@ -297,8 +297,8 @@ class PiHoleConfig(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Remove upstream DNS server
             success = config.remove_config_item("dns/upstreams", "8.8.8.8")
             print(f"Removed upstream: {success}")
@@ -320,7 +320,7 @@ class PiHoleConfig(BasePiHoleAPIClient):
 
             # Remove without restarting FTL
             success = config.remove_config_item("dns/upstreams", "1.1.1.1", restart=False)
-            ```
+
         """
         # URL encode the element and value for safe transmission
         encoded_element = quote(element, safe="")

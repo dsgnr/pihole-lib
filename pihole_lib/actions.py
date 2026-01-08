@@ -12,8 +12,8 @@ class PiHoleActions(BasePiHoleAPIClient):
     Handles action endpoints that perform operations on Pi-hole.
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleActions
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -30,7 +30,7 @@ class PiHoleActions(BasePiHoleAPIClient):
             # Restart DNS service
             success = actions.restart_dns()
             print(f"DNS restart: {'success' if success else 'failed'}")
-        ```
+
     """
 
     BASE_URL = "/api/action"
@@ -56,8 +56,8 @@ class PiHoleActions(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Basic gravity update
             for line in actions.update_gravity():
                 print(line.strip())
@@ -65,7 +65,7 @@ class PiHoleActions(BasePiHoleAPIClient):
             # Gravity update with colored output
             for line in actions.update_gravity(color=True):
                 print(line.strip())
-            ```
+
         """
         params = {"color": "true"} if color else None
 
@@ -94,15 +94,15 @@ class PiHoleActions(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Restart DNS service
             success = actions.restart_dns()
             if success:
                 print("DNS service restarted successfully")
             else:
                 print("DNS restart failed")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -129,15 +129,15 @@ class PiHoleActions(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Flush DNS logs
             success = actions.flush_logs()
             if success:
                 print("DNS logs flushed successfully")
             else:
                 print("DNS logs flush failed")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -163,15 +163,15 @@ class PiHoleActions(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Flush network table
             success = actions.flush_network()
             if success:
                 print("Network table flushed successfully")
             else:
                 print("Network table flush failed")
-            ```
+
         """
         response = make_pihole_request(
             self._client,

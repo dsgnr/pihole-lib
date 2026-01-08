@@ -119,8 +119,8 @@ class PiHoleClient:
     Handles authentication and session management for Pi-hole API interactions.
     Can be used as a context manager for automatic cleanup.
 
-    Examples:
-        ```python
+    Examples::
+
         # Basic usage with property access
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
             # Get system information
@@ -142,7 +142,7 @@ class PiHoleClient:
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
             info = PiHoleInfo(client)
             actions = PiHoleActions(client)
-        ```
+
     """
 
     DEFAULT_TIMEOUT = 30
@@ -152,7 +152,7 @@ class PiHoleClient:
         self,
         base_url: str,
         password: str,
-        timeout: int | None = None,
+        timeout: int | None = DEFAULT_TIMEOUT,
         verify_ssl: bool = True,
     ) -> None:
         """Initialize a Pi-hole client.
@@ -166,7 +166,7 @@ class PiHoleClient:
         self.base_url = base_url.rstrip("/")  # Remove trailing slash for consistency
         self._password = password
         self._session_id: str | None = None
-        self.timeout = timeout or self.DEFAULT_TIMEOUT
+        self.timeout = timeout
         self.verify_ssl = verify_ssl
         self._session: requests.Session | None = None
 

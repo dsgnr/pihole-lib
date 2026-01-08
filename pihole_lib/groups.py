@@ -19,8 +19,8 @@ class PiHoleGroups(BasePiHoleAPIClient):
 
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleGroups
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -50,7 +50,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
             # Delete a group
             success = groups.delete_group("updated_group")
             print(f"Group deleted: {success}")
-        ```
+
     """
 
     BASE_URL = "/api/groups"
@@ -70,8 +70,8 @@ class PiHoleGroups(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get all groups
             all_groups = groups.get_groups()
             print(f"Found {len(all_groups.groups)} groups")
@@ -81,7 +81,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
             if specific_group.groups:
                 group = specific_group.groups[0]
                 print(f"Group: {group.name}, Enabled: {group.enabled}")
-            ```
+
         """
         endpoint = self.BASE_URL
         if name:
@@ -117,8 +117,8 @@ class PiHoleGroups(BasePiHoleAPIClient):
             PiHoleServerError: If Pi-hole reports an error (e.g., group already exists).
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Create a simple group
             groups_list = groups.create_group("new_group")
             print(f"Created group: {groups_list[0].name}")
@@ -129,7 +129,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
                 comment="Devices used by family members",
                 enabled=True
             )
-            ```
+
         """
         group_request = GroupRequest(
             name=name,
@@ -176,8 +176,8 @@ class PiHoleGroups(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails (e.g., group not found).
 
-        Examples:
-            ```python
+        Examples::
+
             # Update group name
             result = groups.update_group("old_name", new_name="new_name")
 
@@ -187,7 +187,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
                 comment="Updated comment",
                 enabled=False
             )
-            ```
+
         """
         encoded_name = quote(name, safe="")
 
@@ -219,13 +219,13 @@ class PiHoleGroups(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails (e.g., group not found).
 
-        Examples:
-            ```python
+        Examples::
+
             # Delete a group
             success = groups.delete_group("test_group")
             if success:
                 print("Group deleted successfully")
-            ```
+
         """
         encoded_name = quote(name, safe="")
 

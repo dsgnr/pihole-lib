@@ -22,8 +22,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
     Handles information endpoints that don't require authentication.
     Uses a PiHoleClient instance for making requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleInfo
 
         # Create client and info instance
@@ -36,7 +36,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
             info = PiHoleInfo(client)
             login_info = info.get_login_info()
-        ```
+
     """
 
     BASE_URL = "/api/info"
@@ -81,8 +81,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 client_info = info.get_client_info()
@@ -91,7 +91,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                 print(f"Method: {client_info.method}")
                 for header in client_info.headers:
                     print(f"Header: {header.name} = {header.value}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -117,8 +117,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 db_info = info.get_database_info()
@@ -127,7 +127,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                 print(f"Queries in memory: {db_info.queries}")
                 print(f"Queries on disk: {db_info.queries_disk}")
                 print(f"File owner: {db_info.owner.user.name}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -154,8 +154,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 ftl_info = info.get_ftl_info()
@@ -166,7 +166,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                 print(f"Gravity domains: {ftl_info.ftl.database.gravity}")
                 print(f"Total clients: {ftl_info.ftl.clients.total}")
                 print(f"Active clients: {ftl_info.ftl.clients.active}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -192,8 +192,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 host_info = info.get_host_info()
@@ -203,7 +203,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                 print(f"Hardware model: {host_info.host.model}")
                 if host_info.host.dmi.sys.vendor:
                     print(f"System vendor: {host_info.host.dmi.sys.vendor}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -229,8 +229,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 version_info = info.get_version_info()
@@ -242,7 +242,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                 # Check if updates are available
                 if version_info.version.core.local.version != version_info.version.core.remote.version:
                     print("Core update available!")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -269,8 +269,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 system_info = info.get_system_info()
@@ -281,7 +281,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                 print(f"Processes: {system_info.system.procs}")
                 print(f"FTL Memory: {system_info.system.ftl.percent_mem:.2f}%")
                 print(f"Load Average: {system_info.system.cpu.load.raw}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -307,8 +307,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 messages_info = info.get_messages()
@@ -319,7 +319,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                     print(f"  ID: {message.id}")
                     print(f"  Time: {message.timestamp}")
                     print(f"  HTML: {message.html}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -344,8 +344,8 @@ class PiHoleInfo(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 info = PiHoleInfo(client)
                 messages_count = info.get_messages_count()
@@ -356,7 +356,7 @@ class PiHoleInfo(BasePiHoleAPIClient):
                     print("There are messages to review")
                 else:
                     print("No messages")
-            ```
+
         """
         response = make_pihole_request(
             self._client,

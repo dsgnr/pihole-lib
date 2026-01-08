@@ -17,8 +17,8 @@ class PiHoleDNS(BasePiHoleAPIClient):
 
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleDNS
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -52,7 +52,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
             # Re-enable blocking permanently
             status = dns.enable_blocking()
             print(f"Blocking enabled: {status.blocking}")
-        ```
+
     """
 
     BASE_URL = "/api/dns"
@@ -70,8 +70,8 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get DNS configuration
             config = dns.get_config()
             print(f"Upstream servers: {config.upstreams}")
@@ -91,7 +91,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
             # Access CNAME records only (backward compatibility)
             for cname in config.cname_records:
                 print(f"CNAME: {cname.domain} -> {cname.target}")
-            ```
+
         """
         # Use PiHoleConfig to get DNS configuration
         config_client = PiHoleConfig(self._client)
@@ -120,8 +120,8 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAPIError: If the API request fails.
             ValueError: If an invalid record type is specified.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get all custom DNS records
             records = dns.get_records()
             for record in records:
@@ -136,7 +136,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
             cname_records = dns.get_records(record_type="CNAME")
             for record in cname_records:
                 print(f"CNAME: {record.domain} -> {record.target}")
-            ```
+
         """
         # Validate record_type parameter
         if record_type is not None and record_type not in ["A", "CNAME"]:
@@ -172,8 +172,8 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Add A record for local server
             success = dns.add_a_record("server.local", "192.168.1.100")
             if success:
@@ -181,7 +181,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
 
             # Add A record for NAS
             success = dns.add_a_record("nas.local", "192.168.1.50")
-            ```
+
         """
         # Format as "ip domain" for the API
         record_value = f"{ip} {domain}"
@@ -213,13 +213,13 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Remove A record
             success = dns.remove_a_record("server.local", "192.168.1.100")
             if success:
                 print("A record removed successfully")
-            ```
+
         """
         # Format as "ip domain" for the API
         record_value = f"{ip} {domain}"
@@ -252,8 +252,8 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Create alias for existing server
             success = dns.add_cname_record("www.local", "server.local")
             if success:
@@ -261,7 +261,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
 
             # Create alias for NAS
             success = dns.add_cname_record("files.local", "nas.local")
-            ```
+
         """
         # Format as "domain,target" for the API
         record_value = f"{domain},{target}"
@@ -293,13 +293,13 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Remove CNAME record
             success = dns.remove_cname_record("www.local", "server.local")
             if success:
                 print("CNAME record removed successfully")
-            ```
+
         """
         # Format as "domain,target" for the API
         record_value = f"{domain},{target}"
@@ -325,14 +325,14 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Check blocking status
             status = dns.get_blocking_status()
             print(f"Blocking: {status.blocking}")
             if status.timer:
                 print(f"Temporarily disabled for {status.timer} seconds")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -365,8 +365,8 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Enable blocking permanently
             status = dns.set_blocking_status(blocking=True)
             print(f"Blocking enabled: {status.blocking}")
@@ -378,7 +378,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
             # Enable blocking permanently (cancel any timer)
             status = dns.set_blocking_status(blocking=True, timer=None)
             print(f"Blocking enabled permanently")
-            ```
+
         """
         payload: dict[str, bool | int] = {"blocking": blocking}
         if timer is not None:
@@ -410,14 +410,14 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Enable blocking permanently
             status = dns.enable_blocking()
 
             # Enable blocking for 1 hour, then auto-disable
             status = dns.enable_blocking(timer=3600)
-            ```
+
         """
         return self.set_blocking_status(blocking=True, timer=timer)
 
@@ -439,13 +439,13 @@ class PiHoleDNS(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Disable blocking permanently
             status = dns.disable_blocking()
 
             # Disable blocking for 10 minutes, then auto-enable
             status = dns.disable_blocking(timer=600)
-            ```
+
         """
         return self.set_blocking_status(blocking=False, timer=timer)

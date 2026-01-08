@@ -27,8 +27,8 @@ class PiHoleStats(BasePiHoleAPIClient):
     Handles statistics and history endpoints for Pi-hole data analysis.
     Uses a PiHoleClient instance for making requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleStats
 
         # Create client and stats instance
@@ -43,7 +43,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
             # Get top domains
             top_domains = stats.get_top_domains(count=10)
-        ```
+
     """
 
     BASE_URL = "/api"
@@ -67,8 +67,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 history = stats.get_history()
@@ -77,7 +77,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                     print(f"Time: {entry.timestamp}")
                     print(f"Total: {entry.total}, Blocked: {entry.blocked}")
                     print(f"Cached: {entry.cached}, Forwarded: {entry.forwarded}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -105,8 +105,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 client_history = stats.get_client_history()
@@ -115,7 +115,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 for entry in client_history.history:
                     print(f"Time: {entry.timestamp}")
                     print(f"Client data: {entry.data}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -146,8 +146,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -159,7 +159,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
                 history = stats.get_database_history(week_ago, now)
                 print(f"Found {len(history.history)} entries")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(
@@ -192,8 +192,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -205,7 +205,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
                 client_history = stats.get_database_client_history(month_ago, now)
                 print(f"Client mappings: {client_history.clients}")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(
@@ -253,8 +253,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
 
@@ -270,7 +270,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
                 # Get blocked queries
                 blocked_queries = stats.get_queries(upstream="blocklist")
-            ```
+
         """
         params: dict[str, Any] = {"length": length}
 
@@ -312,8 +312,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 suggestions = stats.get_query_suggestions()
@@ -322,7 +322,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 print(f"Available clients: {suggestions.suggestions.client_ip}")
                 print(f"Available upstreams: {suggestions.suggestions.upstream}")
                 print(f"Available types: {suggestions.suggestions.type}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -349,15 +349,15 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 query_types = stats.get_query_types()
 
                 for query_type, count in query_types.types.items():
                     print(f"{query_type}: {count}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -385,8 +385,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 recent_blocked = stats.get_recent_blocked(count=20)
@@ -394,7 +394,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 print(f"Recently blocked domains:")
                 for domain in recent_blocked.blocked:
                     print(f"  - {domain}")
-            ```
+
         """
         params = {"count": count}
         response = make_pihole_request(
@@ -421,8 +421,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 summary = stats.get_summary()
@@ -432,7 +432,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 print(f"Percent blocked: {summary.queries.percent_blocked}%")
                 print(f"Active clients: {summary.clients.active}")
                 print(f"Domains on blocklists: {summary.gravity.domains_being_blocked}")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -464,8 +464,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
 
@@ -476,7 +476,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
                 # Get top clients by blocked queries
                 blocked_clients = stats.get_top_clients(blocked=True, count=5)
-            ```
+
         """
         params: dict[str, Any] = {"count": count}
         if blocked is not None:
@@ -513,8 +513,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
 
@@ -525,7 +525,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
                 # Get top blocked domains
                 blocked_domains = stats.get_top_domains(blocked=True, count=10)
-            ```
+
         """
         params: dict[str, Any] = {"count": count}
         if blocked is not None:
@@ -555,8 +555,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
                 stats = PiHoleStats(client)
                 upstreams = stats.get_upstreams()
@@ -569,7 +569,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                     print(f"  Queries: {upstream.count}")
                     if upstream.statistics:
                         print(f"  Response time: {upstream.statistics.response}ms")
-            ```
+
         """
         response = make_pihole_request(
             self._client,
@@ -602,8 +602,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -616,7 +616,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 query_types = stats.get_database_query_types(day_ago, now)
                 for query_type, count in query_types.types.items():
                     print(f"{query_type}: {count}")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(
@@ -649,8 +649,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -665,7 +665,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 print(f"Blocked queries: {summary.sum_blocked}")
                 print(f"Percent blocked: {summary.percent_blocked}%")
                 print(f"Total clients: {summary.total_clients}")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(
@@ -698,8 +698,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -712,7 +712,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 top_clients = stats.get_database_top_clients(month_ago, now)
                 for client in top_clients.clients:
                     print(f"{client.name or client.ip}: {client.count} queries")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(
@@ -745,8 +745,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -759,7 +759,7 @@ class PiHoleStats(BasePiHoleAPIClient):
                 top_domains = stats.get_database_top_domains(month_ago, now)
                 for domain in top_domains.domains:
                     print(f"{domain.domain}: {domain.count} queries")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(
@@ -792,8 +792,8 @@ class PiHoleStats(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             import time
 
             with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -808,7 +808,7 @@ class PiHoleStats(BasePiHoleAPIClient):
 
                 for upstream in upstreams.upstreams:
                     print(f"{upstream.name}: {upstream.count} queries")
-            ```
+
         """
         params = {"from": from_timestamp, "until": until_timestamp}
         response = make_pihole_request(

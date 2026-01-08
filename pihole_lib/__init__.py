@@ -4,7 +4,7 @@ A Python library for interacting with Pi-hole through its API.
 Handles authentication and session management.
 
 Examples:
-    ```python
+
     from pihole_lib import PiHoleClient, ListType
 
     # Simplified usage with property access (recommended)
@@ -143,7 +143,7 @@ Examples:
         # Get client suggestions
         suggestions = clients.get_client_suggestions()
         print(f"Found {len(suggestions)} unconfigured clients")
-    ```
+
 """
 
 from .actions import PiHoleActions

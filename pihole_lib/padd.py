@@ -14,8 +14,8 @@ class PiHolePADD(BasePiHoleAPIClient):
 
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHolePADD
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -28,7 +28,7 @@ class PiHolePADD(BasePiHoleAPIClient):
             print(f"Blocking status: {dashboard.blocking}")
             print(f"Total queries: {dashboard.queries.total}")
             print(f"Blocked queries: {dashboard.queries.blocked}")
-        ```
+
     """
 
     BASE_URL = "/api/padd"
@@ -49,8 +49,8 @@ class PiHolePADD(BasePiHoleAPIClient):
             PiHoleAuthenticationError: If authentication fails.
             PiHoleAPIError: If the API request fails.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get dashboard data
             data = padd.get_dashboard_data()
 
@@ -74,7 +74,7 @@ class PiHolePADD(BasePiHoleAPIClient):
             # Access configuration
             print(f"DHCP active: {data.config.dhcp_active}")
             print(f"DNS port: {data.config.dns_port}")
-            ```
+
         """
         response_data = make_pihole_request(
             self._client,

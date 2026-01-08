@@ -30,8 +30,8 @@ class PiHoleClients(BasePiHoleAPIClient):
     available after some time. Furthermore, MAC address recognition only works for
     devices at most one networking hop away from your Pi-hole.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleClients
 
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
@@ -51,7 +51,7 @@ class PiHoleClients(BasePiHoleAPIClient):
             # Get client suggestions
             suggestions = clients.get_client_suggestions()
             print(f"Found {len(suggestions)} unconfigured clients")
-        ```
+
     """
 
     BASE_URL = "/api/clients"
@@ -74,8 +74,8 @@ class PiHoleClients(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get all clients
             all_clients = clients.get_clients()
 
@@ -92,7 +92,7 @@ class PiHoleClients(BasePiHoleAPIClient):
 
             # Get client by hostname
             hostname_client = clients.get_clients(client="laptop.local")
-            ```
+
         """
         endpoint = self.BASE_URL
         if client:
@@ -137,8 +137,8 @@ class PiHoleClients(BasePiHoleAPIClient):
             PiHoleConnectionError: Connection failed.
             PiHoleAuthenticationError: Authentication failed.
 
-        Examples:
-            ```python
+        Examples::
+
             # Add client by IP address
             new_clients = clients.add_client(
                 client="192.168.1.50",
@@ -172,7 +172,7 @@ class PiHoleClients(BasePiHoleAPIClient):
 
             if new_clients:
                 print(f"Added client: {new_clients[0].client}")
-            ```
+
         """
         request_data = ClientRequest(
             client=client,
@@ -221,8 +221,8 @@ class PiHoleClients(BasePiHoleAPIClient):
             PiHoleServerError: Server error or client not found.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Update a client's comment and groups
             response = clients.update_client(
                 client="192.168.1.50",
@@ -245,7 +245,7 @@ class PiHoleClients(BasePiHoleAPIClient):
                 comment="Updated Smart TV settings",
                 groups=[0]
             )
-            ```
+
         """
         request_data = ClientUpdateRequest(
             comment=comment,
@@ -285,8 +285,8 @@ class PiHoleClients(BasePiHoleAPIClient):
             PiHoleServerError: Server error or client not found.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Delete client by IP
             success = clients.delete_client("192.168.1.50")
             print(f"Deletion successful: {success}")
@@ -296,7 +296,7 @@ class PiHoleClients(BasePiHoleAPIClient):
 
             # Delete client by hostname
             success = clients.delete_client("laptop.local")
-            ```
+
         """
         # URL encode the client identifier for safe transmission
         encoded_client = quote(client, safe="")
@@ -326,8 +326,8 @@ class PiHoleClients(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             from pihole_lib.models import ClientBatchDeleteItem
 
             # Delete multiple clients
@@ -339,7 +339,7 @@ class PiHoleClients(BasePiHoleAPIClient):
 
             success = clients.batch_delete_clients(items_to_delete)
             print(f"Batch deletion successful: {success}")
-            ```
+
         """
         # Convert ClientBatchDeleteItem objects to dictionaries
         items_data = [item.model_dump() for item in items]
@@ -370,8 +370,8 @@ class PiHoleClients(BasePiHoleAPIClient):
             PiHoleServerError: Server error.
             PiHoleAPIError: Other API errors.
 
-        Examples:
-            ```python
+        Examples::
+
             # Get unconfigured clients
             suggestions = clients.get_client_suggestions()
             print(f"Found {len(suggestions)} unconfigured clients")
@@ -388,7 +388,7 @@ class PiHoleClients(BasePiHoleAPIClient):
                     client=suggestion.client,
                     comment=f"Auto-added from suggestions: {suggestion.name or 'Unknown'}"
                 )
-            ```
+
         """
         endpoint = f"{self.BASE_URL}/_suggestions"
 

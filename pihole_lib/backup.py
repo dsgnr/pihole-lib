@@ -15,8 +15,8 @@ class PiHoleBackup(BasePiHoleAPIClient):
     Handles backup and restore operations using the Teleporter endpoint.
     Uses a PiHoleClient instance for making authenticated requests.
 
-    Examples:
-        ```python
+    Examples::
+
         from pihole_lib import PiHoleClient, PiHoleBackup
 
         # Create client and backup instance
@@ -30,7 +30,7 @@ class PiHoleBackup(BasePiHoleAPIClient):
             # Import backup (Pi-hole only accepts ZIP files)
             imported_files = backup.import_backup("/path/to/backup.zip")
             print(f"Imported {len(imported_files)} files")
-        ```
+
     """
 
     BASE_URL = "/api/teleporter"
