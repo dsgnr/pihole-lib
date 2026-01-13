@@ -1,66 +1,44 @@
-"""Integration tests for PiHoleDHCP class."""
+"""Integration tests for PiHoleDHCP."""
 
-import pytest
-
-from pihole_lib import PiHoleClient, PiHoleDHCP
-from pihole_lib.models import DHCPLeasesInfo
-from tests.constants import PIHOLE_BASE_URL, PIHOLE_TEST_PASSWORD
+from pihole_lib import PiHoleDHCP
+from pihole_lib.models.dhcp import DHCPLeasesInfo
+from tests.conftest import integration
 
 
+@integration
 class TestPiHoleDHCPIntegration:
     """Integration test cases for PiHoleDHCP class."""
 
-    @pytest.fixture
-    def dhcp_client(self):
-        """Create a PiHoleDHCP instance for integration testing."""
-        client = PiHoleClient(
-            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
-        )
-        client.__enter__()  # Authenticate
-        dhcp = PiHoleDHCP(client)
-        yield dhcp
-        client.__exit__(None, None, None)  # Clean up
-
-    def test_get_leases_integration(self, dhcp_client):
+    def test_get_leases_integration(self, pihole_client):
         """Test DHCP leases retrieval against real Pi-hole instance."""
-        # Get DHCP leases
-        result = dhcp_client.get_leases()
+        dhcp = PiHoleDHCP(pihole_client)
+        result = dhcp.get_leases()
 
-        # Verify result structure
         assert isinstance(result, DHCPLeasesInfo)
-        assert hasattr(result, "leases")
         assert isinstance(result.leases, list)
 
-        # In test environment, there may be no active DHCP leases
-        # but the structure should still be valid
+        # Validate lease structure if any exist
         for lease in result.leases:
-            assert hasattr(lease, "expires")
-            assert hasattr(lease, "name")
-            assert hasattr(lease, "hwaddr")
-            assert hasattr(lease, "ip")
-            assert hasattr(lease, "clientid")
-
-            # Validate data types
             assert isinstance(lease.expires, int)
             assert isinstance(lease.name, str)
             assert isinstance(lease.hwaddr, str)
             assert isinstance(lease.ip, str)
             assert isinstance(lease.clientid, str)
 
-    def test_delete_lease_integration(self, dhcp_client):
+    def test_delete_lease_integration(self, pihole_client):
         """Test DHCP lease deletion against real Pi-hole instance."""
+        dhcp = PiHoleDHCP(pihole_client)
+
         # Try to delete a non-existent lease (should handle gracefully)
-        # In a real environment, this would return False or raise an appropriate exception
         try:
-            result = dhcp_client.delete_lease("192.168.1.999")
-            # If it returns False, that's expected for non-existent lease
+            result = dhcp.delete_lease("192.168.1.999")
             assert isinstance(result, bool)
         except Exception as e:
-            # If it raises an exception, it should be a PiHoleAPIError
             from pihole_lib.exceptions import PiHoleAPIError
 
             assert isinstance(e, PiHoleAPIError)
 
-    def test_constants_usage(self, dhcp_client):
+    def test_constants_usage(self, pihole_client):
         """Test that the class uses the correct API endpoint constants."""
-        assert dhcp_client.BASE_URL == "/api/dhcp"
+        dhcp = PiHoleDHCP(pihole_client)
+        assert dhcp.BASE_URL == "/api/dhcp"

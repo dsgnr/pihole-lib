@@ -1,9 +1,7 @@
 """Pi-hole network API client."""
 
-from typing import TYPE_CHECKING
-
-from .base import BasePiHoleAPIClient
-from .models import (
+from pihole_lib.base import BasePiHoleAPIClient
+from pihole_lib.models.network import (
     NetworkDeviceDeleteResponse,
     NetworkDevicesResponse,
     NetworkGatewayDetailedResponse,
@@ -11,17 +9,30 @@ from .models import (
     NetworkInterfacesResponse,
     NetworkRoutesResponse,
 )
-from .utils import make_pihole_request
-
-if TYPE_CHECKING:
-    pass
+from pihole_lib.utils import make_pihole_request
 
 
 class PiHoleNetwork(BasePiHoleAPIClient):
     """Pi-hole network API client.
 
-    Provides methods to gather advanced information about your network
-    as seen by your Pi-hole.
+    Provides methods to gather network information as seen by Pi-hole.
+
+    Examples::
+
+        from pihole_lib import PiHoleClient
+
+        with PiHoleClient("http://192.168.1.100", password="secret") as client:
+            # Get network devices
+            devices = client.network.get_devices()
+            for device in devices.devices:
+                print(f"{device.name}: {device.hwaddr}")
+
+            # Get gateway info
+            gateway = client.network.get_gateway()
+
+            # Get interfaces
+            interfaces = client.network.get_interfaces()
+
     """
 
     BASE_URL = "/api/network"
@@ -31,23 +42,14 @@ class PiHoleNetwork(BasePiHoleAPIClient):
         max_devices: int | None = None,
         max_addresses: int | None = None,
     ) -> NetworkDevicesResponse:
-        """Get info about the devices in your local network as seen by your Pi-hole.
-
-        By default, the number of shown devices is limited to 10. Devices are ordered
-        by when your Pi-hole has received the last query from this device (most recent first).
+        """Get info about devices in your local network.
 
         Args:
             max_devices: Maximum number of devices to show (optional).
-            max_addresses: Maximum number of addresses to show per device (optional).
+            max_addresses: Maximum addresses per device (optional).
 
         Returns:
             NetworkDevicesResponse containing device information.
-
-        Raises:
-            PiHoleAPIError: API request failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
         """
         params = {}
         if max_devices is not None:
@@ -59,117 +61,73 @@ class PiHoleNetwork(BasePiHoleAPIClient):
             self._client,
             "GET",
             f"{self.BASE_URL}/devices",
-            params=params,
+            params=params or None,
         )
         return NetworkDevicesResponse.model_validate(response.json())
 
     def get_gateway(
         self, detailed: bool = False
     ) -> NetworkGatewayResponse | NetworkGatewayDetailedResponse:
-        """Get info about the gateway of your Pi-hole.
+        """Get info about the gateway.
 
         Args:
-            detailed: If True, include detailed information about individual
-                     interfaces and routes. Note that available information
-                     is dependent on the interface type and state.
+            detailed: If True, include detailed interface and route info.
 
         Returns:
-            NetworkGatewayResponse or NetworkGatewayDetailedResponse containing gateway information.
-
-        Raises:
-            PiHoleAPIError: API request failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
+            NetworkGatewayResponse or NetworkGatewayDetailedResponse.
         """
-        params = {"detailed": detailed}
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/gateway",
-            params=params,
+            params={"detailed": detailed},
         )
-
         if detailed:
             return NetworkGatewayDetailedResponse.model_validate(response.json())
         return NetworkGatewayResponse.model_validate(response.json())
 
     def get_interfaces(self, detailed: bool = False) -> NetworkInterfacesResponse:
-        """Get info about the interfaces of your Pi-hole.
-
-        Note that not all described fields are applicable to any routing type.
-        Users must not rely on the presence of any field without checking the
-        route type first.
+        """Get info about network interfaces.
 
         Args:
-            detailed: If True, include more detailed information about individual
-                     interfaces where available information is dependent on the
-                     interface type and state.
+            detailed: If True, include more detailed information.
 
         Returns:
             NetworkInterfacesResponse containing interface information.
-
-        Raises:
-            PiHoleAPIError: API request failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
         """
-        params = {"detailed": detailed}
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/interfaces",
-            params=params,
+            params={"detailed": detailed},
         )
         return NetworkInterfacesResponse.model_validate(response.json())
 
     def get_routes(self, detailed: bool = False) -> NetworkRoutesResponse:
-        """Get info about the routes of your Pi-hole.
-
-        Note that not all described fields are applicable to any routing type.
-        Users must not rely on the presence of any field without checking the
-        route type first.
+        """Get info about network routes.
 
         Args:
-            detailed: If True, include more detailed information about individual
-                     routes where available information is dependent on the route
-                     type and state.
+            detailed: If True, include more detailed information.
 
         Returns:
             NetworkRoutesResponse containing route information.
-
-        Raises:
-            PiHoleAPIError: API request failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
         """
-        params = {"detailed": detailed}
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/routes",
-            params=params,
+            params={"detailed": detailed},
         )
         return NetworkRoutesResponse.model_validate(response.json())
 
     def delete_device(self, device_id: int) -> NetworkDeviceDeleteResponse:
         """Delete a device from the network table.
 
-        This will also remove all associated IP addresses and hostnames.
-
         Args:
             device_id: Device ID to delete.
 
         Returns:
             NetworkDeviceDeleteResponse containing operation result.
-
-        Raises:
-            PiHoleAPIError: API request failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
         """
         response = make_pihole_request(
             self._client,

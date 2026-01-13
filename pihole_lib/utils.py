@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import requests
 
-from .exceptions import (
+from pihole_lib.exceptions import (
     PiHoleAPIError,
     PiHoleAuthenticationError,
     PiHoleConnectionError,
@@ -12,17 +12,19 @@ from .exceptions import (
 )
 
 if TYPE_CHECKING:
-    from .client import PiHoleClient
+    from pihole_lib.client import PiHoleClient
 
-_CLIENT_ERROR_MESSAGES = {
+# Pre-computed error messages for common HTTP status codes
+_CLIENT_ERROR_MESSAGES: dict[int, str] = {
     400: "Bad request - missing parameter",
     402: "Request failed",
     404: "Endpoint not found",
     429: "Too many requests - rate limited",
 }
 
-_AUTH_ERROR_CODES = frozenset([401, 403])
-_SUCCESS_CODES = frozenset([200, 204])
+# Status code sets for fast lookup
+_AUTH_ERROR_CODES: frozenset[int] = frozenset((401, 403))
+_SUCCESS_CODES: frozenset[int] = frozenset((200, 201, 204))
 
 
 def handle_pihole_response(response: requests.Response) -> None:

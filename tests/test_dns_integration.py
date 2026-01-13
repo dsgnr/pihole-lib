@@ -1,31 +1,23 @@
-"""Integration tests for PiHoleDNS class."""
+"""Integration tests for PiHoleDNS."""
 
 import pytest
 
-from pihole_lib import PiHoleClient, PiHoleDNS
+from pihole_lib import PiHoleDNS
 from pihole_lib.exceptions import PiHoleAPIError
-from pihole_lib.models import DNSBlockingStatus, DNSConfig, DNSRecord
-from tests.constants import PIHOLE_BASE_URL, PIHOLE_TEST_PASSWORD
+from pihole_lib.models.dns import DNSBlockingStatus, DNSConfig, DNSRecord
+from tests.conftest import integration
 
 
+@integration
 class TestPiHoleDNSIntegration:
     """Integration test cases for PiHoleDNS class."""
 
-    @pytest.fixture
-    def dns_client(self):
-        """Create a PiHoleDNS instance for integration testing."""
-        client = PiHoleClient(
-            PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
-        )
-        client.__enter__()  # Authenticate
-        dns = PiHoleDNS(client)
-        yield dns
-        client.__exit__(None, None, None)  # Clean up
-
-    def test_get_config_integration(self, dns_client):
+    def test_get_config_integration(self, pihole_client):
         """Test DNS configuration retrieval against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get DNS configuration
-        result = dns_client.get_config()
+        result = dns.get_config()
 
         # Verify result structure
         assert isinstance(result, DNSConfig)
@@ -74,10 +66,12 @@ class TestPiHoleDNSIntegration:
             assert isinstance(cname, DNSRecord)
             assert cname.record_type == "CNAME"
 
-    def test_get_records_integration(self, dns_client):
+    def test_get_records_integration(self, pihole_client):
         """Test DNS records retrieval against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get DNS records
-        result = dns_client.get_records()
+        result = dns.get_records()
 
         # Verify result structure
         assert isinstance(result, list)
@@ -97,16 +91,18 @@ class TestPiHoleDNSIntegration:
             # Validate record type
             assert record.record_type in ["A", "CNAME"]
 
-    def test_get_records_filter_integration(self, dns_client):
+    def test_get_records_filter_integration(self, pihole_client):
         """Test DNS records retrieval with type filtering against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get all records first
-        all_records = dns_client.get_records()
+        all_records = dns.get_records()
 
         # Get A records only
-        a_records = dns_client.get_records(record_type="A")
+        a_records = dns.get_records(record_type="A")
 
         # Get CNAME records only
-        cname_records = dns_client.get_records(record_type="CNAME")
+        cname_records = dns.get_records(record_type="CNAME")
 
         # Verify filtering works correctly
         assert isinstance(a_records, list)
@@ -130,16 +126,20 @@ class TestPiHoleDNSIntegration:
         assert len(a_records) == len(all_a_records)
         assert len(cname_records) == len(all_cname_records)
 
-    def test_get_records_invalid_type_integration(self, dns_client):
+    def test_get_records_invalid_type_integration(self, pihole_client):
         """Test DNS records retrieval with invalid type parameter."""
+        dns = PiHoleDNS(pihole_client)
+
         # Test invalid type parameter
         with pytest.raises(ValueError, match="Invalid record type 'INVALID'"):
-            dns_client.get_records(record_type="INVALID")
+            dns.get_records(record_type="INVALID")
 
-    def test_get_blocking_status_integration(self, dns_client):
+    def test_get_blocking_status_integration(self, pihole_client):
         """Test DNS blocking status retrieval against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get blocking status
-        result = dns_client.get_blocking_status()
+        result = dns.get_blocking_status()
 
         # Verify result structure
         assert isinstance(result, DNSBlockingStatus)
@@ -155,18 +155,19 @@ class TestPiHoleDNSIntegration:
         # Validate blocking status
         assert result.blocking in ["enabled", "disabled"]
 
-    def test_a_record_operations_integration(self, dns_client):
+    def test_a_record_operations_integration(self, pihole_client):
         """Test A record add/remove operations against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
         test_domain = "test-integration.local"
         test_ip = "192.168.99.100"
 
         try:
             # Add A record
-            add_result = dns_client.add_a_record(test_domain, test_ip)
+            add_result = dns.add_a_record(test_domain, test_ip)
             assert add_result is True
 
             # Verify record was added by getting all records
-            records = dns_client.get_records()
+            records = dns.get_records()
             a_records = [
                 r for r in records if r.record_type == "A" and r.domain == test_domain
             ]
@@ -175,28 +176,29 @@ class TestPiHoleDNSIntegration:
 
         finally:
             # Clean up - remove the test record
-            remove_result = dns_client.remove_a_record(test_domain, test_ip)
+            remove_result = dns.remove_a_record(test_domain, test_ip)
             assert remove_result is True
 
             # Verify record was removed
-            records = dns_client.get_records()
+            records = dns.get_records()
             a_records = [
                 r for r in records if r.record_type == "A" and r.domain == test_domain
             ]
             assert len(a_records) == 0
 
-    def test_cname_record_operations_integration(self, dns_client):
+    def test_cname_record_operations_integration(self, pihole_client):
         """Test CNAME record add/remove operations against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
         test_domain = "test-cname-integration.local"
         test_target = "target-integration.local"
 
         try:
             # Add CNAME record
-            add_result = dns_client.add_cname_record(test_domain, test_target)
+            add_result = dns.add_cname_record(test_domain, test_target)
             assert add_result is True
 
             # Verify record was added by getting all records
-            records = dns_client.get_records()
+            records = dns.get_records()
             cname_records = [
                 r
                 for r in records
@@ -207,11 +209,11 @@ class TestPiHoleDNSIntegration:
 
         finally:
             # Clean up - remove the test record
-            remove_result = dns_client.remove_cname_record(test_domain, test_target)
+            remove_result = dns.remove_cname_record(test_domain, test_target)
             assert remove_result is True
 
             # Verify record was removed
-            records = dns_client.get_records()
+            records = dns.get_records()
             cname_records = [
                 r
                 for r in records
@@ -219,11 +221,13 @@ class TestPiHoleDNSIntegration:
             ]
             assert len(cname_records) == 0
 
-    def test_remove_nonexistent_records_integration(self, dns_client):
+    def test_remove_nonexistent_records_integration(self, pihole_client):
         """Test removing non-existent records against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Try to remove non-existent A record
         try:
-            result = dns_client.remove_a_record("nonexistent.local", "192.168.99.999")
+            result = dns.remove_a_record("nonexistent.local", "192.168.99.999")
             # Should return False for non-existent record
             assert result is False
         except PiHoleAPIError:
@@ -232,15 +236,16 @@ class TestPiHoleDNSIntegration:
 
         # Try to remove non-existent CNAME record
         try:
-            result = dns_client.remove_cname_record("nonexistent.local", "target.local")
+            result = dns.remove_cname_record("nonexistent.local", "target.local")
             # Should return False for non-existent record
             assert result is False
         except PiHoleAPIError:
             # Pi-hole may return 404 for non-existent records, which is also acceptable
             pass
 
-    def test_multiple_record_operations_integration(self, dns_client):
+    def test_multiple_record_operations_integration(self, pihole_client):
         """Test multiple record operations in sequence."""
+        dns = PiHoleDNS(pihole_client)
         test_records = [
             ("test1.local", "192.168.99.101", "A"),
             ("test2.local", "192.168.99.102", "A"),
@@ -252,13 +257,13 @@ class TestPiHoleDNSIntegration:
             # Add all test records
             for domain, target, record_type in test_records:
                 if record_type == "A":
-                    result = dns_client.add_a_record(domain, target)
+                    result = dns.add_a_record(domain, target)
                 else:  # CNAME
-                    result = dns_client.add_cname_record(domain, target)
+                    result = dns.add_cname_record(domain, target)
                 assert result is True
 
             # Verify all records were added
-            records = dns_client.get_records()
+            records = dns.get_records()
             for domain, target, record_type in test_records:
                 matching_records = [
                     r
@@ -273,16 +278,18 @@ class TestPiHoleDNSIntegration:
             # Clean up all test records
             for domain, target, record_type in test_records:
                 if record_type == "A":
-                    dns_client.remove_a_record(domain, target)
+                    dns.remove_a_record(domain, target)
                 else:  # CNAME
-                    dns_client.remove_cname_record(domain, target)
+                    dns.remove_cname_record(domain, target)
 
-    def test_dns_client_combination_integration(self, dns_client):
+    def test_dns_client_combination_integration(self, pihole_client):
         """Test using DNS client with other operations."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get initial state
-        initial_config = dns_client.get_config()
-        initial_records = dns_client.get_records()
-        initial_blocking = dns_client.get_blocking_status()
+        initial_config = dns.get_config()
+        initial_records = dns.get_records()
+        initial_blocking = dns.get_blocking_status()
 
         # Verify we can get all information
         assert isinstance(initial_config, DNSConfig)
@@ -303,10 +310,12 @@ class TestPiHoleDNSIntegration:
         assert a_record_count == len(config_hosts)
         assert cname_record_count == len(config_cnames)
 
-    def test_blocking_control_integration(self, dns_client):
+    def test_blocking_control_integration(self, pihole_client):
         """Test DNS blocking control against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get initial blocking status
-        initial_status = dns_client.get_blocking_status()
+        initial_status = dns.get_blocking_status()
         assert isinstance(initial_status, DNSBlockingStatus)
 
         # Store initial state to restore later
@@ -314,35 +323,35 @@ class TestPiHoleDNSIntegration:
 
         try:
             # Test enabling blocking (should work regardless of current state)
-            enabled_status = dns_client.enable_blocking()
+            enabled_status = dns.enable_blocking()
             assert isinstance(enabled_status, DNSBlockingStatus)
             assert enabled_status.blocking == "enabled"
             assert enabled_status.timer is None  # Should be permanent
 
             # Verify status was actually changed
-            current_status = dns_client.get_blocking_status()
+            current_status = dns.get_blocking_status()
             assert current_status.blocking == "enabled"
 
             # Test disabling blocking with timer (5 seconds)
-            disabled_status = dns_client.disable_blocking(timer=5)
+            disabled_status = dns.disable_blocking(timer=5)
             assert isinstance(disabled_status, DNSBlockingStatus)
             assert disabled_status.blocking == "disabled"
             assert disabled_status.timer == 5
 
             # Verify status was actually changed
-            current_status = dns_client.get_blocking_status()
+            current_status = dns.get_blocking_status()
             assert current_status.blocking == "disabled"
             assert isinstance(current_status.timer, int)
             assert current_status.timer <= 5  # Should be counting down
 
             # Test canceling timer by enabling permanently
-            enabled_status = dns_client.enable_blocking()
+            enabled_status = dns.enable_blocking()
             assert isinstance(enabled_status, DNSBlockingStatus)
             assert enabled_status.blocking == "enabled"
             assert enabled_status.timer is None  # Timer should be canceled
 
             # Test set_blocking_status directly
-            disabled_status = dns_client.set_blocking_status(blocking=False, timer=3)
+            disabled_status = dns.set_blocking_status(blocking=False, timer=3)
             assert isinstance(disabled_status, DNSBlockingStatus)
             assert disabled_status.blocking == "disabled"
             assert disabled_status.timer == 3
@@ -350,35 +359,37 @@ class TestPiHoleDNSIntegration:
         finally:
             # Restore initial state
             if initial_blocking:
-                dns_client.enable_blocking()
+                dns.enable_blocking()
             else:
-                dns_client.disable_blocking()
+                dns.disable_blocking()
 
-    def test_blocking_convenience_methods_integration(self, dns_client):
+    def test_blocking_convenience_methods_integration(self, pihole_client):
         """Test blocking convenience methods against real Pi-hole instance."""
+        dns = PiHoleDNS(pihole_client)
+
         # Get initial state
-        initial_status = dns_client.get_blocking_status()
+        initial_status = dns.get_blocking_status()
         initial_blocking = initial_status.blocking == "enabled"
 
         try:
             # Test enable_blocking convenience method
-            result = dns_client.enable_blocking()
+            result = dns.enable_blocking()
             assert isinstance(result, DNSBlockingStatus)
             assert result.blocking == "enabled"
 
             # Test disable_blocking convenience method
-            result = dns_client.disable_blocking()
+            result = dns.disable_blocking()
             assert isinstance(result, DNSBlockingStatus)
             assert result.blocking == "disabled"
 
             # Test enable_blocking with timer
-            result = dns_client.enable_blocking(timer=2)
+            result = dns.enable_blocking(timer=2)
             assert isinstance(result, DNSBlockingStatus)
             assert result.blocking == "enabled"
             assert result.timer == 2
 
             # Test disable_blocking with timer
-            result = dns_client.disable_blocking(timer=2)
+            result = dns.disable_blocking(timer=2)
             assert isinstance(result, DNSBlockingStatus)
             assert result.blocking == "disabled"
             assert result.timer == 2
@@ -386,11 +397,12 @@ class TestPiHoleDNSIntegration:
         finally:
             # Restore initial state
             if initial_blocking:
-                dns_client.enable_blocking()
+                dns.enable_blocking()
             else:
-                dns_client.disable_blocking()
+                dns.disable_blocking()
 
-    def test_constants_usage(self, dns_client):
+    def test_constants_usage(self, pihole_client):
         """Test that the class uses the correct API endpoint constants."""
-        assert dns_client.BASE_URL == "/api/dns"
-        assert dns_client.CONFIG_URL == "/api/config/dns"
+        dns = PiHoleDNS(pihole_client)
+        assert dns.BASE_URL == "/api/dns"
+        assert dns.CONFIG_URL == "/api/config/dns"

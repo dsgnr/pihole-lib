@@ -3,16 +3,13 @@
 import pytest
 from pydantic import ValidationError
 
-from pihole_lib.models import (
-    ListType,
-    LoginInfo,
-    PiHoleAuthSession,
-    PiHoleList,
+from pihole_lib.models.lists import ListType, PiHoleList
+from pihole_lib.models.session import LoginInfo, PiHoleAuthSession
+from pihole_lib.models.teleporter import (
     TeleporterGravityOptions,
     TeleporterImportOptions,
 )
-
-from .constants import (
+from tests.constants import (
     PIHOLE_AUTH_URL,
     PIHOLE_TEST_PASSWORD,
     TEST_CSRF_TOKEN,
@@ -408,72 +405,6 @@ class TestModelIntegration:
 
         assert "properties" in session_schema
         assert "valid" in session_schema["properties"]
-
-
-class TestModelIntegrationWithRealData:
-    """Test models with real Pi-hole API responses."""
-
-    def test_auth_session_with_real_pihole_data(self, pihole_session):
-        """Test PiHoleAuthSession model with real Pi-hole authentication data."""
-        session, session_id = pihole_session
-
-        # Make a fresh authentication request to get real response data
-        import requests
-
-        fresh_session = requests.Session()
-        fresh_session.verify = False
-
-        response = fresh_session.post(
-            PIHOLE_AUTH_URL,
-            json={"password": PIHOLE_TEST_PASSWORD},
-            timeout=30,
-        )
-
-        assert response.status_code == 200
-        response_data = response.json()
-
-        # Test that our model can parse real Pi-hole response
-        auth_session = PiHoleAuthSession(**response_data["session"])
-
-        # Verify the parsed data makes sense
-        assert auth_session.valid is True
-        assert auth_session.sid is not None
-        assert len(auth_session.sid) > 0
-        assert auth_session.csrf is not None
-        assert auth_session.validity > 0
-
-        # Test serialization round-trip
-        serialized = auth_session.model_dump()
-        recreated = PiHoleAuthSession(**serialized)
-        assert recreated.sid == auth_session.sid
-
-        fresh_session.close()
-
-    def test_invalid_auth_session_with_real_pihole(self, pihole_container):
-        """Test PiHoleAuthSession model with real Pi-hole invalid authentication."""
-        import requests
-
-        session = requests.Session()
-        session.verify = False
-
-        # Try to authenticate with wrong password
-        response = session.post(
-            PIHOLE_AUTH_URL,
-            json={"password": TEST_WRONG_PASSWORD},
-            timeout=30,
-        )
-
-        # Pi-hole might return 200 with invalid session or 401
-        if response.status_code == 200:
-            response_data = response.json()
-
-            # Test that our model can parse the invalid response
-            auth_session = PiHoleAuthSession(**response_data["session"])
-
-            # Should indicate invalid session
-            assert auth_session.valid is False
-
-        session.close()
 
 
 class TestRealPiHoleResponseValidation:

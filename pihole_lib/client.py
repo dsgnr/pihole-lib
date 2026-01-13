@@ -1,116 +1,26 @@
 """Pi-hole API client."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 
-from .exceptions import PiHoleAuthenticationError
-from .utils import make_pihole_request
+from pihole_lib.exceptions import PiHoleAuthenticationError
+from pihole_lib.utils import make_pihole_request
 
-# Dynamic API client configuration
-# Maps property names to their corresponding module and class information
-API_CLIENTS = {
-    "info": {
-        "module": "info",
-        "class": "PiHoleInfo",
-        "description": "system information operations",
-    },
-    "actions": {
-        "module": "actions",
-        "class": "PiHoleActions",
-        "description": "system actions",
-    },
-    "backup": {
-        "module": "backup",
-        "class": "PiHoleBackup",
-        "description": "backup operations",
-    },
-    "config": {
-        "module": "config",
-        "class": "PiHoleConfig",
-        "description": "configuration management",
-    },
-    "dhcp": {
-        "module": "dhcp",
-        "class": "PiHoleDHCP",
-        "description": "DHCP operations",
-    },
-    "dns": {
-        "module": "dns",
-        "class": "PiHoleDNS",
-        "description": "DNS operations",
-    },
-    "lists": {
-        "module": "lists",
-        "class": "PiHoleLists",
-        "description": "domain list operations",
-    },
-    "groups": {
-        "module": "groups",
-        "class": "PiHoleGroups",
-        "description": "group management operations",
-    },
-    "padd": {
-        "module": "padd",
-        "class": "PiHolePADD",
-        "description": "PADD dashboard operations",
-    },
-    "stats": {
-        "module": "stats",
-        "class": "PiHoleStats",
-        "description": "statistics and analytics operations",
-    },
-    "domains": {
-        "module": "domains",
-        "class": "PiHoleDomains",
-        "description": "domain management operations",
-    },
-    "network": {
-        "module": "network",
-        "class": "PiHoleNetwork",
-        "description": "network information operations",
-    },
-    "clients": {
-        "module": "clients",
-        "class": "PiHoleClients",
-        "description": "client management operations",
-    },
-}
-
-
-def _create_api_property(property_name: str, config: dict[str, str]) -> property:
-    """Create a dynamic property for an API client.
-
-    Args:
-        property_name: Name of the property (e.g., 'info', 'actions')
-        config: Configuration dict with 'module', 'class', and 'description'
-
-    Returns:
-        Property object that lazy-loads the API client
-    """
-    cache_attr = f"_{property_name}"
-    module_name = config["module"]
-    class_name = config["class"]
-    description = config["description"]
-
-    def getter(self: "PiHoleClient") -> Any:
-        # Use faster attribute access with getattr default
-        cached_instance = getattr(self, cache_attr, None)
-        if cached_instance is None:
-            # Dynamic import and instantiation
-            module = __import__(f"pihole_lib.{module_name}", fromlist=[class_name])
-            api_class = getattr(module, class_name)
-            cached_instance = api_class(self)
-            setattr(self, cache_attr, cached_instance)
-        return cached_instance
-
-    getter.__doc__ = f"""Get Pi-hole {property_name} API client.
-
-        Returns:
-            {class_name} instance for {description}.
-        """
-
-    return property(getter)
+if TYPE_CHECKING:
+    from pihole_lib.actions import PiHoleActions
+    from pihole_lib.backup import PiHoleBackup
+    from pihole_lib.clients import PiHoleClients
+    from pihole_lib.config import PiHoleConfig
+    from pihole_lib.dhcp import PiHoleDHCP
+    from pihole_lib.dns import PiHoleDNS
+    from pihole_lib.domains import PiHoleDomains
+    from pihole_lib.groups import PiHoleGroups
+    from pihole_lib.info import PiHoleInfo
+    from pihole_lib.lists import PiHoleLists
+    from pihole_lib.network import PiHoleNetwork
+    from pihole_lib.padd import PiHolePADD
+    from pihole_lib.stats import PiHoleStats
 
 
 class PiHoleClient:
@@ -163,24 +73,30 @@ class PiHoleClient:
             timeout: Request timeout in seconds. Defaults to 30.
             verify_ssl: Whether to verify SSL certificates. Defaults to True.
         """
-        self.base_url = base_url.rstrip("/")  # Remove trailing slash for consistency
+        self.base_url = base_url.rstrip("/")
         self._password = password
         self._session_id: str | None = None
         self.timeout = timeout
         self.verify_ssl = verify_ssl
         self._session: requests.Session | None = None
 
-        # Pre-initialize cache attributes for all API clients to None
-        # This avoids hasattr() calls in the property getters
-        for property_name in API_CLIENTS:
-            setattr(self, f"_{property_name}", None)
+        # Cached API client instances
+        self._info: "PiHoleInfo | None" = None
+        self._actions: "PiHoleActions | None" = None
+        self._backup: "PiHoleBackup | None" = None
+        self._config: "PiHoleConfig | None" = None
+        self._dhcp: "PiHoleDHCP | None" = None
+        self._dns: "PiHoleDNS | None" = None
+        self._lists: "PiHoleLists | None" = None
+        self._groups: "PiHoleGroups | None" = None
+        self._padd: "PiHolePADD | None" = None
+        self._stats: "PiHoleStats | None" = None
+        self._domains: "PiHoleDomains | None" = None
+        self._network: "PiHoleNetwork | None" = None
+        self._clients: "PiHoleClients | None" = None
 
     def __enter__(self) -> "PiHoleClient":
-        """Enter context manager and authenticate.
-
-        Returns:
-            The authenticated client instance.
-        """
+        """Enter context manager and authenticate."""
         self._ensure_session()
         self._authenticate()
         return self
@@ -195,18 +111,16 @@ class PiHoleClient:
             self._session = requests.Session()
             self._session.verify = self.verify_ssl
 
-            # Optimize connection pooling for better performance
             adapter = requests.adapters.HTTPAdapter(
-                pool_connections=1,  # Single connection pool for Pi-hole
-                pool_maxsize=10,  # Reasonable pool size
-                max_retries=0,  # Let our code handle retries
+                pool_connections=1,
+                pool_maxsize=10,
+                max_retries=0,
             )
             self._session.mount("http://", adapter)
             self._session.mount("https://", adapter)
 
-        # Update session headers with authentication if available
-        if self._session_id and self._session:
-            self._session.headers.update({self.HEADER_SESSION_ID: self._session_id})
+        if self._session_id:
+            self._session.headers[self.HEADER_SESSION_ID] = self._session_id
 
     def close(self) -> None:
         """Close session and clean up resources."""
@@ -217,18 +131,9 @@ class PiHoleClient:
             self._session = None
 
     def _authenticate(self) -> None:
-        """Authenticate with Pi-hole.
-
-        Raises:
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-        """
+        """Authenticate with Pi-hole."""
         self._ensure_session()
-        assert self._session is not None
 
-        # First attempt
         response = make_pihole_request(
             self,
             "POST",
@@ -255,11 +160,9 @@ class PiHoleClient:
             raise PiHoleAuthenticationError("Login failed")
 
         self._session_id = session.get("sid")
-
         if not self._session_id:
             raise PiHoleAuthenticationError("No session ID received")
 
-        # Update session headers with the new authentication
         self._ensure_session()
 
     def _delete_session(self) -> None:
@@ -268,35 +171,139 @@ class PiHoleClient:
             return
 
         try:
-            auth_url = f"{self.base_url}/api/auth"
             self._session.delete(
-                auth_url,
+                f"{self.base_url}/api/auth",
                 headers={self.HEADER_SESSION_ID: self._session_id},
                 timeout=self.timeout,
             )
         except Exception:
-            # If logout fails, that's acceptable - cleanup continues regardless
             pass
         finally:
             self._session_id = None
 
     def is_authenticated(self) -> bool:
-        """Check if client is authenticated.
-
-        Returns:
-            True if authenticated, False otherwise.
-        """
+        """Check if client is authenticated."""
         return self._session_id is not None
 
     def get_session_id(self) -> str | None:
-        """Get current session ID.
-
-        Returns:
-            Session ID if authenticated, None otherwise.
-        """
+        """Get current session ID."""
         return self._session_id
 
+    # API client properties with lazy loading
 
-# Dynamically create properties for all API clients
-for prop_name, prop_config in API_CLIENTS.items():
-    setattr(PiHoleClient, prop_name, _create_api_property(prop_name, prop_config))
+    @property
+    def info(self) -> "PiHoleInfo":
+        """Get Pi-hole info API client."""
+        if self._info is None:
+            from pihole_lib.info import PiHoleInfo
+
+            self._info = PiHoleInfo(self)
+        return self._info
+
+    @property
+    def actions(self) -> "PiHoleActions":
+        """Get Pi-hole actions API client."""
+        if self._actions is None:
+            from pihole_lib.actions import PiHoleActions
+
+            self._actions = PiHoleActions(self)
+        return self._actions
+
+    @property
+    def backup(self) -> "PiHoleBackup":
+        """Get Pi-hole backup API client."""
+        if self._backup is None:
+            from pihole_lib.backup import PiHoleBackup
+
+            self._backup = PiHoleBackup(self)
+        return self._backup
+
+    @property
+    def config(self) -> "PiHoleConfig":
+        """Get Pi-hole config API client."""
+        if self._config is None:
+            from pihole_lib.config import PiHoleConfig
+
+            self._config = PiHoleConfig(self)
+        return self._config
+
+    @property
+    def dhcp(self) -> "PiHoleDHCP":
+        """Get Pi-hole DHCP API client."""
+        if self._dhcp is None:
+            from pihole_lib.dhcp import PiHoleDHCP
+
+            self._dhcp = PiHoleDHCP(self)
+        return self._dhcp
+
+    @property
+    def dns(self) -> "PiHoleDNS":
+        """Get Pi-hole DNS API client."""
+        if self._dns is None:
+            from pihole_lib.dns import PiHoleDNS
+
+            self._dns = PiHoleDNS(self)
+        return self._dns
+
+    @property
+    def lists(self) -> "PiHoleLists":
+        """Get Pi-hole lists API client."""
+        if self._lists is None:
+            from pihole_lib.lists import PiHoleLists
+
+            self._lists = PiHoleLists(self)
+        return self._lists
+
+    @property
+    def groups(self) -> "PiHoleGroups":
+        """Get Pi-hole groups API client."""
+        if self._groups is None:
+            from pihole_lib.groups import PiHoleGroups
+
+            self._groups = PiHoleGroups(self)
+        return self._groups
+
+    @property
+    def padd(self) -> "PiHolePADD":
+        """Get Pi-hole PADD API client."""
+        if self._padd is None:
+            from pihole_lib.padd import PiHolePADD
+
+            self._padd = PiHolePADD(self)
+        return self._padd
+
+    @property
+    def stats(self) -> "PiHoleStats":
+        """Get Pi-hole stats API client."""
+        if self._stats is None:
+            from pihole_lib.stats import PiHoleStats
+
+            self._stats = PiHoleStats(self)
+        return self._stats
+
+    @property
+    def domains(self) -> "PiHoleDomains":
+        """Get Pi-hole domains API client."""
+        if self._domains is None:
+            from pihole_lib.domains import PiHoleDomains
+
+            self._domains = PiHoleDomains(self)
+        return self._domains
+
+    @property
+    def network(self) -> "PiHoleNetwork":
+        """Get Pi-hole network API client."""
+        if self._network is None:
+            from pihole_lib.network import PiHoleNetwork
+
+            self._network = PiHoleNetwork(self)
+        return self._network
+
+    @property
+    def clients(self) -> "PiHoleClients":
+        """Get Pi-hole clients API client."""
+        if self._clients is None:
+            from pihole_lib.clients import PiHoleClients
+
+            self._clients = PiHoleClients(self)
+        return self._clients

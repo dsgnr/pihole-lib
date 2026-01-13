@@ -1,29 +1,11 @@
-"""Unit tests for PiHoleActions class."""
+"""Unit tests for PiHoleActions."""
 
 from unittest.mock import Mock, patch
 
 import pytest
 
-from pihole_lib import PiHoleActions, PiHoleClient
-from pihole_lib.exceptions import (
-    PiHoleAPIError,
-    PiHoleAuthenticationError,
-    PiHoleConnectionError,
-    PiHoleServerError,
-)
-
-from .constants import PIHOLE_BASE_URL
-
-
-@pytest.fixture
-def mock_client():
-    """Create a mock PiHoleClient for testing."""
-    client = Mock(spec=PiHoleClient)
-    client.base_url = PIHOLE_BASE_URL
-    client.timeout = 30
-    client.verify_ssl = True
-    client._session_id = "test-session-id"
-    return client
+from pihole_lib import PiHoleActions
+from tests.conftest import EXCEPTION_TEST_CASES, make_mock_response
 
 
 @pytest.fixture
@@ -44,23 +26,26 @@ class TestPiHoleActionsInit:
 class TestUpdateGravity:
     """Test update_gravity method."""
 
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_basic(self, mock_request, actions_client):
-        """Test basic gravity update without color."""
-        # Mock response with streaming content
-        mock_response = Mock()
-        mock_response.iter_lines.return_value = [
+    @pytest.fixture
+    def mock_gravity_response(self):
+        """Create a mock streaming response for gravity update."""
+        response = Mock()
+        response.iter_lines.return_value = [
             "  [✓] DNS resolution is available",
-            "",  # Empty line should be skipped
             "  [i] Neutrino emissions detected...",
             "  [✓] Done.",
         ]
-        mock_request.return_value = mock_response
+        return response
 
-        # Call the method and collect results
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_update_gravity_basic(
+        self, mock_request, actions_client, mock_gravity_response
+    ):
+        """Test basic gravity update without color."""
+        mock_request.return_value = mock_gravity_response
+
         lines = list(actions_client.update_gravity())
 
-        # Verify the request was made correctly
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
@@ -68,323 +53,163 @@ class TestUpdateGravity:
             params=None,
             stream=True,
         )
-
-        # Verify the output (empty lines should be filtered out)
-        expected_lines = [
+        assert lines == [
             "  [✓] DNS resolution is available",
             "  [i] Neutrino emissions detected...",
             "  [✓] Done.",
         ]
-        assert lines == expected_lines
 
+    @pytest.mark.parametrize(
+        "color,expected_params",
+        [
+            (True, {"color": "true"}),
+            (False, None),
+        ],
+    )
     @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_with_color(self, mock_request, actions_client):
-        """Test gravity update with color parameter."""
-        # Mock response with streaming content
-        mock_response = Mock()
-        mock_response.iter_lines.return_value = [
-            "  [✓] DNS resolution is available",
-            "  [i] Neutrino emissions detected...",
-        ]
-        mock_request.return_value = mock_response
-
-        # Call the method with color=True
-        lines = list(actions_client.update_gravity(color=True))
-
-        # Verify the request was made with color parameter
-        mock_request.assert_called_once_with(
-            actions_client._client,
-            "POST",
-            f"{actions_client.BASE_URL}/gravity",
-            params={"color": "true"},
-            stream=True,
-        )
-
-        # Verify the output
-        expected_lines = [
-            "  [✓] DNS resolution is available",
-            "  [i] Neutrino emissions detected...",
-        ]
-        assert lines == expected_lines
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_with_color_false(self, mock_request, actions_client):
-        """Test gravity update with color=False (should not include color param)."""
-        # Mock response
+    def test_update_gravity_color_param(
+        self, mock_request, actions_client, color, expected_params
+    ):
+        """Test gravity update with color parameter variations."""
         mock_response = Mock()
         mock_response.iter_lines.return_value = ["  [✓] Done."]
         mock_request.return_value = mock_response
 
-        # Call the method with color=False
-        list(actions_client.update_gravity(color=False))
+        list(actions_client.update_gravity(color=color))
 
-        # Verify the request was made without color parameter
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
             f"{actions_client.BASE_URL}/gravity",
-            params=None,
+            params=expected_params,
             stream=True,
         )
 
+    @pytest.mark.parametrize(
+        "input_lines,expected_output",
+        [
+            ([], []),
+            (["", "", ""], []),
+            (["  [✓] Start", "", "  [✓] Done", ""], ["  [✓] Start", "  [✓] Done"]),
+        ],
+    )
     @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_empty_response(self, mock_request, actions_client):
-        """Test gravity update with empty response."""
-        # Mock response with no content
+    def test_update_gravity_filters_empty_lines(
+        self, mock_request, actions_client, input_lines, expected_output
+    ):
+        """Test that empty lines are filtered from gravity output."""
         mock_response = Mock()
-        mock_response.iter_lines.return_value = []
+        mock_response.iter_lines.return_value = input_lines
         mock_request.return_value = mock_response
 
-        # Call the method
         lines = list(actions_client.update_gravity())
+        assert lines == expected_output
 
-        # Verify empty result
-        assert lines == []
-
+    @pytest.mark.parametrize("exception_class,message", EXCEPTION_TEST_CASES)
     @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_only_empty_lines(self, mock_request, actions_client):
-        """Test gravity update with only empty lines."""
-        # Mock response with only empty lines
-        mock_response = Mock()
-        mock_response.iter_lines.return_value = ["", "", ""]
-        mock_request.return_value = mock_response
+    def test_update_gravity_exceptions(
+        self, mock_request, actions_client, exception_class, message
+    ):
+        """Test gravity update exception handling."""
+        mock_request.side_effect = exception_class(message)
 
-        # Call the method
-        lines = list(actions_client.update_gravity())
-
-        # Verify empty result (empty lines should be filtered out)
-        assert lines == []
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_connection_error(self, mock_request, actions_client):
-        """Test gravity update with connection error."""
-        mock_request.side_effect = PiHoleConnectionError("Connection failed")
-
-        with pytest.raises(PiHoleConnectionError, match="Connection failed"):
+        with pytest.raises(exception_class, match=message):
             list(actions_client.update_gravity())
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_authentication_error(self, mock_request, actions_client):
-        """Test gravity update with authentication error."""
-        mock_request.side_effect = PiHoleAuthenticationError("Invalid credentials")
-
-        with pytest.raises(PiHoleAuthenticationError, match="Invalid credentials"):
-            list(actions_client.update_gravity())
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_server_error(self, mock_request, actions_client):
-        """Test gravity update with server error."""
-        mock_request.side_effect = PiHoleServerError("Server error: 500")
-
-        with pytest.raises(PiHoleServerError, match="Server error: 500"):
-            list(actions_client.update_gravity())
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_api_error(self, mock_request, actions_client):
-        """Test gravity update with API error."""
-        mock_request.side_effect = PiHoleAPIError("Bad request")
-
-        with pytest.raises(PiHoleAPIError, match="Bad request"):
-            list(actions_client.update_gravity())
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_update_gravity_mixed_content(self, mock_request, actions_client):
-        """Test gravity update with mixed content (empty and non-empty lines)."""
-        # Mock response with mixed content
-        mock_response = Mock()
-        mock_response.iter_lines.return_value = [
-            "  [✓] Starting...",
-            "",
-            "  [i] Processing...",
-            "",
-            "",
-            "  [✓] Done.",
-            "",
-        ]
-        mock_request.return_value = mock_response
-
-        # Call the method
-        lines = list(actions_client.update_gravity())
-
-        # Verify only non-empty lines are returned
-        expected_lines = [
-            "  [✓] Starting...",
-            "  [i] Processing...",
-            "  [✓] Done.",
-        ]
-        assert lines == expected_lines
 
 
 class TestRestartDns:
     """Test restart_dns method."""
 
+    @pytest.mark.parametrize(
+        "status,expected_result",
+        [
+            ("success", True),
+            ("error", False),
+        ],
+    )
     @patch("pihole_lib.actions.make_pihole_request")
-    def test_restart_dns_success(self, mock_request, actions_client):
-        """Test successful DNS restart."""
-        # Mock successful response
-        mock_response = Mock()
-        mock_response.json.return_value = {"status": "success", "took": 0.003}
-        mock_request.return_value = mock_response
+    def test_restart_dns_status_handling(
+        self, mock_request, actions_client, status, expected_result
+    ):
+        """Test DNS restart with various status responses."""
+        mock_request.return_value = make_mock_response(
+            json_data={"status": status, "took": 0.003}
+        )
 
-        # Call the method
         result = actions_client.restart_dns()
 
-        # Verify the request was made correctly
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
             f"{actions_client.BASE_URL}/restartdns",
         )
-
-        # Verify the response
-        assert result is True
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_restart_dns_connection_error(self, mock_request, actions_client):
-        """Test DNS restart with connection error."""
-        mock_request.side_effect = PiHoleConnectionError("Connection failed")
-
-        with pytest.raises(PiHoleConnectionError, match="Connection failed"):
-            actions_client.restart_dns()
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_restart_dns_authentication_error(self, mock_request, actions_client):
-        """Test DNS restart with authentication error."""
-        mock_request.side_effect = PiHoleAuthenticationError("Invalid credentials")
-
-        with pytest.raises(PiHoleAuthenticationError, match="Invalid credentials"):
-            actions_client.restart_dns()
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_restart_dns_server_error(self, mock_request, actions_client):
-        """Test DNS restart with server error."""
-        mock_request.side_effect = PiHoleServerError("Server error: 500")
-
-        with pytest.raises(PiHoleServerError, match="Server error: 500"):
-            actions_client.restart_dns()
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_restart_dns_api_error(self, mock_request, actions_client):
-        """Test DNS restart with API error."""
-        mock_request.side_effect = PiHoleAPIError("Bad request")
-
-        with pytest.raises(PiHoleAPIError, match="Bad request"):
-            actions_client.restart_dns()
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_restart_dns_failure(self, mock_request, actions_client):
-        """Test DNS restart failure."""
-        # Mock failure response
-        mock_response = Mock()
-        mock_response.json.return_value = {"status": "error", "took": 0.001}
-        mock_request.return_value = mock_response
-
-        # Call the method
-        result = actions_client.restart_dns()
-
-        # Verify the response
-        assert result is False
+        assert result is expected_result
 
     @patch("pihole_lib.actions.make_pihole_request")
     def test_restart_dns_missing_status(self, mock_request, actions_client):
         """Test DNS restart with missing status field."""
-        # Mock response without status
-        mock_response = Mock()
-        mock_response.json.return_value = {"took": 0.001}
-        mock_request.return_value = mock_response
+        mock_request.return_value = make_mock_response(json_data={"took": 0.001})
 
-        # Call the method
         result = actions_client.restart_dns()
-
-        # Verify the response (should be False when status is missing)
         assert result is False
 
-
-class TestPiHoleActionsFlush:
-    """Test flush methods."""
-
+    @pytest.mark.parametrize("exception_class,message", EXCEPTION_TEST_CASES)
     @patch("pihole_lib.actions.make_pihole_request")
-    def test_flush_logs_success(self, mock_request, actions_client):
-        """Test successful DNS logs flush."""
-        # Mock successful response
-        mock_response = Mock()
-        mock_response.json.return_value = {"status": "success", "took": 0.001}
-        mock_request.return_value = mock_response
+    def test_restart_dns_exceptions(
+        self, mock_request, actions_client, exception_class, message
+    ):
+        """Test DNS restart exception handling."""
+        mock_request.side_effect = exception_class(message)
 
-        # Call method
-        result = actions_client.flush_logs()
+        with pytest.raises(exception_class, match=message):
+            actions_client.restart_dns()
 
-        # Verify request was made correctly
+
+class TestFlushMethods:
+    """Test flush_logs and flush_network methods."""
+
+    @pytest.mark.parametrize(
+        "method,endpoint",
+        [
+            ("flush_logs", "/flush/logs"),
+            ("flush_network", "/flush/network"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "status,expected_result",
+        [
+            ("success", True),
+            ("error", False),
+        ],
+    )
+    @patch("pihole_lib.actions.make_pihole_request")
+    def test_flush_methods(
+        self, mock_request, actions_client, method, endpoint, status, expected_result
+    ):
+        """Test flush methods with various status responses."""
+        mock_request.return_value = make_mock_response(
+            json_data={"status": status, "took": 0.001}
+        )
+
+        result = getattr(actions_client, method)()
+
         mock_request.assert_called_once_with(
             actions_client._client,
             "POST",
-            f"{actions_client.BASE_URL}/flush/logs",
+            f"{actions_client.BASE_URL}{endpoint}",
         )
+        assert result is expected_result
 
-        # Verify result
-        assert result is True
-
+    @pytest.mark.parametrize("method", ["flush_logs", "flush_network"])
+    @pytest.mark.parametrize(
+        "exception_class,message", EXCEPTION_TEST_CASES[:2]
+    )  # Test subset
     @patch("pihole_lib.actions.make_pihole_request")
-    def test_flush_logs_failure(self, mock_request, actions_client):
-        """Test DNS logs flush failure."""
-        # Mock failure response
-        mock_response = Mock()
-        mock_response.json.return_value = {"status": "error", "took": 0.001}
-        mock_request.return_value = mock_response
+    def test_flush_methods_exceptions(
+        self, mock_request, actions_client, method, exception_class, message
+    ):
+        """Test flush methods exception handling."""
+        mock_request.side_effect = exception_class(message)
 
-        # Call method
-        result = actions_client.flush_logs()
-
-        # Verify result
-        assert result is False
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_flush_logs_connection_error(self, mock_request, actions_client):
-        """Test DNS logs flush with connection error."""
-        mock_request.side_effect = PiHoleConnectionError("Connection failed")
-
-        with pytest.raises(PiHoleConnectionError):
-            actions_client.flush_logs()
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_flush_network_success(self, mock_request, actions_client):
-        """Test successful network table flush."""
-        # Mock successful response
-        mock_response = Mock()
-        mock_response.json.return_value = {"status": "success", "took": 0.001}
-        mock_request.return_value = mock_response
-
-        # Call method
-        result = actions_client.flush_network()
-
-        # Verify request was made correctly
-        mock_request.assert_called_once_with(
-            actions_client._client,
-            "POST",
-            f"{actions_client.BASE_URL}/flush/network",
-        )
-
-        # Verify result
-        assert result is True
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_flush_network_failure(self, mock_request, actions_client):
-        """Test network table flush failure."""
-        # Mock failure response
-        mock_response = Mock()
-        mock_response.json.return_value = {"status": "error", "took": 0.001}
-        mock_request.return_value = mock_response
-
-        # Call method
-        result = actions_client.flush_network()
-
-        # Verify result
-        assert result is False
-
-    @patch("pihole_lib.actions.make_pihole_request")
-    def test_flush_network_authentication_error(self, mock_request, actions_client):
-        """Test network table flush with authentication error."""
-        mock_request.side_effect = PiHoleAuthenticationError("Authentication failed")
-
-        with pytest.raises(PiHoleAuthenticationError):
-            actions_client.flush_network()
+        with pytest.raises(exception_class):
+            getattr(actions_client, method)()

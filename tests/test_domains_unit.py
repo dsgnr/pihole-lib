@@ -1,4 +1,4 @@
-"""Unit tests for PiHoleDomains (no network calls)."""
+"""Unit tests for PiHoleDomains."""
 
 from unittest.mock import Mock, patch
 from urllib.parse import quote
@@ -11,15 +11,14 @@ from pihole_lib.exceptions import (
     PiHoleConnectionError,
     PiHoleServerError,
 )
-from pihole_lib.models import (
+from pihole_lib.models.domains import (
     Domain,
     DomainBatchDeleteItem,
     DomainKind,
     DomainMutationResponse,
     DomainType,
 )
-
-from .constants import (
+from tests.constants import (
     CONNECTION_FAILED_MESSAGE,
     PIHOLE_BASE_URL,
     TEST_SECRET_PASSWORD,
@@ -28,7 +27,7 @@ from .constants import (
 
 
 class TestPiHoleDomainsGetDomains:
-    """Test domain retrieval functionality (no network calls)."""
+    """Test domain retrieval functionality."""
 
     @patch("pihole_lib.domains.make_pihole_request")
     def test_get_domains_all_success(self, mock_request):

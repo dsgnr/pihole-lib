@@ -1,41 +1,36 @@
 """Pi-hole Info API client."""
 
-
-from .base import BasePiHoleAPIClient
-from .models import (
-    ClientInfo,
-    DatabaseInfo,
-    FTLInfo,
-    HostInfo,
-    LoginInfo,
-    MessagesCountInfo,
-    MessagesInfo,
-    SystemInfo,
-    VersionInfo,
-)
-from .utils import make_pihole_request
+from pihole_lib.base import BasePiHoleAPIClient
+from pihole_lib.models.ftl import DatabaseInfo, FTLInfo
+from pihole_lib.models.host import HostInfo
+from pihole_lib.models.messages import MessagesCountInfo, MessagesInfo
+from pihole_lib.models.session import ClientInfo, LoginInfo
+from pihole_lib.models.system import SystemInfo
+from pihole_lib.models.version import VersionInfo
+from pihole_lib.utils import make_pihole_request
 
 
 class PiHoleInfo(BasePiHoleAPIClient):
     """Pi-hole Info API client.
 
-    Handles information endpoints that don't require authentication.
-    Uses a PiHoleClient instance for making requests.
+    Handles information endpoints for system status and diagnostics.
 
     Examples::
 
-        from pihole_lib import PiHoleClient, PiHoleInfo
+        from pihole_lib import PiHoleClient
 
-        # Create client and info instance
-        client = PiHoleClient("http://192.168.1.100", password="secret")
-        info = PiHoleInfo(client)
-        login_info = info.get_login_info()
-        client.close()
-
-        # Or within client context
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
-            info = PiHoleInfo(client)
-            login_info = info.get_login_info()
+            # Get login info
+            login_info = client.info.get_login_info()
+            print(f"DNS running: {login_info.dns}")
+
+            # Get system info
+            system_info = client.info.get_system_info()
+            print(f"Uptime: {system_info.system.uptime}s")
+
+            # Get version info
+            version = client.info.get_version_info()
+            print(f"Pi-hole: {version.version.core.local.version}")
 
     """
 
@@ -44,325 +39,116 @@ class PiHoleInfo(BasePiHoleAPIClient):
     def get_login_info(self) -> LoginInfo:
         """Get login page related information.
 
-        This API hook returns information used on the login page to possibly
-        display messages/warnings.
-
         Returns:
-            LoginInfo: Login page information including HTTPS port, DNS status,
-                      and request processing time.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
+            LoginInfo with HTTPS port and DNS status.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/login",
         )
-
-        data = response.json()
-        return LoginInfo.model_validate(data)
+        return LoginInfo.model_validate(response.json())
 
     def get_client_info(self) -> ClientInfo:
         """Get client request information.
 
-        This API hook returns information about the current HTTP request,
-        including client IP, HTTP version, method, and headers.
-
         Returns:
-            ClientInfo: Client request information including remote address,
-                       HTTP version, method, and headers.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                client_info = info.get_client_info()
-                print(f"Client IP: {client_info.remote_addr}")
-                print(f"HTTP Version: {client_info.http_version}")
-                print(f"Method: {client_info.method}")
-                for header in client_info.headers:
-                    print(f"Header: {header.name} = {header.value}")
-
+            ClientInfo with remote address, HTTP version, method, and headers.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/client",
         )
-
-        data = response.json()
-        return ClientInfo.model_validate(data)
+        return ClientInfo.model_validate(response.json())
 
     def get_database_info(self) -> DatabaseInfo:
         """Get database information.
 
-        This API hook returns a collection of various long-term database properties infos.
-
         Returns:
-            DatabaseInfo: Database information including file size, permissions,
-                         ownership, query counts, and SQLite version.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                db_info = info.get_database_info()
-                print(f"Database size: {db_info.size} bytes")
-                print(f"SQLite version: {db_info.sqlite_version}")
-                print(f"Queries in memory: {db_info.queries}")
-                print(f"Queries on disk: {db_info.queries_disk}")
-                print(f"File owner: {db_info.owner.user.name}")
-
+            DatabaseInfo with file size, permissions, query counts, etc.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/database",
         )
-
-        data = response.json()
-        return DatabaseInfo.model_validate(data)
+        return DatabaseInfo.model_validate(response.json())
 
     def get_ftl_info(self) -> FTLInfo:
-        """Get FTL information.
-
-        This API hook returns runtime information about the FTL process, including
-        database statistics, process details, resource usage, and dnsmasq statistics.
+        """Get FTL runtime information.
 
         Returns:
-            FTLInfo: FTL information including database stats, process info,
-                    resource usage, and dnsmasq statistics.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                ftl_info = info.get_ftl_info()
-                print(f"Process ID: {ftl_info.ftl.pid}")
-                print(f"Uptime: {ftl_info.ftl.uptime} seconds")
-                print(f"Memory usage: {ftl_info.ftl.mem_percent}%")
-                print(f"CPU usage: {ftl_info.ftl.cpu_percent}%")
-                print(f"Gravity domains: {ftl_info.ftl.database.gravity}")
-                print(f"Total clients: {ftl_info.ftl.clients.total}")
-                print(f"Active clients: {ftl_info.ftl.clients.active}")
-
+            FTLInfo with database stats, process info, and resource usage.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/ftl",
         )
-
-        data = response.json()
-        return FTLInfo.model_validate(data)
+        return FTLInfo.model_validate(response.json())
 
     def get_host_info(self) -> HostInfo:
         """Get host system information.
 
-        This API hook returns a collection of host infos.
-
         Returns:
-            HostInfo: Host system information including uname details, hardware model,
-                     and DMI/SMBIOS data.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                host_info = info.get_host_info()
-                print(f"Hostname: {host_info.host.uname.nodename}")
-                print(f"OS: {host_info.host.uname.sysname} {host_info.host.uname.release}")
-                print(f"Architecture: {host_info.host.uname.machine}")
-                print(f"Hardware model: {host_info.host.model}")
-                if host_info.host.dmi.sys.vendor:
-                    print(f"System vendor: {host_info.host.dmi.sys.vendor}")
-
+            HostInfo with uname details, hardware model, and DMI data.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/host",
         )
-
-        data = response.json()
-        return HostInfo.model_validate(data)
+        return HostInfo.model_validate(response.json())
 
     def get_version_info(self) -> VersionInfo:
         """Get Pi-hole version information.
 
-        Request versions of the individual Pi-hole components.
-
         Returns:
-            VersionInfo: Version information for all Pi-hole components including
-                        local and remote versions, git hashes, and build dates.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                version_info = info.get_version_info()
-                print(f"Pi-hole Core: {version_info.version.core.local.version}")
-                print(f"Web Interface: {version_info.version.web.local.version}")
-                print(f"FTL: {version_info.version.ftl.local.version}")
-                print(f"Docker: {version_info.version.docker.local}")
-
-                # Check if updates are available
-                if version_info.version.core.local.version != version_info.version.core.remote.version:
-                    print("Core update available!")
-
+            VersionInfo for all Pi-hole components.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/version",
         )
-
-        data = response.json()
-        return VersionInfo.model_validate(data)
+        return VersionInfo.model_validate(response.json())
 
     def get_system_info(self) -> SystemInfo:
         """Get system resource information.
 
-        This API hook returns comprehensive system resource information including
-        memory usage, CPU statistics, process count, and FTL resource usage.
-
         Returns:
-            SystemInfo: System resource information including uptime, memory usage,
-                       CPU statistics, process count, and FTL resource usage.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                system_info = info.get_system_info()
-                print(f"Uptime: {system_info.system.uptime} seconds")
-                print(f"RAM Usage: {system_info.system.memory.ram.percent_used:.1f}%")
-                print(f"CPU Cores: {system_info.system.cpu.nprocs}")
-                print(f"CPU Usage: {system_info.system.cpu.percent_cpu:.1f}%")
-                print(f"Processes: {system_info.system.procs}")
-                print(f"FTL Memory: {system_info.system.ftl.percent_mem:.2f}%")
-                print(f"Load Average: {system_info.system.cpu.load.raw}")
-
+            SystemInfo with uptime, memory, CPU, and FTL resource usage.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/system",
         )
-
-        data = response.json()
-        return SystemInfo.model_validate(data)
+        return SystemInfo.model_validate(response.json())
 
     def get_messages(self) -> MessagesInfo:
         """Get system messages.
 
-        Request Pi-hole diagnosis messages.
-
         Returns:
-            MessagesInfo: System messages including message ID, timestamp, type,
-                         plain text content, and HTML-formatted content.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                messages_info = info.get_messages()
-                print(f"Total messages: {len(messages_info.messages)}")
-
-                for message in messages_info.messages:
-                    print(f"[{message.type.upper()}] {message.plain}")
-                    print(f"  ID: {message.id}")
-                    print(f"  Time: {message.timestamp}")
-                    print(f"  HTML: {message.html}")
-
+            MessagesInfo with diagnosis messages.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/messages",
         )
-
-        data = response.json()
-        return MessagesInfo.model_validate(data)
+        return MessagesInfo.model_validate(response.json())
 
     def get_messages_count(self) -> MessagesCountInfo:
         """Get system messages count.
 
-        Request number of Pi-hole diagnosis messages.
-
         Returns:
-            MessagesCountInfo: Count of system messages.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
-
-        Examples::
-
-            with PiHoleClient("http://192.168.1.100", password="secret") as client:
-                info = PiHoleInfo(client)
-                messages_count = info.get_messages_count()
-                print(f"Total messages: {messages_count.count}")
-
-                # More efficient than getting all messages if you only need the count
-                if messages_count.count > 0:
-                    print("There are messages to review")
-                else:
-                    print("No messages")
-
+            MessagesCountInfo with message count.
         """
         response = make_pihole_request(
             self._client,
             "GET",
             f"{self.BASE_URL}/messages/count",
         )
-
-        data = response.json()
-        return MessagesCountInfo.model_validate(data)
+        return MessagesCountInfo.model_validate(response.json())

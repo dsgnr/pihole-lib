@@ -1,4 +1,4 @@
-"""Unit tests for PiHoleConfig class."""
+"""Unit tests for PiHoleConfig."""
 
 from unittest.mock import Mock, patch
 
@@ -11,8 +11,7 @@ from pihole_lib.exceptions import (
     PiHoleConnectionError,
     PiHoleServerError,
 )
-
-from .constants import TEST_LOCALHOST_URL
+from tests.constants import TEST_LOCALHOST_URL
 
 
 @pytest.fixture

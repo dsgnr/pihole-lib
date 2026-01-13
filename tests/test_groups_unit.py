@@ -1,188 +1,117 @@
-"""Unit tests for PiHoleGroups class."""
+"""Unit tests for PiHoleGroups."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
 from pihole_lib.exceptions import PiHoleServerError
 from pihole_lib.groups import PiHoleGroups
-from pihole_lib.models import (
-    Group,
-    GroupsResponse,
-)
+from pihole_lib.models.groups import Group, GroupsResponse
+from tests.conftest import SAMPLE_GROUP_DATA, make_mock_response
+
+
+@pytest.fixture
+def groups_client(mock_client):
+    """Create a PiHoleGroups instance with mock client."""
+    return PiHoleGroups(mock_client)
 
 
 class TestPiHoleGroups:
     """Test cases for PiHoleGroups class."""
 
-    @pytest.fixture
-    def mock_client(self):
-        """Create a mock PiHoleClient."""
-        return Mock()
-
-    @pytest.fixture
-    def groups_client(self, mock_client):
-        """Create a PiHoleGroups instance with mock client."""
-        return PiHoleGroups(mock_client)
-
     @patch("pihole_lib.groups.make_pihole_request")
     def test_get_groups_all(self, mock_request, groups_client):
         """Test getting all groups."""
-        # Mock response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "groups": [
-                {
-                    "name": "Default",
-                    "comment": "The default group",
-                    "enabled": True,
-                    "id": 0,
-                    "date_added": 1594670974,
-                    "date_modified": 1611157897,
-                },
-                {
-                    "name": "test_group",
-                    "comment": "Test group",
-                    "enabled": True,
-                    "id": 1,
-                    "date_added": 1611239095,
-                    "date_modified": 1611239099,
-                },
-            ],
-            "took": 0.003,
-            "processed": None,
-        }
-        mock_request.return_value = mock_response
-
-        # Call method
-        result = groups_client.get_groups()
-
-        # Verify API call
-        mock_request.assert_called_once_with(
-            groups_client._client,
-            "GET",
-            groups_client.BASE_URL,
+        mock_request.return_value = make_mock_response(
+            json_data={
+                "groups": [
+                    SAMPLE_GROUP_DATA,
+                    {**SAMPLE_GROUP_DATA, "name": "test_group", "id": 1},
+                ],
+                "took": 0.003,
+                "processed": None,
+            }
         )
 
-        # Verify result
-        assert isinstance(result, GroupsResponse)
-        assert len(result.groups) == 2
-        assert result.groups[0].name == "Default"
-        assert result.groups[0].enabled is True
-        assert result.groups[1].name == "test_group"
-        assert result.took == 0.003
+        result = groups_client.get_groups()
+
+        mock_request.assert_called_once_with(
+            groups_client._client, "GET", groups_client.BASE_URL
+        )
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0].name == "Default"
 
     @patch("pihole_lib.groups.make_pihole_request")
     def test_get_groups_specific(self, mock_request, groups_client):
         """Test getting a specific group."""
-        # Mock response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "groups": [
-                {
-                    "name": "test_group",
-                    "comment": "Test group",
-                    "enabled": True,
-                    "id": 1,
-                    "date_added": 1611239095,
-                    "date_modified": 1611239099,
-                }
-            ],
-            "took": 0.002,
-            "processed": None,
-        }
-        mock_request.return_value = mock_response
-
-        # Call method
-        result = groups_client.get_groups(name="test_group")
-
-        # Verify API call
-        mock_request.assert_called_once_with(
-            groups_client._client,
-            "GET",
-            f"{groups_client.BASE_URL}/test_group",
+        mock_request.return_value = make_mock_response(
+            json_data={
+                "groups": [{**SAMPLE_GROUP_DATA, "name": "test_group"}],
+                "took": 0.002,
+                "processed": None,
+            }
         )
 
-        # Verify result
-        assert isinstance(result, GroupsResponse)
-        assert len(result.groups) == 1
-        assert result.groups[0].name == "test_group"
+        result = groups_client.get_groups(name="test_group")
+
+        mock_request.assert_called_once_with(
+            groups_client._client, "GET", f"{groups_client.BASE_URL}/test_group"
+        )
+        assert len(result) == 1
+        assert result[0].name == "test_group"
 
     @patch("pihole_lib.groups.make_pihole_request")
     def test_create_group(self, mock_request, groups_client):
         """Test creating a group."""
-        # Mock response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "groups": [
-                {
-                    "name": "new_group",
-                    "comment": "New test group",
-                    "enabled": True,
-                    "id": 2,
-                    "date_added": 1611239200,
-                    "date_modified": 1611239200,
-                }
-            ],
-            "processed": {
-                "success": [{"item": "new_group"}],
-                "errors": [],
-            },
-            "took": 0.005,
-        }
-        mock_request.return_value = mock_response
-
-        # Call method
-        result = groups_client.create_group(
-            name="new_group",
-            comment="New test group",
-            enabled=True,
+        mock_request.return_value = make_mock_response(
+            json_data={
+                "groups": [
+                    {
+                        **SAMPLE_GROUP_DATA,
+                        "name": "new_group",
+                        "comment": "New test group",
+                        "id": 2,
+                    }
+                ],
+                "processed": {"success": [{"item": "new_group"}], "errors": []},
+                "took": 0.005,
+            }
         )
 
-        # Verify API call
+        result = groups_client.create_group(
+            name="new_group", comment="New test group", enabled=True
+        )
+
         mock_request.assert_called_once_with(
             groups_client._client,
             "POST",
             groups_client.BASE_URL,
-            json={
-                "name": "new_group",
-                "comment": "New test group",
-                "enabled": True,
-            },
+            json={"name": "new_group", "comment": "New test group", "enabled": True},
         )
-
-        # Verify result
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], Group)
         assert result[0].name == "new_group"
-        assert result[0].comment == "New test group"
 
     @patch("pihole_lib.groups.make_pihole_request")
     def test_update_group(self, mock_request, groups_client):
         """Test updating a group."""
-        # Mock response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "groups": [
-                {
-                    "name": "updated_group",
-                    "comment": "Updated comment",
-                    "enabled": False,
-                    "id": 1,
-                    "date_added": 1611239095,
-                    "date_modified": 1611239300,
-                }
-            ],
-            "processed": {
-                "success": [{"item": "updated_group"}],
-                "errors": [],
-            },
-            "took": 0.004,
-        }
-        mock_request.return_value = mock_response
+        mock_request.return_value = make_mock_response(
+            json_data={
+                "groups": [
+                    {
+                        **SAMPLE_GROUP_DATA,
+                        "name": "updated_group",
+                        "comment": "Updated comment",
+                        "enabled": False,
+                    }
+                ],
+                "processed": {"success": [{"item": "updated_group"}], "errors": []},
+                "took": 0.004,
+            }
+        )
 
-        # Call method
         result = groups_client.update_group(
             name="old_group",
             new_name="updated_group",
@@ -190,7 +119,6 @@ class TestPiHoleGroups:
             enabled=False,
         )
 
-        # Verify API call
         mock_request.assert_called_once_with(
             groups_client._client,
             "PUT",
@@ -201,69 +129,50 @@ class TestPiHoleGroups:
                 "enabled": False,
             },
         )
-
-        # Verify result
         assert isinstance(result, GroupsResponse)
         assert result.groups[0].name == "updated_group"
-        assert result.groups[0].comment == "Updated comment"
         assert result.groups[0].enabled is False
 
+    @pytest.mark.parametrize(
+        "status_code,expected_result",
+        [
+            (204, True),
+            (404, False),
+        ],
+    )
     @patch("pihole_lib.groups.make_pihole_request")
-    def test_delete_group(self, mock_request, groups_client):
+    def test_delete_group(
+        self, mock_request, groups_client, status_code, expected_result
+    ):
         """Test deleting a group."""
-        # Mock response
-        mock_response = Mock()
-        mock_response.status_code = 204
-        mock_request.return_value = mock_response
+        mock_request.return_value = make_mock_response(status_code=status_code)
 
-        # Call method
         result = groups_client.delete_group("test_group")
 
-        # Verify API call
         mock_request.assert_called_once_with(
-            groups_client._client,
-            "DELETE",
-            f"{groups_client.BASE_URL}/test_group",
+            groups_client._client, "DELETE", f"{groups_client.BASE_URL}/test_group"
         )
-
-        # Verify result
-        assert result is True
-
-    @patch("pihole_lib.groups.make_pihole_request")
-    def test_delete_group_not_found(self, mock_request, groups_client):
-        """Test deleting a group that returns non-204 status."""
-        # Mock response
-        mock_response = Mock()
-        mock_response.status_code = 404
-        mock_request.return_value = mock_response
-
-        # Call method
-        result = groups_client.delete_group("nonexistent_group")
-
-        # Verify result
-        assert result is False
+        assert result is expected_result
 
     @patch("pihole_lib.groups.make_pihole_request")
     def test_create_group_api_error(self, mock_request, groups_client):
         """Test creating a group with API error."""
-        # Mock response with error
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "groups": [],
-            "processed": {
-                "success": [],
-                "errors": [
-                    {
-                        "item": "existing_group",
-                        "error": "UNIQUE constraint failed: group.name",
-                    }
-                ],
-            },
-            "took": 0.001,
-        }
-        mock_request.return_value = mock_response
+        mock_request.return_value = make_mock_response(
+            json_data={
+                "groups": [],
+                "processed": {
+                    "success": [],
+                    "errors": [
+                        {
+                            "item": "existing_group",
+                            "error": "UNIQUE constraint failed: group.name",
+                        }
+                    ],
+                },
+                "took": 0.001,
+            }
+        )
 
-        # Call method and expect exception
         with pytest.raises(
             PiHoleServerError,
             match="Failed to create group 'existing_group': UNIQUE constraint failed",

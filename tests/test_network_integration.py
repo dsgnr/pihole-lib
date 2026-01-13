@@ -1,35 +1,17 @@
-"""Integration tests for Pi-hole network API client."""
+"""Integration tests for PiHoleNetwork."""
 
-import pytest
-
-from pihole_lib import PiHoleClient, PiHoleNetwork
-
-from .constants import PIHOLE_BASE_URL, PIHOLE_TEST_PASSWORD
+from pihole_lib import PiHoleNetwork
+from tests.conftest import integration
 
 
-@pytest.fixture
-def pihole_client(pihole_container):
-    """Create an authenticated Pi-hole client."""
-    with PiHoleClient(
-        base_url=PIHOLE_BASE_URL,
-        password=PIHOLE_TEST_PASSWORD,
-        verify_ssl=False,
-    ) as client:
-        yield client
-
-
-@pytest.fixture
-def network_client(pihole_client):
-    """Create a network API client."""
-    return PiHoleNetwork(pihole_client)
-
-
+@integration
 class TestPiHoleNetworkIntegration:
     """Integration test cases for PiHoleNetwork class."""
 
-    def test_get_devices(self, network_client):
+    def test_get_devices(self, pihole_client):
         """Test device retrieval."""
-        result = network_client.get_devices()
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_devices()
 
         assert hasattr(result, "devices")
         assert hasattr(result, "took")
@@ -38,13 +20,14 @@ class TestPiHoleNetworkIntegration:
         assert result.took > 0
 
         # Test with parameters
-        result_with_params = network_client.get_devices(max_devices=5, max_addresses=3)
+        result_with_params = network.get_devices(max_devices=5, max_addresses=3)
         assert hasattr(result_with_params, "devices")
         assert isinstance(result_with_params.devices, list)
 
-    def test_get_gateway(self, network_client):
+    def test_get_gateway(self, pihole_client):
         """Test gateway retrieval."""
-        result = network_client.get_gateway()
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_gateway()
 
         assert hasattr(result, "gateway")
         assert hasattr(result, "took")
@@ -60,9 +43,10 @@ class TestPiHoleNetworkIntegration:
             assert hasattr(gateway, "local")
             assert isinstance(gateway.local, list)
 
-    def test_get_gateway_detailed(self, network_client):
+    def test_get_gateway_detailed(self, pihole_client):
         """Test detailed gateway retrieval."""
-        result = network_client.get_gateway(detailed=True)
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_gateway(detailed=True)
 
         assert hasattr(result, "gateway")
         assert hasattr(result, "routes")
@@ -74,9 +58,10 @@ class TestPiHoleNetworkIntegration:
         assert isinstance(result.took, float)
         assert result.took > 0
 
-    def test_get_interfaces(self, network_client):
+    def test_get_interfaces(self, pihole_client):
         """Test interface retrieval."""
-        result = network_client.get_interfaces()
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_interfaces()
 
         assert hasattr(result, "interfaces")
         assert hasattr(result, "took")
@@ -111,9 +96,10 @@ class TestPiHoleNetworkIntegration:
             assert isinstance(stats.tx_bytes, dict)
             assert isinstance(stats.bits, int)
 
-    def test_get_interfaces_detailed(self, network_client):
+    def test_get_interfaces_detailed(self, pihole_client):
         """Test detailed interface retrieval."""
-        result = network_client.get_interfaces(detailed=True)
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_interfaces(detailed=True)
 
         assert hasattr(result, "interfaces")
         assert hasattr(result, "took")
@@ -124,9 +110,10 @@ class TestPiHoleNetworkIntegration:
         # Should have at least one interface
         assert len(result.interfaces) > 0
 
-    def test_get_routes(self, network_client):
+    def test_get_routes(self, pihole_client):
         """Test route retrieval."""
-        result = network_client.get_routes()
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_routes()
 
         assert hasattr(result, "routes")
         assert hasattr(result, "took")
@@ -150,9 +137,10 @@ class TestPiHoleNetworkIntegration:
             assert isinstance(route.table, int)
             assert isinstance(route.flags, list)
 
-    def test_get_routes_detailed(self, network_client):
+    def test_get_routes_detailed(self, pihole_client):
         """Test detailed route retrieval."""
-        result = network_client.get_routes(detailed=True)
+        network = PiHoleNetwork(pihole_client)
+        result = network.get_routes(detailed=True)
 
         assert hasattr(result, "routes")
         assert hasattr(result, "took")
@@ -163,12 +151,14 @@ class TestPiHoleNetworkIntegration:
         # Should have at least one route
         assert len(result.routes) > 0
 
-    def test_delete_device_nonexistent(self, network_client):
+    def test_delete_device_nonexistent(self, pihole_client):
         """Test deleting a non-existent device."""
+        network = PiHoleNetwork(pihole_client)
+
         # This should not raise an error, just return a response
         # The actual behavior depends on Pi-hole implementation
         try:
-            result = network_client.delete_device(99999)
+            result = network.delete_device(99999)
             assert hasattr(result, "took")
             assert isinstance(result.took, float)
         except Exception:
@@ -187,13 +177,15 @@ class TestPiHoleNetworkIntegration:
         network2 = pihole_client.network
         assert network is network2
 
-    def test_network_endpoints_consistency(self, network_client):
+    def test_network_endpoints_consistency(self, pihole_client):
         """Test that all network endpoints return consistent data structures."""
+        network = PiHoleNetwork(pihole_client)
+
         # Get all network information
-        devices = network_client.get_devices()
-        gateway = network_client.get_gateway()
-        interfaces = network_client.get_interfaces()
-        routes = network_client.get_routes()
+        devices = network.get_devices()
+        gateway = network.get_gateway()
+        interfaces = network.get_interfaces()
+        routes = network.get_routes()
 
         # All should have 'took' field
         for result in [devices, gateway, interfaces, routes]:
@@ -202,9 +194,9 @@ class TestPiHoleNetworkIntegration:
             assert result.took > 0
 
         # Test detailed versions
-        gateway_detailed = network_client.get_gateway(detailed=True)
-        interfaces_detailed = network_client.get_interfaces(detailed=True)
-        routes_detailed = network_client.get_routes(detailed=True)
+        gateway_detailed = network.get_gateway(detailed=True)
+        interfaces_detailed = network.get_interfaces(detailed=True)
+        routes_detailed = network.get_routes(detailed=True)
 
         for result in [gateway_detailed, interfaces_detailed, routes_detailed]:
             assert hasattr(result, "took")

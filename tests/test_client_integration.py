@@ -1,4 +1,4 @@
-"""Integration tests for PiHoleClient against real Pi-hole."""
+"""Integration tests for PiHoleClient."""
 
 import pytest
 
@@ -7,8 +7,8 @@ from pihole_lib.exceptions import (
     PiHoleAuthenticationError,
     PiHoleConnectionError,
 )
-
-from .constants import (
+from tests.conftest import integration
+from tests.constants import (
     CONNECTION_FAILED_MESSAGE,
     PIHOLE_BASE_URL,
     PIHOLE_TEST_PASSWORD,
@@ -19,6 +19,7 @@ from .constants import (
 )
 
 
+@integration
 class TestPiHoleClientAuthentication:
     """Test authentication against real Pi-hole."""
 
@@ -84,6 +85,7 @@ class TestPiHoleClientAuthentication:
         client.close()
 
 
+@integration
 class TestPiHoleClientContextManager:
     """Test context manager functionality with real Pi-hole."""
 
@@ -126,6 +128,7 @@ class TestPiHoleClientContextManager:
         assert client.get_session_id() is None
 
 
+@integration
 class TestPiHoleClientSessionCleanup:
     """Test session cleanup with real Pi-hole."""
 
@@ -174,6 +177,7 @@ class TestPiHoleClientSessionCleanup:
         assert client._session_id is None
 
 
+@integration
 class TestPiHoleClientWorkflows:
     """Test complete client workflows with real Pi-hole."""
 

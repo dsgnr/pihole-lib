@@ -1,4 +1,4 @@
-"""Unit tests for Pi-hole Stats API client."""
+"""Unit tests for PiHoleStats."""
 
 import time
 from unittest.mock import Mock, patch

@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .client import PiHoleClient
+    from pihole_lib.client import PiHoleClient
 
 
 class BasePiHoleAPIClient:
@@ -13,6 +13,9 @@ class BasePiHoleAPIClient:
     """
 
     __slots__ = ("_client",)
+
+    # Subclasses should override this
+    BASE_URL: str = ""
 
     def __init__(self, client: "PiHoleClient") -> None:
         """Initialize the API client.

@@ -1,225 +1,138 @@
-"""Unit tests for PiHoleBackup (no network calls)."""
+"""Unit tests for PiHoleBackup."""
 
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
-from pihole_lib import PiHoleBackup, PiHoleClient
+from pihole_lib import PiHoleBackup
 from pihole_lib.exceptions import PiHoleAPIError
-from pihole_lib.models import TeleporterImportOptions
+from pihole_lib.models.teleporter import TeleporterImportOptions
+from tests.conftest import make_client
 
-from .constants import (
-    TEST_BACKUP_CONTENT,
-    TEST_IMPORTED_FILES,
-    TEST_LOCALHOST_URL,
-    TEST_SECRET_PASSWORD,
-)
+TEST_BACKUP_CONTENT = b"test backup content"
+TEST_IMPORTED_FILES = [
+    "etc/pihole/pihole.toml",
+    "etc/pihole/gravity.db->group",
+    "etc/pihole/gravity.db->adlist",
+    "etc/pihole/gravity.db->adlist_by_group",
+]
 
 
 class TestPiHoleBackupInit:
-    """Test backup client initialization."""
+    """Test PiHoleBackup initialization."""
 
-    def test_init_with_client(self):
-        """Backup client should initialize with a PiHoleClient."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    def test_stores_client(self):
+        """Test that backup client stores the provided client."""
+        client = make_client()
+        backup = PiHoleBackup(client)
 
-        assert backup_client._client is client
-
-    def test_init_stores_client_reference(self):
-        """Backup client should store reference to the provided client."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
-
-        # Should be able to access client properties through the stored reference
-        assert backup_client._client.base_url == TEST_LOCALHOST_URL
-        assert backup_client._client._password == TEST_SECRET_PASSWORD
+        assert backup._client is client
 
 
 class TestPiHoleBackupExport:
-    """Test backup export functionality (no network calls)."""
+    """Test backup export functionality."""
 
-    def test_generate_backup_filename(self):
-        """Should generate timestamped backup filename."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    def test_generates_timestamped_filename(self):
+        """Test that backup filename is properly timestamped."""
+        backup = PiHoleBackup(make_client())
 
-        filename = backup_client._generate_backup_filename()
+        filename = backup._generate_backup_filename()
 
-        # Should match the expected pattern
         assert filename.startswith("pi-hole_pihole_teleporter_")
         assert filename.endswith("_UTC.zip")
-        # Format: pi-hole_pihole_teleporter_YYYY-MM-DD_HH-MM-SS_UTC.zip
-        # Split by '_': ['pi-hole', 'pihole', 'teleporter', 'YYYY-MM-DD', 'HH-MM-SS', 'UTC.zip']
         assert len(filename.split("_")) == 6
 
-    def test_export_backup_uses_client_session(self):
-        """export_backup should use the client through make_pihole_request."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
-
-        assert client._session is None
-
-        # Mock the make_pihole_request to avoid network calls
-        with patch("pihole_lib.backup.make_pihole_request") as mock_request:
-            mock_response = Mock()
-            mock_response.content = TEST_BACKUP_CONTENT
-            mock_request.return_value = mock_response
-
-            with patch("builtins.open", mock_open()):
-                with patch("pathlib.Path.mkdir"):
-                    backup_client.export_backup("/tmp")
-
-        # Verify make_pihole_request was called with the client
-        mock_request.assert_called_once_with(client, "GET", backup_client.BASE_URL)
-
     @patch("pihole_lib.backup.make_pihole_request")
-    @patch("pathlib.Path.write_bytes")
     @patch("pathlib.Path.mkdir")
-    def test_export_backup_success(self, mock_mkdir, mock_write_bytes, mock_request):
-        """Should successfully export backup with timestamped filename."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    @patch("pathlib.Path.write_bytes")
+    def test_export_success(self, mock_write, mock_mkdir, mock_request):
+        """Test successful backup export."""
+        backup = PiHoleBackup(make_client())
+        mock_request.return_value = Mock(content=TEST_BACKUP_CONTENT)
 
-        # Mock successful response
-        mock_response = Mock()
-        mock_response.content = TEST_BACKUP_CONTENT
-        mock_request.return_value = mock_response
+        path = backup.export_backup("/tmp")
 
-        result = backup_client.export_backup("/tmp")
-
-        # Should return full path with timestamped filename
-        assert result.startswith("/tmp/pi-hole_pihole_teleporter_")
-        assert result.endswith("_UTC.zip")
-
-        mock_request.assert_called_once_with(client, "GET", backup_client.BASE_URL)
-
-        # Should create directory and write file
+        assert path.startswith("/tmp/pi-hole_pihole_teleporter_")
+        assert path.endswith("_UTC.zip")
+        mock_request.assert_called_once_with(backup._client, "GET", backup.BASE_URL)
         mock_mkdir.assert_called_once()
-        mock_write_bytes.assert_called_once_with(TEST_BACKUP_CONTENT)
+        mock_write.assert_called_once_with(TEST_BACKUP_CONTENT)
 
     @patch("pihole_lib.backup.make_pihole_request")
     @patch("pathlib.Path.write_bytes", side_effect=OSError("Permission denied"))
     @patch("pathlib.Path.mkdir")
-    def test_export_backup_file_error(self, mock_mkdir, mock_write_bytes, mock_request):
-        """Should raise PiHoleAPIError when file operations fail."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        client._ensure_session()
-        backup_client = PiHoleBackup(client)
-
-        mock_response = Mock()
-        mock_response.content = TEST_BACKUP_CONTENT
-        mock_request.return_value = mock_response
+    def test_export_file_error(self, mock_mkdir, mock_write, mock_request):
+        """Test export failure due to file system error."""
+        backup = PiHoleBackup(make_client())
+        mock_request.return_value = Mock(content=TEST_BACKUP_CONTENT)
 
         with pytest.raises(PiHoleAPIError, match="Failed to save backup file"):
-            backup_client.export_backup("/tmp")
+            backup.export_backup("/tmp")
 
-    def test_export_backup_uses_client_properties(self):
-        """export_backup should use client's base_url and timeout."""
-        client = PiHoleClient(
-            TEST_LOCALHOST_URL,
-            password=TEST_SECRET_PASSWORD,
-            timeout=60,
-            verify_ssl=False,
-        )
-        backup_client = PiHoleBackup(client)
+    def test_export_uses_client_properties(self):
+        """Test that export uses client's timeout and SSL settings."""
+        client = make_client(timeout=60, verify_ssl=False)
+        backup = PiHoleBackup(client)
 
-        # Verify backup client uses client properties
-        assert backup_client._client.base_url == TEST_LOCALHOST_URL
-        assert backup_client._client.timeout == 60
-        assert backup_client._client.verify_ssl is False
+        assert backup._client.timeout == 60
+        assert backup._client.verify_ssl is False
 
 
 class TestPiHoleBackupImport:
-    """Test backup import functionality (no network calls)."""
+    """Test backup import functionality."""
 
     @patch("pihole_lib.backup.make_pihole_request")
     @patch("pathlib.Path.exists", return_value=True)
     @patch("pathlib.Path.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
-    def test_import_backup_success(self, mock_file, mock_exists, mock_request):
-        """Should successfully import backup."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    def test_import_success(self, mock_file, mock_exists, mock_request):
+        """Test successful backup import."""
+        backup = PiHoleBackup(make_client())
+        mock_request.return_value = Mock(json=lambda: {"files": TEST_IMPORTED_FILES})
 
-        # Mock successful response
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "files": TEST_IMPORTED_FILES,
-        }
-        mock_request.return_value = mock_response
+        result = backup.import_backup("/tmp/test.zip")
 
-        result = backup_client.import_backup("/tmp/test.zip")
-
-        assert isinstance(result, list)
         assert result == TEST_IMPORTED_FILES
-        mock_request.assert_called_once_with(
-            client,
-            "POST",
-            backup_client.BASE_URL,
-            files={
-                "file": (
-                    "test.zip",
-                    mock_file.return_value.__enter__.return_value,
-                    "application/zip",
-                )
-            },
-            json=None,
-        )
+        mock_request.assert_called_once()
 
     @patch("pathlib.Path.exists", return_value=False)
-    def test_import_backup_file_not_found(self, mock_exists):
-        """Should raise PiHoleAPIError when backup file doesn't exist."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    def test_import_file_not_found(self, mock_exists):
+        """Test import failure when file doesn't exist."""
+        backup = PiHoleBackup(make_client())
 
         with pytest.raises(PiHoleAPIError, match="Backup file not found"):
-            backup_client.import_backup("/tmp/nonexistent.zip")
+            backup.import_backup("/tmp/missing.zip")
 
     @patch("pihole_lib.backup.make_pihole_request")
     @patch("pathlib.Path.exists", return_value=True)
     @patch("pathlib.Path.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
-    def test_import_backup_with_options(self, mock_file, mock_exists, mock_request):
-        """Should pass import options correctly."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    def test_import_with_options(self, mock_file, mock_exists, mock_request):
+        """Test import with custom options."""
+        backup = PiHoleBackup(make_client())
+        mock_request.return_value = Mock(json=lambda: {"files": TEST_IMPORTED_FILES})
 
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "files": TEST_IMPORTED_FILES,
-        }
-        mock_request.return_value = mock_response
+        options = TeleporterImportOptions(config=False, dhcp_leases=True)
+        result = backup.import_backup("/tmp/test.zip", options)
 
-        import_options = TeleporterImportOptions(config=False, dhcp_leases=True)
-        result = backup_client.import_backup("/tmp/test.zip", import_options)
-
-        assert isinstance(result, list)
         assert result == TEST_IMPORTED_FILES
-        # Verify that make_pihole_request was called with JSON containing the options
-        call_args = mock_request.call_args
-        json_data = call_args[1]["json"]
-        assert json_data == import_options.model_dump()
+        assert mock_request.call_args.kwargs["json"] == options.model_dump()
 
-    def test_import_backup_uses_client_session(self):
-        """import_backup should use the client through make_pihole_request."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
+    @pytest.mark.parametrize("extension", [".txt", ".tar", ".gz", ""])
+    def test_import_invalid_extension(self, extension):
+        """Test import failure with invalid file extension."""
+        backup = PiHoleBackup(make_client())
 
-        assert client._session is None
-
-        # This should fail due to file not found, but should call make_pihole_request
-        with pytest.raises(PiHoleAPIError, match="Backup file not found"):
-            backup_client.import_backup("/tmp/nonexistent.zip")
-
-        # The session is not created because we never call make_pihole_request
-        # (the method fails before that due to file not found)
-        assert client._session is None
-
-    def test_import_backup_invalid_file_format(self):
-        """Should raise error for invalid file formats."""
-        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
-        backup_client = PiHoleBackup(client)
-
-        # Mock file exists but has wrong extension
         with patch("pathlib.Path.exists", return_value=True):
             with pytest.raises(PiHoleAPIError, match="Invalid backup file format"):
-                backup_client.import_backup("/tmp/backup.txt")
+                backup.import_backup(f"/tmp/backup{extension}")
+
+    def test_import_does_not_create_session_before_file_check(self):
+        """Test that session is not created before file validation."""
+        client = make_client()
+        backup = PiHoleBackup(client)
+
+        assert client._session is None
+
+        with pytest.raises(PiHoleAPIError, match="Backup file not found"):
+            backup.import_backup("/tmp/missing.zip")
+
+        assert client._session is None

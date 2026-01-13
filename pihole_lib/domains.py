@@ -2,9 +2,9 @@
 
 from urllib.parse import quote
 
-from .base import BasePiHoleAPIClient
-from .exceptions import PiHoleAPIError
-from .models import (
+from pihole_lib.base import BasePiHoleAPIClient
+from pihole_lib.exceptions import PiHoleAPIError
+from pihole_lib.models.domains import (
     Domain,
     DomainBatchDeleteItem,
     DomainKind,
@@ -13,7 +13,7 @@ from .models import (
     DomainsResponse,
     DomainType,
 )
-from .utils import make_pihole_request
+from pihole_lib.utils import make_pihole_request
 
 
 class PiHoleDomains(BasePiHoleAPIClient):

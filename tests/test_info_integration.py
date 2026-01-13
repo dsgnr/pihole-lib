@@ -1,12 +1,12 @@
-"""Integration tests for PiHoleInfo against real Pi-hole."""
+"""Integration tests for PiHoleInfo."""
 
 import pytest
 
 from pihole_lib import PiHoleClient, PiHoleInfo
 from pihole_lib.exceptions import PiHoleConnectionError
-from pihole_lib.models import ClientInfo, LoginInfo
-
-from .constants import (
+from pihole_lib.models.session import ClientInfo, LoginInfo
+from tests.conftest import integration
+from tests.constants import (
     CONNECTION_FAILED_MESSAGE,
     PIHOLE_BASE_URL,
     PIHOLE_TEST_PASSWORD,
@@ -14,6 +14,7 @@ from .constants import (
 )
 
 
+@integration
 class TestPiHoleInfoLoginInfo:
     """Test login info functionality against real Pi-hole."""
 
@@ -77,6 +78,7 @@ class TestPiHoleInfoLoginInfo:
             assert client.is_authenticated()  # Client context manager authenticates
 
 
+@integration
 class TestPiHoleInfoWorkflows:
     """Test complete info client workflows with real Pi-hole."""
 
@@ -137,6 +139,7 @@ class TestPiHoleInfoWorkflows:
         client.close()
 
 
+@integration
 class TestPiHoleInfoClientInfo:
     """Test client info functionality against real Pi-hole."""
 
@@ -199,6 +202,7 @@ class TestPiHoleInfoClientInfo:
             assert "localhost:8080" in host_header.value
 
 
+@integration
 class TestPiHoleInfoDatabaseInfo:
     """Test database info functionality against real Pi-hole."""
 
@@ -295,6 +299,7 @@ class TestPiHoleInfoDatabaseInfo:
             assert db_info.earliest_timestamp_disk >= 0
 
 
+@integration
 class TestPiHoleInfoFTLInfo:
     """Test FTL info functionality against real Pi-hole."""
 
@@ -422,6 +427,7 @@ class TestPiHoleInfoFTLInfo:
             assert ftl_info.ftl.clients.active <= ftl_info.ftl.clients.total
 
 
+@integration
 class TestPiHoleInfoHostInfo:
     """Test host info functionality against real Pi-hole."""
 
@@ -540,6 +546,7 @@ class TestPiHoleInfoHostInfo:
             assert len(version_parts) >= 2  # At least major.minor
 
 
+@integration
 class TestPiHoleInfoVersionInfo:
     """Test version info functionality against real Pi-hole."""
 
@@ -690,6 +697,7 @@ class TestPiHoleInfoVersionInfo:
                     assert component.remote.hash.isalnum()
 
 
+@integration
 class TestPiHoleInfoSystemInfo:
     """Test system info functionality against real Pi-hole."""
 
@@ -841,6 +849,7 @@ class TestPiHoleInfoSystemInfo:
                 assert abs(load.percent[i] - expected_percent) < 0.1
 
 
+@integration
 class TestPiHoleInfoMessagesInfo:
     """Test messages info functionality against real Pi-hole."""
 
@@ -946,6 +955,7 @@ class TestPiHoleInfoMessagesInfo:
                 assert len(html_text.strip()) > 0
 
 
+@integration
 class TestPiHoleInfoMessagesCountInfo:
     """Test messages count info functionality against real Pi-hole."""
 

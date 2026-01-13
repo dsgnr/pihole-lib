@@ -1,82 +1,48 @@
-"""Integration tests for PiHoleGroups class."""
+"""Integration tests for PiHoleGroups."""
 
-import pytest
-
-from pihole_lib import PiHoleClient, PiHoleGroups
+from pihole_lib import PiHoleGroups
 from pihole_lib.exceptions import PiHoleServerError
-from pihole_lib.models import GroupsResponse
-from tests.constants import PIHOLE_BASE_URL, PIHOLE_TEST_PASSWORD
+from pihole_lib.models.groups import GroupsResponse
+from tests.conftest import integration
 
 
+@integration
 class TestPiHoleGroupsIntegration:
     """Integration tests for PiHoleGroups against real Pi-hole instance."""
 
-    @pytest.fixture(scope="class")
-    def pihole_container(self):
-        """Start Pi-hole container for testing."""
-        pytest.importorskip("docker")
-        import docker
-
-        client = docker.from_env()
-
-        # Check if container is already running
-        try:
-            container = client.containers.get("pihole-test")
-            if container.status != "running":
-                container.start()
-        except docker.errors.NotFound:
-            pytest.skip("Pi-hole test container not available")
-
-        yield container
-
-    @pytest.fixture
-    def groups_client(self, pihole_container):
-        """Create authenticated PiHoleGroups client."""
-        client = PiHoleClient(
-            base_url=PIHOLE_BASE_URL, password=PIHOLE_TEST_PASSWORD, verify_ssl=False
-        )
-        client._ensure_session()
-        client._authenticate()
-        return PiHoleGroups(client)
-
-    def test_get_groups_integration(self, groups_client):
+    def test_get_groups_integration(self, pihole_client):
         """Test getting groups from real Pi-hole instance."""
+        groups = PiHoleGroups(pihole_client)
+
         # Get all groups
-        result = groups_client.get_groups()
+        result = groups.get_groups()
 
         # Verify result structure
-        assert isinstance(result, GroupsResponse)
-        assert hasattr(result, "groups")
-        assert hasattr(result, "took")
-        assert hasattr(result, "processed")
-
-        # Validate data types
-        assert isinstance(result.groups, list)
-        assert isinstance(result.took, float)
-        assert result.processed is None  # GET operations don't have processed results
+        assert isinstance(result, list)
 
         # Should have at least the default group
-        assert len(result.groups) >= 1
+        assert len(result) >= 1
 
         # Check default group exists
-        default_group = next((g for g in result.groups if g.name == "Default"), None)
+        default_group = next((g for g in result if g.name == "Default"), None)
         assert default_group is not None
         assert default_group.id == 0
         assert isinstance(default_group.enabled, bool)
 
-    def test_group_crud_operations_integration(self, groups_client):
+    def test_group_crud_operations_integration(self, pihole_client):
         """Test complete CRUD operations for groups against real Pi-hole instance."""
+        groups = PiHoleGroups(pihole_client)
         test_group_name = "test-integration-group"
 
         # Clean up any existing test group first
         try:
-            groups_client.delete_group(test_group_name)
+            groups.delete_group(test_group_name)
         except Exception:
             pass  # Ignore if group doesn't exist
 
         try:
             # 1. Create a new group
-            create_result = groups_client.create_group(
+            create_result = groups.create_group(
                 name=test_group_name,
                 comment="Integration test group",
                 enabled=True,
@@ -96,13 +62,13 @@ class TestPiHoleGroupsIntegration:
             assert isinstance(created_group.id, int)
 
             # 2. Read the group back
-            get_result = groups_client.get_groups(name=test_group_name)
-            assert isinstance(get_result, GroupsResponse)
-            assert len(get_result.groups) == 1
-            assert get_result.groups[0].name == test_group_name
+            get_result = groups.get_groups(name=test_group_name)
+            assert isinstance(get_result, list)
+            assert len(get_result) == 1
+            assert get_result[0].name == test_group_name
 
             # 3. Update the group
-            update_result = groups_client.update_group(
+            update_result = groups.update_group(
                 name=test_group_name,
                 new_name=f"{test_group_name}-updated",
                 comment="Updated integration test group",
@@ -111,33 +77,25 @@ class TestPiHoleGroupsIntegration:
 
             assert isinstance(update_result, GroupsResponse)
 
-            # The Pi-hole API behavior for updates is inconsistent:
-            # - It may return the old group name in the response
-            # - It may report a UNIQUE constraint error in processed.errors
-            # - But the update actually succeeds
-            # So we need to verify by fetching the group with the new name
-
             # Verify the group was actually updated by fetching it
-            check_result = groups_client.get_groups(name=f"{test_group_name}-updated")
-            assert len(check_result.groups) == 1
-            updated_group = check_result.groups[0]
+            check_result = groups.get_groups(name=f"{test_group_name}-updated")
+            assert len(check_result) == 1
+            updated_group = check_result[0]
 
             assert updated_group.name == f"{test_group_name}-updated"
             assert updated_group.comment == "Updated integration test group"
             assert updated_group.enabled is False
-            assert updated_group.comment == "Updated integration test group"
-            assert updated_group.enabled is False
 
             # 4. Delete the group
-            delete_result = groups_client.delete_group(f"{test_group_name}-updated")
+            delete_result = groups.delete_group(f"{test_group_name}-updated")
             assert delete_result is True
 
             # 5. Verify group is deleted
-            final_result = groups_client.get_groups()
+            final_result = groups.get_groups()
             deleted_group = next(
                 (
                     g
-                    for g in final_result.groups
+                    for g in final_result
                     if g.name in [test_group_name, f"{test_group_name}-updated"]
                 ),
                 None,
@@ -147,64 +105,67 @@ class TestPiHoleGroupsIntegration:
         finally:
             # Clean up in case of test failure
             try:
-                groups_client.delete_group(test_group_name)
-                groups_client.delete_group(f"{test_group_name}-updated")
+                groups.delete_group(test_group_name)
+                groups.delete_group(f"{test_group_name}-updated")
             except Exception:
                 pass
 
-    def test_batch_operations_integration(self, groups_client):
+    def test_batch_operations_integration(self, pihole_client):
         """Test multiple group operations against real Pi-hole instance."""
+        groups = PiHoleGroups(pihole_client)
         test_groups = ["batch-test-1", "batch-test-2", "batch-test-3"]
 
         # Clean up any existing test groups first
         for group_name in test_groups:
             try:
-                groups_client.delete_group(group_name)
+                groups.delete_group(group_name)
             except Exception:
                 pass
 
         try:
             # Create multiple groups using individual creates
             for group_name in test_groups:
-                groups_client.create_group(
+                groups.create_group(
                     name=group_name,
                     comment=f"Batch test group {group_name}",
                     enabled=True,
                 )
 
             # Verify all groups were created
-            all_groups = groups_client.get_groups()
-            created_groups = [g for g in all_groups.groups if g.name in test_groups]
+            all_groups = groups.get_groups()
+            created_groups = [g for g in all_groups if g.name in test_groups]
             assert len(created_groups) == 3
 
             # Delete the groups individually
             for group_name in test_groups:
-                success = groups_client.delete_group(group_name)
+                success = groups.delete_group(group_name)
                 assert success is True
 
             # Verify groups are actually deleted
-            final_groups = groups_client.get_groups()
-            remaining_groups = [g for g in final_groups.groups if g.name in test_groups]
+            final_groups = groups.get_groups()
+            remaining_groups = [g for g in final_groups if g.name in test_groups]
             assert len(remaining_groups) == 0
 
         finally:
             # Clean up in case of test failure
             for group_name in test_groups:
                 try:
-                    groups_client.delete_group(group_name)
+                    groups.delete_group(group_name)
                 except Exception:
                     pass
 
-    def test_error_handling_integration(self, groups_client):
+    def test_error_handling_integration(self, pihole_client):
         """Test error handling with real Pi-hole instance."""
+        groups = PiHoleGroups(pihole_client)
+
         # Try to create a group with the same name as default group
         # Pi-hole should raise a PiHoleServerError for duplicate groups
         try:
-            groups_client.create_group(name="Default", comment="Duplicate default")
+            groups.create_group(name="Default", comment="Duplicate default")
             # If no exception was raised, check if we got a valid result
             # (Pi-hole behavior can vary)
-            all_groups = groups_client.get_groups()
-            default_groups = [g for g in all_groups.groups if g.name == "Default"]
+            all_groups = groups.get_groups()
+            default_groups = [g for g in all_groups if g.name == "Default"]
             assert len(default_groups) >= 1  # At least one should exist
         except PiHoleServerError as e:
             # This is the expected behavior - error should be raised
@@ -213,32 +174,31 @@ class TestPiHoleGroupsIntegration:
             ) or "Failed to create group" in str(e)
 
         # Try to get a non-existent group (should return empty list, not error)
-        result = groups_client.get_groups(name="non-existent-group-12345")
-        assert isinstance(result, GroupsResponse)
-        assert len(result.groups) == 0
+        result = groups.get_groups(name="non-existent-group-12345")
+        assert isinstance(result, list)
+        assert len(result) == 0
 
-    def test_groups_client_combination_integration(self, groups_client):
+    def test_groups_client_combination_integration(self, pihole_client):
         """Test using groups client with other operations."""
+        groups = PiHoleGroups(pihole_client)
+
         # Get initial groups
-        initial_groups = groups_client.get_groups()
+        initial_groups = groups.get_groups()
 
         # Verify we can get all information
-        assert isinstance(initial_groups, GroupsResponse)
-        assert isinstance(initial_groups.groups, list)
-        assert isinstance(initial_groups.took, float)
+        assert isinstance(initial_groups, list)
 
         # Should have at least the default group
-        assert len(initial_groups.groups) >= 1
+        assert len(initial_groups) >= 1
 
         # Verify default group properties
-        default_group = next(
-            (g for g in initial_groups.groups if g.name == "Default"), None
-        )
+        default_group = next((g for g in initial_groups if g.name == "Default"), None)
         assert default_group is not None
         assert default_group.id == 0
         assert isinstance(default_group.date_added, int)
         assert isinstance(default_group.date_modified, int)
 
-    def test_constants_usage(self, groups_client):
+    def test_constants_usage(self, pihole_client):
         """Test that the class uses the correct API endpoint constants."""
-        assert groups_client.BASE_URL == "/api/groups"
+        groups = PiHoleGroups(pihole_client)
+        assert groups.BASE_URL == "/api/groups"

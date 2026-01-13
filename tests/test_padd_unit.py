@@ -1,4 +1,4 @@
-"""Unit tests for PiHolePADD class."""
+"""Unit tests for PiHolePADD."""
 
 from unittest.mock import Mock, patch
 
@@ -6,7 +6,7 @@ import pytest
 
 from pihole_lib import PiHoleClient, PiHolePADD
 from pihole_lib.exceptions import PiHoleAPIError
-from pihole_lib.models import PADDInfo
+from pihole_lib.models.padd import PADDInfo
 
 
 class TestPiHolePADD:

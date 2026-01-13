@@ -1,4 +1,4 @@
-"""Unit tests for Pi-hole network API client."""
+"""Unit tests for PiHoleNetwork."""
 
 from unittest.mock import Mock, patch
 
@@ -6,8 +6,7 @@ import pytest
 
 from pihole_lib import PiHoleClient, PiHoleNetwork
 from pihole_lib.exceptions import PiHoleAPIError, PiHoleAuthenticationError
-
-from .constants import PIHOLE_BASE_URL, TEST_SESSION_ID
+from tests.constants import PIHOLE_BASE_URL, TEST_SESSION_ID
 
 
 @pytest.fixture

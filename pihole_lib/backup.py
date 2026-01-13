@@ -3,85 +3,58 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .base import BasePiHoleAPIClient
-from .exceptions import PiHoleAPIError
-from .models import TeleporterImportOptions
-from .utils import make_pihole_request
+from pihole_lib.base import BasePiHoleAPIClient
+from pihole_lib.exceptions import PiHoleAPIError
+from pihole_lib.models.teleporter import TeleporterImportOptions
+from pihole_lib.utils import make_pihole_request
 
 
 class PiHoleBackup(BasePiHoleAPIClient):
     """Pi-hole Backup API client.
 
     Handles backup and restore operations using the Teleporter endpoint.
-    Uses a PiHoleClient instance for making authenticated requests.
 
     Examples::
 
-        from pihole_lib import PiHoleClient, PiHoleBackup
+        from pihole_lib import PiHoleClient
 
-        # Create client and backup instance
         with PiHoleClient("http://192.168.1.100", password="secret") as client:
-            backup = PiHoleBackup(client)
-
-            # Export backup to directory (filename auto-generated with timestamp)
-            backup_file = backup.export_backup("/path/to/backups")
+            # Export backup
+            backup_file = client.backup.export_backup("/path/to/backups")
             print(f"Backup saved to: {backup_file}")
 
-            # Import backup (Pi-hole only accepts ZIP files)
-            imported_files = backup.import_backup("/path/to/backup.zip")
+            # Import backup
+            imported_files = client.backup.import_backup("/path/to/backup.zip")
             print(f"Imported {len(imported_files)} files")
 
     """
 
     BASE_URL = "/api/teleporter"
-    ZIP_EXTENSION = ".zip"
-    MIME_ZIP = "application/zip"
+    _ZIP_EXT = ".zip"
+    _MIME_ZIP = "application/zip"
 
     def _generate_backup_filename(self) -> str:
-        """Generate a timestamped backup filename.
-
-        Returns:
-            Backup filename in format: pi-hole_pihole_teleporter_YYYY-MM-DD_HH-MM-SS_UTC.zip
-        """
+        """Generate a timestamped backup filename."""
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        return f"pi-hole_pihole_teleporter_{timestamp}_UTC{self.ZIP_EXTENSION}"
+        return f"pi-hole_pihole_teleporter_{timestamp}_UTC{self._ZIP_EXT}"
 
     def export_backup(self, backup_dir: str) -> str:
         """Export Pi-hole settings to a backup file.
-
-        Request an archived copy of your Pi-hole's current configuration.
-        The backup file will be saved with a timestamped filename.
-        Authentication is required for this endpoint.
 
         Args:
             backup_dir: Directory where the backup file should be saved.
 
         Returns:
             The full path to the created backup file.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors.
         """
-        response = make_pihole_request(
-            self._client,
-            "GET",
-            self.BASE_URL,
-        )
+        response = make_pihole_request(self._client, "GET", self.BASE_URL)
 
-        # Generate timestamped filename and create full path
         try:
-            backup_dir_obj = Path(backup_dir)
-            backup_dir_obj.mkdir(parents=True, exist_ok=True)
-
-            backup_filename = self._generate_backup_filename()
-            backup_path = backup_dir_obj / backup_filename
-
-            backup_path.write_bytes(response.content)
-
-            return str(backup_path)
+            backup_path = Path(backup_dir)
+            backup_path.mkdir(parents=True, exist_ok=True)
+            backup_file = backup_path / self._generate_backup_filename()
+            backup_file.write_bytes(response.content)
+            return str(backup_file)
         except OSError as e:
             raise PiHoleAPIError(f"Failed to save backup file: {e}") from e
 
@@ -92,9 +65,7 @@ class PiHoleBackup(BasePiHoleAPIClient):
     ) -> list[str]:
         """Import Pi-hole settings from a backup file.
 
-        Upload a Pi-hole Teleporter archive to restore from it.
-        Note that this will overwrite your current configuration and restart Pi-hole.
-        Authentication is required for this endpoint.
+        Note: This will overwrite your current configuration and restart Pi-hole.
 
         Args:
             file_path: Full path to the backup ZIP file to import.
@@ -103,17 +74,10 @@ class PiHoleBackup(BasePiHoleAPIClient):
 
         Returns:
             List of imported backup files/components.
-
-        Raises:
-            PiHoleConnectionError: Connection failed.
-            PiHoleAuthenticationError: Authentication failed.
-            PiHoleServerError: Server error.
-            PiHoleAPIError: Other API errors, file not found, or invalid file type.
         """
         file_path_obj = Path(file_path)
 
-        # Check if file is a ZIP file (Pi-hole only accepts ZIP format)
-        if not file_path_obj.name.lower().endswith(self.ZIP_EXTENSION):
+        if not file_path_obj.name.lower().endswith(self._ZIP_EXT):
             raise PiHoleAPIError(
                 f"Invalid backup file format. Pi-hole only accepts ZIP files, "
                 f"got: {file_path_obj.name}"
@@ -122,13 +86,10 @@ class PiHoleBackup(BasePiHoleAPIClient):
         if not file_path_obj.exists():
             raise PiHoleAPIError(f"Backup file not found: {file_path}")
 
-        # Handle import options - send as JSON if provided
         json_data = import_options.model_dump() if import_options else None
 
-        # Prepare files for upload and make request
         with file_path_obj.open("rb") as f:
-            files = {"file": (file_path_obj.name, f, self.MIME_ZIP)}
-
+            files = {"file": (file_path_obj.name, f, self._MIME_ZIP)}
             response = make_pihole_request(
                 self._client,
                 "POST",
@@ -137,6 +98,5 @@ class PiHoleBackup(BasePiHoleAPIClient):
                 json=json_data,
             )
 
-        response_data = response.json()
-        imported_files: list[str] = response_data["files"]
-        return imported_files
+        result: dict[str, list[str]] = response.json()
+        return list(result["files"])
