@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 
 # Pre-computed error messages for common HTTP status codes
 _CLIENT_ERROR_MESSAGES: dict[int, str] = {
-    400: "Bad request - missing parameter",
+    400: "Bad request",
     402: "Request failed",
     404: "Endpoint not found",
-    429: "Too many requests - rate limited",
+    429: "Too many requests",
 }
 
 # Status code sets for fast lookup
@@ -52,7 +52,14 @@ def handle_pihole_response(response: requests.Response) -> None:
 
     # Handle common client errors (4xx) with pre-computed messages
     if status_code in _CLIENT_ERROR_MESSAGES:
-        raise PiHoleAPIError(_CLIENT_ERROR_MESSAGES[status_code])
+        try:
+            error_message = response.json().get("error", {}).get("message")
+        except (ValueError, requests.JSONDecodeError):
+            error_message = None
+        base_message = _CLIENT_ERROR_MESSAGES[status_code]
+        raise PiHoleAPIError(
+            f"{base_message}: {error_message}" if error_message else base_message
+        )
 
     # Handle server errors (5xx)
     if status_code >= 500:
