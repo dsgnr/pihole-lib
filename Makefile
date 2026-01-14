@@ -21,6 +21,9 @@ lint: ## Run linting
 format: ## Format code
 	poetry run ruff format .
 
+format-check: ## Format code
+	poetry run ruff format . --check
+
 type-check: ## Run type checking
 	poetry run mypy pihole_lib/
 
