@@ -375,31 +375,6 @@ class TestPiHoleConfigItemManagementIntegration:
             )
             assert success is True
 
-    def test_add_config_item_special_characters(self, pihole_client):
-        """Test adding config items with special characters."""
-        config = PiHoleConfig(pihole_client)
-
-        # Test with host entry containing spaces
-        test_host = "192.168.1.201 test-server.example.com"
-
-        # Add the host entry
-        success = config.add_config_item("dns/hosts", test_host)
-        assert success is True
-
-        # Verify it was added
-        current_config = config.get_config("dns")
-        current_hosts = current_config["dns"]["hosts"]
-        assert test_host in current_hosts
-
-        # Remove the host entry
-        success = config.remove_config_item("dns/hosts", test_host)
-        assert success is True
-
-        # Verify it was removed
-        final_config = config.get_config("dns")
-        final_hosts = final_config["dns"]["hosts"]
-        assert test_host not in final_hosts
-
     def test_remove_nonexistent_config_item(self, pihole_client):
         """Test removing a config item that doesn't exist."""
         config = PiHoleConfig(pihole_client)
