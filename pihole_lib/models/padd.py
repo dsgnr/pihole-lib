@@ -76,8 +76,8 @@ class PADDVersionComponent(StrictModel):
 class PADDVersionRemote(StrictModel):
     """PADD remote version information."""
 
-    version: str = Field(..., description="Version string")
-    hash: str = Field(..., description="Git commit hash")
+    version: str | None = Field(None, description="Version string")
+    hash: str | None = Field(None, description="Git commit hash")
 
 
 class PADDVersionInfo(StrictModel):

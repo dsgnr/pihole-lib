@@ -475,7 +475,7 @@ class TestPiHoleInfoHostInfo:
             assert hasattr(host_info.host.dmi, "sys")
 
             # Model can be None (especially in containers)
-            assert host_info.host.model is None or isinstance(host_info.host.model, str)
+            assert isinstance(host_info.host.model, str | None)
 
     def test_get_host_info_connection_error(self):
         """Network errors should raise connection error."""
@@ -515,12 +515,12 @@ class TestPiHoleInfoHostInfo:
             # Kernel release should contain version info
             assert "." in host_info.host.uname.release  # Should have version numbers
 
-            # Model is typically None in containers
-            assert host_info.host.model is None
+            # Model is typically None in containers, but may have a value on VMs
+            assert isinstance(host_info.host.model, str | None)
 
-            # DMI info is typically None in containers
-            assert host_info.host.dmi.bios.vendor is None
-            assert host_info.host.dmi.sys.vendor is None
+            # DMI info may be None in containers or have values on VMs/bare metal
+            assert isinstance(host_info.host.dmi.bios.vendor, str | None)
+            assert isinstance(host_info.host.dmi.sys.vendor, str | None)
 
     def test_get_host_info_system_details(self, pihole_container):
         """Should return valid system details."""
