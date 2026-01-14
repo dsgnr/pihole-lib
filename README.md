@@ -4,6 +4,10 @@ A non-official Python library for interacting with Pi-hole's API. This library p
 
 This library is pretty much a scrape of the Pi-hole docs found at `<pihole-instance>/api/docs`.
 
+I made this library for use on my [ConfigHole](https://github.com/dsgnr/confighole) project, in order to keep my Pi-hole configuration under version control. Feel free to contribute, but use at your own risk.
+
+It works for me, but it may not work for you. There are no warranties, no guarantees, and no promises that it will not break your DNS at an inconvenient moment.
+
 ## Table of Contents
 
 - [Disclaimer](#disclaimer)
@@ -22,15 +26,13 @@ This library is pretty much a scrape of the Pi-hole docs found at `<pihole-insta
 
 This is an unofficial library and is not affiliated with or endorsed by the Pi-hole project. Pi-hole is a trademark of Pi-hole LLC.
 
-I made this tool to use in my homelab. Feel free to contribute, but use at your own risk.
-
 ## Features
 
 | Feature Category | Feature | Status |
 |------------------|---------|--------|
 | **Testing** | Integration tests against a live Pi-hole instance | ✅ |
 | | Lint and type checking | ✅ |
-| | GitHub Actions | 📋 |
+| | GitHub Actions | ✅ |
 | **Authentication** | Session-based authentication | ✅ |
 | | Automatic session management | ✅ |
 | | Context manager support | ✅ |
@@ -99,8 +101,6 @@ I made this tool to use in my homelab. Feel free to contribute, but use at your 
 | | Get network interfaces | ✅ |
 | | Get network routes | ✅ |
 | | Delete network devices | ✅ |
-| **Other** | Better documentation format (Sphinx?) | 📋 |
-| | Initial Pypi release | 📋 |
 
 ## Supported Pi-hole Versions
 
@@ -196,7 +196,7 @@ make format        # Auto-format code
 
 ## API Reference
 
-For complete API documentation, build the docs locally with `make docs`.
+For complete API documentation, view [https://dsgnr.github.io/pihole-lib](https://dsgnr.github.io/pihole-lib).
 
 ## Contributing
 
