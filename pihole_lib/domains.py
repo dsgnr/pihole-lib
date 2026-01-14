@@ -410,5 +410,5 @@ class PiHoleDomains(BasePiHoleAPIClient):
             return True
 
         raise PiHoleAPIError(
-            f"{response.json().get("error", {}).get('message', 'Unknown error')}"
+            f"{response.json().get('error', {}).get('message', 'Unknown error')}"
         )
