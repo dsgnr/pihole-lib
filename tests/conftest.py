@@ -152,6 +152,12 @@ def docker_client() -> Iterator[docker.DockerClient]:
 @pytest.fixture(scope="session")
 def pihole_container(docker_client):
     """Start and manage the Pi-hole Docker container."""
+    # if we are running in a CI like GitHub Actions,
+    # we should assume we are using a service container.
+    if os.getenv("IS_CI"):
+        yield None
+        return
+
     try:
         try:
             container = docker_client.containers.get(PIHOLE_CONTAINER_NAME)
