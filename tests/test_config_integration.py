@@ -380,7 +380,7 @@ class TestPiHoleConfigItemManagementIntegration:
         config = PiHoleConfig(pihole_client)
 
         # Test with host entry containing spaces
-        test_host = "192.168.1.200 test-server.example.com"
+        test_host = "192.168.1.201 test-server.example.com"
 
         # Add the host entry
         success = config.add_config_item("dns/hosts", test_host)
