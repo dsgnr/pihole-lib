@@ -81,19 +81,19 @@ class PiHoleClient:
         self._session: requests.Session | None = None
 
         # Cached API client instances
-        self._info: "PiHoleInfo | None" = None
-        self._actions: "PiHoleActions | None" = None
-        self._backup: "PiHoleBackup | None" = None
-        self._config: "PiHoleConfig | None" = None
-        self._dhcp: "PiHoleDHCP | None" = None
-        self._dns: "PiHoleDNS | None" = None
-        self._lists: "PiHoleLists | None" = None
-        self._groups: "PiHoleGroups | None" = None
-        self._padd: "PiHolePADD | None" = None
-        self._stats: "PiHoleStats | None" = None
-        self._domains: "PiHoleDomains | None" = None
-        self._network: "PiHoleNetwork | None" = None
-        self._clients: "PiHoleClients | None" = None
+        self._info: PiHoleInfo | None = None
+        self._actions: PiHoleActions | None = None
+        self._backup: PiHoleBackup | None = None
+        self._config: PiHoleConfig | None = None
+        self._dhcp: PiHoleDHCP | None = None
+        self._dns: PiHoleDNS | None = None
+        self._lists: PiHoleLists | None = None
+        self._groups: PiHoleGroups | None = None
+        self._padd: PiHolePADD | None = None
+        self._stats: PiHoleStats | None = None
+        self._domains: PiHoleDomains | None = None
+        self._network: PiHoleNetwork | None = None
+        self._clients: PiHoleClients | None = None
 
     def __enter__(self) -> "PiHoleClient":
         """Enter context manager and authenticate."""

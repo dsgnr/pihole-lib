@@ -211,9 +211,9 @@ class TestPiHoleListsAddList:
 
         # Verify it's a UNIQUE constraint error
         error_message = str(exc_info.value)
-        assert (
-            "UNIQUE constraint failed" in error_message
-        ), f"Expected UNIQUE constraint error, got: {error_message}"
+        assert "UNIQUE constraint failed" in error_message, (
+            f"Expected UNIQUE constraint error, got: {error_message}"
+        )
 
     def test_add_list_different_types(self, pihole_client):
         """Should handle adding both allow and block lists."""
@@ -247,12 +247,12 @@ class TestPiHoleListsAddList:
         block_matches = [lst for lst in block_result if lst.address == block_address]
         allow_matches = [lst for lst in allow_result if lst.address == allow_address]
 
-        assert (
-            len(block_matches) > 0
-        ), f"No block list found with address {block_address}"
-        assert (
-            len(allow_matches) > 0
-        ), f"No allow list found with address {allow_address}"
+        assert len(block_matches) > 0, (
+            f"No block list found with address {block_address}"
+        )
+        assert len(allow_matches) > 0, (
+            f"No allow list found with address {allow_address}"
+        )
 
         assert block_matches[0].type == ListType.BLOCK
         assert allow_matches[0].type == ListType.ALLOW

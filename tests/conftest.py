@@ -78,8 +78,7 @@ def wait_for_container_health(container) -> None:
 
     logs = container.logs().decode()
     pytest.fail(
-        f"Container did not become healthy within "
-        f"{CONTAINER_STARTUP_TIMEOUT}s:\n{logs}"
+        f"Container did not become healthy within {CONTAINER_STARTUP_TIMEOUT}s:\n{logs}"
     )
 
 
