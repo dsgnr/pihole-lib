@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pihole-lib"
-version = "0.1.0"
+version = "1.0.0"
 description = "A non-official comprehensive Python library for Pi-hole API interaction"
 authors = ["https://github.com/dsgnr"]
 readme = "README.md"
