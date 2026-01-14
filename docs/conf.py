@@ -11,7 +11,7 @@ import sys
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath("../../"))
+sys.path.insert(0, os.path.abspath(".."))  # Project root (one level up from docs/)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -58,7 +58,6 @@ html_theme_options = {
     "canonical_url": "",
     "analytics_id": "",
     "logo_only": False,
-    "display_version": True,
     "prev_next_buttons_location": "bottom",
     "style_external_links": False,
     "vcs_pageview_mode": "",
@@ -93,6 +92,8 @@ napoleon_attr_annotations = True
 suppress_warnings = [
     "autosummary.import_cycle",
     "autodoc.import_object",
+    "ref.python",  # Suppress duplicate cross-reference warnings for re-exported symbols
+    "autodoc.duplicate_object",  # Suppress duplicate object description warnings
 ]
 
 # Autodoc settings
