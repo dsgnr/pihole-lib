@@ -33,7 +33,7 @@ pydantic = "^2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.0"
-pytest-cov = "^4.1.0"
+pytest-cov = "^7.0.0"
 pytest-rerunfailures = "^14.0"
 pytest-timeout = "^2.1.0"
 ruff = "^0.15.0"
