@@ -3,7 +3,7 @@
 import pytest
 
 from pihole_lib import PiHoleClients
-from pihole_lib.exceptions import PiHoleServerError
+from pihole_lib.exceptions import PiHoleAPIError, PiHoleServerError
 from pihole_lib.models.client_mgmt import ClientBatchDeleteItem
 from tests.conftest import integration
 
@@ -159,8 +159,9 @@ class TestPiHoleClientsIntegration:
         # Add client first time
         clients.add_client(client="192.168.1.101", comment="First client", groups=[0])
 
-        # Try to add same client again - should fail
-        with pytest.raises(PiHoleServerError):
+        # Try to add same client again - Pi-hole rejects the gravity
+        # database write with an HTTP 400, surfacing as PiHoleAPIError.
+        with pytest.raises(PiHoleAPIError):
             clients.add_client(
                 client="192.168.1.101", comment="Duplicate client", groups=[0]
             )

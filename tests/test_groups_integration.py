@@ -1,7 +1,7 @@
 """Integration tests for PiHoleGroups."""
 
 from pihole_lib import PiHoleGroups
-from pihole_lib.exceptions import PiHoleServerError
+from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models.groups import GroupsResponse
 from tests.conftest import integration
 
@@ -158,8 +158,10 @@ class TestPiHoleGroupsIntegration:
         """Test error handling with real Pi-hole instance."""
         groups = PiHoleGroups(pihole_client)
 
-        # Try to create a group with the same name as default group
-        # Pi-hole should raise a PiHoleServerError for duplicate groups
+        # Try to create a group with the same name as default group.
+        # Pi-hole surfaces the UNIQUE constraint violation as HTTP 400
+        # ("Could not add to gravity database"), which the library maps
+        # to PiHoleAPIError.
         try:
             groups.create_group(name="Default", comment="Duplicate default")
             # If no exception was raised, check if we got a valid result
@@ -167,11 +169,14 @@ class TestPiHoleGroupsIntegration:
             all_groups = groups.get_groups()
             default_groups = [g for g in all_groups if g.name == "Default"]
             assert len(default_groups) >= 1  # At least one should exist
-        except PiHoleServerError as e:
-            # This is the expected behavior - error should be raised
-            assert "UNIQUE constraint failed" in str(
-                e
-            ) or "Failed to create group" in str(e)
+        except PiHoleAPIError as e:
+            # Expected behavior: the API rejects the duplicate.
+            message = str(e)
+            assert (
+                "UNIQUE constraint failed" in message
+                or "Failed to create group" in message
+                or "Could not add to gravity database" in message
+            )
 
         # Try to get a non-existent group (should return empty list, not error)
         result = groups.get_groups(name="non-existent-group-12345")

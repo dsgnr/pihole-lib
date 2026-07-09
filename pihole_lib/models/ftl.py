@@ -38,12 +38,12 @@ class DatabaseInfo(StrictModel):
     ctime: int = Field(..., description="Creation time (Unix timestamp)")
     owner: DatabaseOwner = Field(..., description="File ownership information")
     queries: int = Field(..., description="Number of queries in memory")
-    earliest_timestamp: int = Field(
-        ..., description="Earliest query timestamp in memory"
+    earliest_timestamp: float = Field(
+        ..., description="Earliest query timestamp in memory (Unix seconds)"
     )
     queries_disk: int = Field(..., description="Number of queries on disk")
-    earliest_timestamp_disk: int = Field(
-        ..., description="Earliest query timestamp on disk"
+    earliest_timestamp_disk: float = Field(
+        ..., description="Earliest query timestamp on disk (Unix seconds)"
     )
     sqlite_version: str = Field(..., description="SQLite version")
 

@@ -8,7 +8,6 @@ from pihole_lib import PiHoleClient, PiHoleLists
 from pihole_lib.exceptions import (
     PiHoleAPIError,
     PiHoleConnectionError,
-    PiHoleServerError,
 )
 from pihole_lib.models.lists import ListType
 from tests.conftest import integration
@@ -201,19 +200,21 @@ class TestPiHoleListsAddList:
         matching_lists = [lst for lst in first_result if lst.address == test_address]
         assert len(matching_lists) > 0, f"No list found with address {test_address}"
 
-        # Try to add the same list again - should raise server error with UNIQUE constraint
-        with pytest.raises(PiHoleServerError) as exc_info:
+        # Try to add the same list again. Pi-hole surfaces the UNIQUE
+        # constraint failure as HTTP 400 ("Could not add to gravity
+        # database"), which the library maps to PiHoleAPIError.
+        with pytest.raises(PiHoleAPIError) as exc_info:
             lists_client.add_list(
                 address=test_address,
                 list_type=ListType.BLOCK,
                 comment="Duplicate addition",
             )
 
-        # Verify it's a UNIQUE constraint error
         error_message = str(exc_info.value)
-        assert "UNIQUE constraint failed" in error_message, (
-            f"Expected UNIQUE constraint error, got: {error_message}"
-        )
+        assert (
+            "UNIQUE constraint failed" in error_message
+            or "Could not add to gravity database" in error_message
+        ), f"Expected duplicate-list error, got: {error_message}"
 
     def test_add_list_different_types(self, pihole_client):
         """Should handle adding both allow and block lists."""

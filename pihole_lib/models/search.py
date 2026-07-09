@@ -3,6 +3,7 @@
 from pydantic import Field
 
 from pihole_lib.models.base import StrictModel, TimedResponse
+from pihole_lib.models.domains import Domain
 from pihole_lib.models.lists import PiHoleList
 
 
@@ -42,8 +43,13 @@ class SearchParameters(StrictModel):
 class SearchData(StrictModel):
     """Search data container."""
 
-    domains: list[PiHoleList] = Field(..., description="List of domain matches")
-    gravity: list[PiHoleList] = Field(..., description="List of gravity matches")
+    # /api/search returns two collections:
+    # - ``domains`` holds matches from the exact/regex allow/deny lists,
+    #   which follow the ``/api/domains`` schema (``Domain``).
+    # - ``gravity`` holds matches from user-configured adlists, which
+    #   follow the ``/api/lists`` schema (``PiHoleList``).
+    domains: list[Domain] = Field(..., description="Domain (allow/deny) matches")
+    gravity: list[PiHoleList] = Field(..., description="Gravity (adlist) matches")
     results: SearchResults = Field(..., description="Search result summary")
     parameters: SearchParameters = Field(..., description="Search parameters used")
 

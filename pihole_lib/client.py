@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import requests
 
-from pihole_lib.exceptions import PiHoleAuthenticationError
+from pihole_lib.exceptions import PiHoleAuthenticationError, PiHoleConnectionError
 from pihole_lib.utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -130,28 +130,54 @@ class PiHoleClient:
             self._session.close()
             self._session = None
 
+    _AUTH_CONNECT_RETRIES = 5
+    _AUTH_CONNECT_RETRY_DELAY = 2.0
+
+    def _post_auth(self) -> "requests.Response":
+        """POST to /api/auth with transient connection retry.
+
+        Pi-hole can briefly refuse TCP connections while FTL is restarting
+        (for example after a config change). Retry the auth request a
+        handful of times so a short outage doesn't permanently break the
+        client for the caller.
+        """
+        import time
+
+        last_error: PiHoleConnectionError | None = None
+        for attempt in range(self._AUTH_CONNECT_RETRIES):
+            try:
+                return make_pihole_request(
+                    self,
+                    "POST",
+                    "/api/auth",
+                    json={"password": self._password},
+                )
+            except PiHoleConnectionError as exc:
+                last_error = exc
+                if attempt == self._AUTH_CONNECT_RETRIES - 1:
+                    break
+                # Drop any stale keep-alive sockets before retrying.
+                if self._session is not None:
+                    self._session.close()
+                    self._session = None
+                self._ensure_session()
+                time.sleep(self._AUTH_CONNECT_RETRY_DELAY)
+
+        assert last_error is not None
+        raise last_error
+
     def _authenticate(self) -> None:
         """Authenticate with Pi-hole."""
         self._ensure_session()
 
-        response = make_pihole_request(
-            self,
-            "POST",
-            "/api/auth",
-            json={"password": self._password},
-        )
+        response = self._post_auth()
 
         # Handle rate limiting with retry
         if response.status_code == 429:
             import time
 
             time.sleep(1)
-            response = make_pihole_request(
-                self,
-                "POST",
-                "/api/auth",
-                json={"password": self._password},
-            )
+            response = self._post_auth()
 
         data = response.json()
         session = data.get("session", {})

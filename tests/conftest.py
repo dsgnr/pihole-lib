@@ -191,17 +191,88 @@ def _pihole_client_instance(pihole_container):
         client.close()
 
 
+def _reset_client_session(client) -> None:
+    """Drop cached transport state so the next request re-connects and re-auths."""
+    if client._session is not None:
+        try:
+            client._session.close()
+        except Exception:
+            pass
+        client._session = None
+    client._session_id = None
+
+
+def _ensure_live_session(client, timeout: int = 60) -> None:
+    """Make sure ``client`` has a working, authenticated session.
+
+    ``is_authenticated`` only inspects local state, so after Pi-hole is
+    restarted by a preceding test the cached session id still looks valid
+    even though the server has already forgotten it. Attempts to reuse the
+    connection also fail with ``Connection reset by peer`` while FTL is
+    coming back up. Retry auth against a fresh HTTP session until Pi-hole
+    accepts us again or we run out of time.
+    """
+    from pihole_lib.exceptions import (
+        PiHoleAuthenticationError,
+        PiHoleConnectionError,
+    )
+
+    if client.is_authenticated():
+        return
+
+    deadline = time.time() + timeout
+    last_error: Exception | None = None
+
+    while time.time() < deadline:
+        try:
+            _reset_client_session(client)
+            client._ensure_session()
+            client._authenticate()
+            return
+        except (PiHoleAuthenticationError, PiHoleConnectionError) as exc:
+            last_error = exc
+            time.sleep(POLL_INTERVAL)
+
+    raise RuntimeError(
+        f"Pi-hole did not accept authentication within {timeout}s: {last_error}"
+    )
+
+
+def _session_is_alive(client) -> bool:
+    """Cheap probe to see if the cached session is still usable."""
+    from pihole_lib import PiHoleInfo
+    from pihole_lib.exceptions import (
+        PiHoleAuthenticationError,
+        PiHoleConnectionError,
+    )
+
+    if not client.is_authenticated():
+        return False
+
+    try:
+        # ``/api/info/login`` is a lightweight endpoint that still exercises
+        # the session header, so a stale session id will surface as 401
+        # (auth error) and a restarting FTL will surface as a connection
+        # error. Either way we want to force a reconnect.
+        PiHoleInfo(client).get_login_info()
+        return True
+    except (PiHoleAuthenticationError, PiHoleConnectionError):
+        return False
+
+
 @pytest.fixture
 def pihole_client(_pihole_client_instance):
     """Provide an authenticated PiHoleClient.
 
-    Authentication may expire between tests (like when a config change restarts the server),
-    so this ensures a valid session before each test.
+    Config, action, and other tests can restart Pi-hole (or otherwise
+    invalidate the shared session) between tests. Verify the cached
+    session before handing it out and rebuild it when necessary so
+    downstream tests don't inherit a dead connection.
     """
     client = _pihole_client_instance
 
-    if not client.is_authenticated():
-        client._ensure_session()
-        client._authenticate()
+    if not _session_is_alive(client):
+        _reset_client_session(client)
+        _ensure_live_session(client)
 
     return client

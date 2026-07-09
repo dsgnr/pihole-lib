@@ -279,12 +279,13 @@ class TestPiHoleInfoDatabaseInfo:
             assert hasattr(db_info, "earliest_timestamp")
             assert hasattr(db_info, "earliest_timestamp_disk")
 
-            # Timestamps should be integers (Unix timestamps)
+            # File times remain integer Unix timestamps; query timestamps
+            # include sub-second precision from Pi-hole and come through as floats.
             assert isinstance(db_info.atime, int)
             assert isinstance(db_info.mtime, int)
             assert isinstance(db_info.ctime, int)
-            assert isinstance(db_info.earliest_timestamp, int)
-            assert isinstance(db_info.earliest_timestamp_disk, int)
+            assert isinstance(db_info.earliest_timestamp, float)
+            assert isinstance(db_info.earliest_timestamp_disk, float)
 
             # Timestamps should be reasonable (after year 2000, before year 2100)
             min_timestamp = 946684800  # 2000-01-01
