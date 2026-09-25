@@ -406,9 +406,4 @@ class PiHoleDomains(BasePiHoleAPIClient):
 
         response = make_pihole_request(self._client, "POST", url_path, json=payload)
 
-        if response.status_code == 204:  # No Content - success
-            return True
-
-        raise PiHoleAPIError(
-            f"{response.json().get('error', {}).get('message', 'Unknown error')}"
-        )
+        return bool(response.status_code in (200, 201, 204))
