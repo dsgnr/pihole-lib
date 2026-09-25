@@ -173,13 +173,6 @@ class PiHoleClient:
 
         response = self._post_auth()
 
-        # Handle rate limiting with retry
-        if response.status_code == 429:
-            import time
-
-            time.sleep(1)
-            response = self._post_auth()
-
         data = response.json()
         session = data.get("session", {})
 
