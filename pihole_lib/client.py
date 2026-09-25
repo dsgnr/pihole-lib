@@ -163,7 +163,8 @@ class PiHoleClient:
                 self._ensure_session()
                 time.sleep(self._AUTH_CONNECT_RETRY_DELAY)
 
-        assert last_error is not None
+        if last_error is None:
+            raise PiHoleConnectionError("Unexpected state: no error recorded after retries")
         raise last_error
 
     def _authenticate(self) -> None:
