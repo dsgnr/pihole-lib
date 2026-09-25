@@ -47,20 +47,12 @@ class PiHoleConfig(BasePiHoleAPIClient):
         """
         endpoint = f"{self.BASE_URL}/{element}" if element else self.BASE_URL
 
-        # Only pass params if we have an element and detailed is False
-        if element and not detailed:
-            response = make_pihole_request(
-                self._client,
-                "GET",
-                endpoint,
-                params={"detailed": detailed},
-            )
-        else:
-            response = make_pihole_request(
-                self._client,
-                "GET",
-                endpoint,
-            )
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            endpoint,
+            params={"detailed": detailed},
+        )
         result: dict[str, Any] = response.json()
         return dict(result["config"])
 
