@@ -1,5 +1,7 @@
 """Pi-hole Lists API client."""
 
+from urllib.parse import quote
+
 from pihole_lib.base import BasePiHoleAPIClient
 from pihole_lib.models.lists import (
     AddListRequest,
@@ -112,10 +114,11 @@ class PiHoleLists(BasePiHoleAPIClient):
         Returns:
             True if the list was successfully deleted.
         """
+        encoded_address = quote(address, safe="")
         response = make_pihole_request(
             self._client,
             "DELETE",
-            f"{self.BASE_URL}/{address}",
+            f"{self.BASE_URL}/{encoded_address}",
             params={"type": list_type.value},
         )
         return bool(response.status_code == 204)
@@ -164,10 +167,11 @@ class PiHoleLists(BasePiHoleAPIClient):
             groups=groups or [0],
             enabled=enabled,
         )
+        encoded_address = quote(address, safe="")
         response = make_pihole_request(
             self._client,
             "PUT",
-            f"{self.BASE_URL}/{address}",
+            f"{self.BASE_URL}/{encoded_address}",
             params={"type": list_type.value},
             json=request_data.model_dump(exclude_none=True),
         )
