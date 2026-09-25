@@ -81,7 +81,7 @@ class PiHoleGroups(BasePiHoleAPIClient):
         name: str,
         new_name: str | None = None,
         comment: str | None = None,
-        enabled: bool = True,
+        enabled: bool | None = None,
     ) -> GroupsResponse:
         """Update an existing group.
 
@@ -89,7 +89,8 @@ class PiHoleGroups(BasePiHoleAPIClient):
             name: Current name of the group to update.
             new_name: New name for the group. If None, keeps current name.
             comment: New comment for the group.
-            enabled: Whether the group should be enabled.
+            enabled: Whether the group should be enabled. If None, the current
+                     state is preserved.
 
         Returns:
             GroupsResponse containing the updated group.
