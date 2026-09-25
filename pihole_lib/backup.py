@@ -99,4 +99,4 @@ class PiHoleBackup(BasePiHoleAPIClient):
             )
 
         result: dict[str, list[str]] = response.json()
-        return list(result["files"])
+        return list(result.get("files", []))
