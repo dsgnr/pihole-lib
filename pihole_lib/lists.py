@@ -90,7 +90,7 @@ class PiHoleLists(BasePiHoleAPIClient):
         request_data = AddListRequest(
             address=address,
             comment=comment,
-            groups=groups or [0],
+            groups=groups if groups is not None else [0],
             enabled=enabled,
         )
         response = make_pihole_request(
@@ -164,7 +164,7 @@ class PiHoleLists(BasePiHoleAPIClient):
         request_data = UpdateListRequest(
             comment=comment,
             type=list_type,
-            groups=groups or [0],
+            groups=groups if groups is not None else [0],
             enabled=enabled,
         )
         encoded_address = quote(address, safe="")
