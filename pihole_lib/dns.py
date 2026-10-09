@@ -3,7 +3,6 @@
 from urllib.parse import quote
 
 from pihole_lib.base import BasePiHoleAPIClient
-from pihole_lib.config import PiHoleConfig
 from pihole_lib.models.dns import DNSBlockingStatus, DNSConfig, DNSRecord
 from pihole_lib.utils import make_pihole_request
 
@@ -42,8 +41,7 @@ class PiHoleDNS(BasePiHoleAPIClient):
         Returns:
             DNSConfig with upstream servers, custom records, and settings.
         """
-        config_client = PiHoleConfig(self._client)
-        dns_config = config_client.get_config("dns")["dns"]
+        dns_config = self._client.config.get_config("dns")["dns"]
         return DNSConfig.from_raw_config(dns_config)
 
     def get_records(self, record_type: str | None = None) -> list[DNSRecord]:

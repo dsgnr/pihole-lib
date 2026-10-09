@@ -396,6 +396,28 @@ class TestPiHoleDomainsBatchDelete:
             domains_client._client, "POST", "/api/domains:batchDelete", json=[]
         )
 
+    @patch("pihole_lib.domains.make_pihole_request")
+    def test_batch_delete_non_204_returns_false(self, mock_request):
+        """Should return False, like the other batch deletes, on other 2xx codes."""
+        mock_request.return_value = Mock(status_code=200)
+        domains_client = PiHoleDomains(
+            PiHoleClient(PIHOLE_BASE_URL, TEST_SECRET_PASSWORD)
+        )
+
+        assert domains_client.batch_delete_domains([]) is False
+
+    @patch("pihole_lib.domains.make_pihole_request")
+    def test_delete_domain_uses_base_url(self, mock_request):
+        """Should build the delete path from BASE_URL."""
+        domains_client = PiHoleDomains(
+            PiHoleClient(PIHOLE_BASE_URL, TEST_SECRET_PASSWORD)
+        )
+        domains_client.BASE_URL = "/custom"
+
+        domains_client.delete_domain("a.com", DomainType.DENY, DomainKind.EXACT)
+
+        assert mock_request.call_args.args[2] == "/custom/deny/exact/a.com"
+
 
 class TestPiHoleDomainsExceptionHandling:
     """Test exception handling in domains operations."""
