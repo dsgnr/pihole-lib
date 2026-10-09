@@ -4,7 +4,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class StrictModel(BaseModel):
-    """Base model with Pydantic v2 config."""
+    """Base model for all API models.
+
+    Fields can be populated by name or alias. Despite the class name, strict
+    validation is not enabled, so unknown fields are ignored and values are
+    coerced using the Pydantic defaults.
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 
