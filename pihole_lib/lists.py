@@ -56,7 +56,11 @@ class PiHoleLists(BasePiHoleAPIClient):
         Returns:
             List of PiHoleList objects.
         """
-        endpoint = f"{self.BASE_URL}/{list_name}" if list_name else self.BASE_URL
+        endpoint = (
+            f"{self.BASE_URL}/{quote(list_name, safe='')}"
+            if list_name
+            else self.BASE_URL
+        )
         params = {"type": list_type.value} if list_type else None
 
         response = make_pihole_request(
@@ -202,7 +206,7 @@ class PiHoleLists(BasePiHoleAPIClient):
         response = make_pihole_request(
             self._client,
             "GET",
-            f"/api/search/{domain}",
+            f"/api/search/{quote(domain, safe='')}",
             params=params,
         )
         return SearchResponse.model_validate(response.json())
