@@ -132,6 +132,17 @@ class TestPiHoleClientsAddClient:
             json={"client": "192.168.1.100", "groups": [0]},
         )
 
+    @patch("pihole_lib.clients.make_pihole_request")
+    def test_add_client_empty_groups_sent_as_given(self, mock_request, clients_client):
+        """Should send an explicit empty groups list instead of the default."""
+        mock_request.return_value = make_mock_response(
+            json_data={"clients": [], "processed": None, "took": 0.001}
+        )
+
+        clients_client.add_client(client="192.168.1.100", groups=[])
+
+        assert mock_request.call_args.kwargs["json"]["groups"] == []
+
     @patch("pihole_lib.clients.check_api_errors")
     @patch("pihole_lib.clients.make_pihole_request")
     def test_add_client_api_error(
