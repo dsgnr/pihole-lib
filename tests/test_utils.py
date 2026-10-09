@@ -247,3 +247,92 @@ class TestMakePiHoleRequest:
             timeout=45,
             stream=False,
         )
+
+
+class TestSessionExpiry:
+    """Test transparent re-authentication when the session has expired."""
+
+    @staticmethod
+    def _client(session_id="stale-sid"):
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client.HEADER_SESSION_ID = "X-FTL-SID"
+        client._session_id = session_id
+        client._session = Mock()
+        client._session.headers = {"X-FTL-SID": "stale-sid"}
+        client._ensure_session = Mock()
+        return client
+
+    @staticmethod
+    def _response(status_code):
+        return Mock(status_code=status_code)
+
+    def test_reauthenticates_once_after_401(self):
+        """Should re-authenticate and retry when the session id is rejected."""
+        client = self._client()
+        ok = self._response(200)
+        client._session.request.side_effect = [self._response(401), ok]
+
+        result = make_pihole_request(client, "GET", "/api/test")
+
+        assert result is ok
+        client.authenticate.assert_called_once()
+        assert client._session.request.call_count == 2
+        assert "X-FTL-SID" not in client._session.headers
+
+    def test_second_401_is_raised(self):
+        """Should raise when the retry is rejected as well."""
+        client = self._client()
+        client._session.request.return_value = self._response(401)
+
+        with pytest.raises(PiHoleAuthenticationError):
+            make_pihole_request(client, "GET", "/api/test")
+
+        client.authenticate.assert_called_once()
+        assert client._session.request.call_count == 2
+
+    def test_403_is_not_retried(self):
+        """Should not re-authenticate on access denied."""
+        client = self._client()
+        client._session.request.return_value = self._response(403)
+
+        with pytest.raises(PiHoleAuthenticationError):
+            make_pihole_request(client, "GET", "/api/test")
+
+        client.authenticate.assert_not_called()
+        assert client._session.request.call_count == 1
+
+    def test_auth_endpoint_is_not_retried(self):
+        """Should not loop when /api/auth itself returns 401."""
+        client = self._client()
+        client._session.request.return_value = self._response(401)
+
+        with pytest.raises(PiHoleAuthenticationError):
+            make_pihole_request(client, "POST", "/api/auth", json={"password": "x"})
+
+        client.authenticate.assert_not_called()
+        assert client._session.request.call_count == 1
+
+    def test_unauthenticated_client_is_not_retried(self):
+        """Should not re-authenticate when no session was established."""
+        client = self._client(session_id=None)
+        client._session.request.return_value = self._response(401)
+
+        with pytest.raises(PiHoleAuthenticationError):
+            make_pihole_request(client, "GET", "/api/test")
+
+        client.authenticate.assert_not_called()
+
+    def test_uploads_are_not_retried(self):
+        """Should not replay a request whose file stream was consumed."""
+        client = self._client()
+        client._session.request.return_value = self._response(401)
+
+        with pytest.raises(PiHoleAuthenticationError):
+            make_pihole_request(
+                client, "POST", "/api/teleporter", files={"file": ("a.zip", b"x")}
+            )
+
+        client.authenticate.assert_not_called()
+        assert client._session.request.call_count == 1
