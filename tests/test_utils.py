@@ -71,6 +71,18 @@ class TestHandlePiHoleResponse:
         with pytest.raises(PiHoleAPIError, match="Endpoint not found"):
             handle_pihole_response(response)
 
+    @pytest.mark.parametrize("status_code", [400, 401, 403, 404, 429, 500, 418])
+    def test_exceptions_carry_status_code(self, status_code):
+        """Should expose the HTTP status code on every raised error."""
+        response = Mock()
+        response.status_code = status_code
+        response.raise_for_status.side_effect = requests.HTTPError("error")
+
+        with pytest.raises(PiHoleAPIError) as exc_info:
+            handle_pihole_response(response)
+
+        assert exc_info.value.status_code == status_code
+
     def test_other_http_errors(self):
         """Should handle other HTTP errors gracefully."""
         response = Mock()
