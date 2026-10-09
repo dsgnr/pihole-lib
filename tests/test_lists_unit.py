@@ -243,6 +243,22 @@ class TestPiHoleListsUpdateList:
         assert result.lists[0].comment == "Updated comment"
         assert result.lists[0].enabled is False
 
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_update_list_omitted_fields_not_sent(self, mock_request, lists_client):
+        """Should leave groups and enabled out of the payload when not given."""
+        mock_request.return_value = make_mock_response(
+            json_data={"lists": [], "processed": None, "took": 0.001}
+        )
+
+        lists_client.update_list(
+            address="test.com", list_type=ListType.BLOCK, comment="x"
+        )
+
+        assert mock_request.call_args.kwargs["json"] == {
+            "comment": "x",
+            "type": "block",
+        }
+
 
 class TestPiHoleListsBatchDelete:
     """Test batch list deletion functionality."""

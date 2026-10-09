@@ -27,7 +27,7 @@ class GroupRequest(StrictModel):
     comment: str | None = Field(
         None, description="User-provided free-text comment for this group"
     )
-    enabled: bool = Field(True, description="Status of group")
+    enabled: bool | None = Field(True, description="Status of group")
 
 
 class GroupProcessedSuccess(StrictModel):

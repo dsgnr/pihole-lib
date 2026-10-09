@@ -147,7 +147,7 @@ class PiHoleLists(BasePiHoleAPIClient):
         list_type: ListType,
         comment: str | None = None,
         groups: list[int] | None = None,
-        enabled: bool = True,
+        enabled: bool | None = None,
     ) -> ListsResponse:
         """Update an existing domain list in Pi-hole.
 
@@ -155,8 +155,9 @@ class PiHoleLists(BasePiHoleAPIClient):
             address: Address of the list to update.
             list_type: Type of list (ALLOW or BLOCK).
             comment: Optional comment for this list.
-            groups: Group IDs to assign (defaults to [0]).
-            enabled: Whether the list should be enabled (defaults to True).
+            groups: Group IDs to assign. If None, the current value is kept.
+            enabled: Whether the list should be enabled. If None, the current
+                value is kept.
 
         Returns:
             ListsResponse with the updated list and processing results.
@@ -164,7 +165,7 @@ class PiHoleLists(BasePiHoleAPIClient):
         request_data = UpdateListRequest(
             comment=comment,
             type=list_type,
-            groups=groups if groups is not None else [0],
+            groups=groups,
             enabled=enabled,
         )
         encoded_address = quote(address, safe="")

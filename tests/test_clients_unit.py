@@ -211,8 +211,19 @@ class TestPiHoleClientsUpdateClient:
             mock_client,
             "PUT",
             "/api/clients/12%3A34%3A56%3A78%3A9A%3ABC",
-            json={"comment": "Updated", "groups": [0]},
+            json={"comment": "Updated"},
         )
+
+    @patch("pihole_lib.clients.make_pihole_request")
+    def test_update_client_omitted_groups_not_sent(self, mock_request, clients_client):
+        """Should leave groups out of the payload when not given."""
+        mock_request.return_value = make_mock_response(
+            json_data={"clients": [], "processed": None, "took": 0.001}
+        )
+
+        clients_client.update_client(client="192.168.1.100", comment="x")
+
+        assert mock_request.call_args.kwargs["json"] == {"comment": "x"}
 
 
 class TestPiHoleClientsDeleteClient:

@@ -54,8 +54,8 @@ class UpdateListRequest(StrictModel):
 
     comment: str | None = Field(None, description="Optional comment for this list")
     type: ListType = Field(..., description="Type of list")
-    groups: list[int] = Field(..., description="Array of group IDs")
-    enabled: bool = Field(..., description="Whether the list is enabled")
+    groups: list[int] | None = Field(None, description="Array of group IDs")
+    enabled: bool | None = Field(None, description="Whether the list is enabled")
 
 
 class BatchDeleteItem(StrictModel):
