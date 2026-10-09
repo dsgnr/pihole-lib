@@ -1,10 +1,15 @@
 """Pi-hole API client."""
 
+import time
 from typing import TYPE_CHECKING, Any
 
 import requests
 
-from pihole_lib.exceptions import PiHoleAuthenticationError, PiHoleConnectionError
+from pihole_lib.exceptions import (
+    PiHoleAPIError,
+    PiHoleAuthenticationError,
+    PiHoleConnectionError,
+)
 from pihole_lib.utils import make_pihole_request
 
 if TYPE_CHECKING:
@@ -134,16 +139,15 @@ class PiHoleClient:
     _AUTH_CONNECT_RETRY_DELAY = 2.0
 
     def _post_auth(self) -> "requests.Response":
-        """POST to /api/auth with transient connection retry.
+        """POST to /api/auth, retrying transient failures.
 
         Pi-hole can briefly refuse TCP connections while FTL is restarting
-        (for example after a config change). Retry the auth request a
-        handful of times so a short outage doesn't permanently break the
-        client for the caller.
+        (for example after a config change) and rate limits repeated logins
+        with a 429 response. Both are retried a handful of times so a short
+        outage doesn't permanently break the client for the caller. Any other
+        API error is raised immediately.
         """
-        import time
-
-        last_error: PiHoleConnectionError | None = None
+        last_error: PiHoleAPIError | None = None
         for attempt in range(self._AUTH_CONNECT_RETRIES):
             try:
                 return make_pihole_request(
@@ -154,13 +158,16 @@ class PiHoleClient:
                 )
             except PiHoleConnectionError as exc:
                 last_error = exc
-                if attempt == self._AUTH_CONNECT_RETRIES - 1:
-                    break
                 # Drop any stale keep-alive sockets before retrying.
                 if self._session is not None:
                     self._session.close()
                     self._session = None
                 self._ensure_session()
+            except PiHoleAPIError as exc:
+                if exc.status_code != 429:
+                    raise
+                last_error = exc
+            if attempt < self._AUTH_CONNECT_RETRIES - 1:
                 time.sleep(self._AUTH_CONNECT_RETRY_DELAY)
 
         assert last_error is not None
@@ -171,13 +178,6 @@ class PiHoleClient:
         self._ensure_session()
 
         response = self._post_auth()
-
-        # Handle rate limiting with retry
-        if response.status_code == 429:
-            import time
-
-            time.sleep(1)
-            response = self._post_auth()
 
         data = response.json()
         session = data.get("session", {})
