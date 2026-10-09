@@ -105,6 +105,7 @@ class TestMakePiHoleRequest:
             "http://test.com/api/test",
             json=None,
             files=None,
+            data=None,
             params=None,
             timeout=30,
             stream=False,
@@ -145,10 +146,24 @@ class TestMakePiHoleRequest:
             "http://test.com/api/test",
             json=None,
             files=test_files,
+            data=None,
             params=None,
             timeout=30,
             stream=False,
         )
+
+    def test_passes_form_data(self):
+        """Should pass form fields to the request method."""
+        client = Mock()
+        client.base_url = "http://test.com"
+        client.timeout = 30
+        client._session = Mock()
+        client._ensure_session = Mock()
+        client._session.request.return_value = Mock(status_code=200)
+
+        make_pihole_request(client, "POST", "/api/test", data={"import": "{}"})
+
+        assert client._session.request.call_args.kwargs["data"] == {"import": "{}"}
 
     def test_passes_json_data(self):
         """Should pass JSON data to the request method."""
@@ -171,6 +186,7 @@ class TestMakePiHoleRequest:
             "http://test.com/api/auth",
             json=test_json,
             files=None,
+            data=None,
             params=None,
             timeout=30,
             stream=False,
@@ -214,6 +230,7 @@ class TestMakePiHoleRequest:
             "http://test.com/api/test",
             json=None,
             files=None,
+            data=None,
             params=None,
             timeout=45,
             stream=False,

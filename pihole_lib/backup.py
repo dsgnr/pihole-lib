@@ -86,7 +86,9 @@ class PiHoleBackup(BasePiHoleAPIClient):
         if not file_path_obj.exists():
             raise PiHoleAPIError(f"Backup file not found: {file_path}")
 
-        json_data = import_options.model_dump() if import_options else None
+        form_data = (
+            {"import": import_options.model_dump_json()} if import_options else None
+        )
 
         with file_path_obj.open("rb") as f:
             files = {"file": (file_path_obj.name, f, self._MIME_ZIP)}
@@ -95,7 +97,7 @@ class PiHoleBackup(BasePiHoleAPIClient):
                 "POST",
                 self.BASE_URL,
                 files=files,
-                json=json_data,
+                data=form_data,
             )
 
         result: dict[str, list[str]] = response.json()
