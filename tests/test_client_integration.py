@@ -32,7 +32,7 @@ class TestPiHoleClientAuthentication:
         )
 
         client._ensure_session()
-        client._authenticate()
+        client.authenticate()
 
         assert client._session_id is not None
         assert len(client._session_id) > 0
@@ -50,7 +50,7 @@ class TestPiHoleClientAuthentication:
         client._ensure_session()
 
         with pytest.raises(PiHoleAuthenticationError):
-            client._authenticate()
+            client.authenticate()
 
         client.close()
 
@@ -65,7 +65,7 @@ class TestPiHoleClientAuthentication:
         client._ensure_session()
 
         with pytest.raises(PiHoleAuthenticationError):
-            client._authenticate()
+            client.authenticate()
 
         client.close()
 
@@ -80,7 +80,7 @@ class TestPiHoleClientAuthentication:
         client._ensure_session()
 
         with pytest.raises(PiHoleConnectionError, match=CONNECTION_FAILED_MESSAGE):
-            client._authenticate()
+            client.authenticate()
 
         client.close()
 
@@ -141,7 +141,7 @@ class TestPiHoleClientSessionCleanup:
         )
 
         client._ensure_session()
-        client._authenticate()
+        client.authenticate()
 
         # Verify we have a session
         assert client.is_authenticated()
@@ -164,7 +164,7 @@ class TestPiHoleClientSessionCleanup:
         )
 
         client._ensure_session()
-        client._authenticate()
+        client.authenticate()
 
         # Manually corrupt the session ID to simulate failure
         client._session_id = TEST_INVALID_SESSION_ID
@@ -211,7 +211,7 @@ class TestPiHoleClientWorkflows:
 
         # Manually set up and authenticate
         client._ensure_session()
-        client._authenticate()
+        client.authenticate()
 
         assert client.is_authenticated()
         session_id = client.get_session_id()

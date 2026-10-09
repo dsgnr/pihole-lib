@@ -103,7 +103,7 @@ class PiHoleClient:
     def __enter__(self) -> "PiHoleClient":
         """Enter context manager and authenticate."""
         self._ensure_session()
-        self._authenticate()
+        self.authenticate()
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -173,7 +173,7 @@ class PiHoleClient:
         assert last_error is not None
         raise last_error
 
-    def _authenticate(self) -> None:
+    def authenticate(self) -> None:
         """Authenticate with Pi-hole."""
         self._ensure_session()
 

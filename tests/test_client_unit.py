@@ -160,3 +160,19 @@ class TestPiHoleClientPostAuth:
 
         assert mock_request.call_count == 1
         mock_sleep.assert_not_called()
+
+
+class TestPiHoleClientAuthenticate:
+    """Test the public authenticate method."""
+
+    @patch("pihole_lib.client.make_pihole_request")
+    def test_authenticate_stores_session_id(self, mock_request):
+        """authenticate() is public and stores the returned session ID."""
+        mock_request.return_value = Mock(
+            json=lambda: {"session": {"valid": True, "sid": TEST_SESSION_ID}}
+        )
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+
+        client.authenticate()
+
+        assert client.get_session_id() == TEST_SESSION_ID
