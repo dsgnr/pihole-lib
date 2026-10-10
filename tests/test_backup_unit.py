@@ -1,5 +1,6 @@
 """Unit tests for PiHoleBackup."""
 
+import json
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
@@ -114,7 +115,39 @@ class TestPiHoleBackupImport:
         result = backup.import_backup("/tmp/test.zip", options)
 
         assert result == TEST_IMPORTED_FILES
-        assert mock_request.call_args.kwargs["json"] == options.model_dump()
+        kwargs = mock_request.call_args.kwargs
+        assert json.loads(kwargs["data"]["import"]) == options.model_dump()
+        assert "json" not in kwargs
+
+    @patch("pihole_lib.backup.make_pihole_request")
+    @patch("pathlib.Path.exists", return_value=True)
+    @patch("pathlib.Path.open", new_callable=mock_open, read_data=TEST_BACKUP_CONTENT)
+    def test_import_without_options_sends_no_form_data(
+        self, mock_file, mock_exists, mock_request
+    ):
+        """Test that no import field is sent when options are omitted."""
+        backup = PiHoleBackup(make_client())
+        mock_request.return_value = Mock(json=lambda: {"files": TEST_IMPORTED_FILES})
+
+        backup.import_backup("/tmp/test.zip")
+
+        assert mock_request.call_args.kwargs["data"] is None
+
+    def test_import_options_encoded_as_multipart_field(self, tmp_path):
+        """Test that the options reach the wire as a multipart form field."""
+        archive = tmp_path / "backup.zip"
+        archive.write_bytes(TEST_BACKUP_CONTENT)
+        client = make_client()
+        client._ensure_session()
+        options = TeleporterImportOptions(config=False)
+
+        with patch("requests.Session.send") as send:
+            send.return_value = Mock(status_code=200, json=lambda: {"files": []})
+            PiHoleBackup(client).import_backup(str(archive), options)
+
+        body = send.call_args.args[0].body
+        assert b'name="import"' in body
+        assert b'"config":false' in body
 
     @pytest.mark.parametrize("extension", [".txt", ".tar", ".gz", ""])
     def test_import_invalid_extension(self, extension):

@@ -372,3 +372,69 @@ class TestPiHoleListsSearchDomains:
         assert result.search.parameters.partial is partial
         assert result.search.parameters.N == max_results
         assert result.search.parameters.debug is debug
+
+
+class TestPiHoleListsUrlEncoding:
+    """Test that list addresses and search terms are encoded in the path."""
+
+    ADDRESS = "https://example.com/list.txt?a=b#c"
+    ENCODED = "https%3A%2F%2Fexample.com%2Flist.txt%3Fa%3Db%23c"
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_get_lists_encodes_name(self, mock_request, lists_client):
+        """Should encode the list name in the path."""
+        mock_request.return_value = make_mock_response(
+            json_data={"lists": [], "took": 0.001}
+        )
+
+        lists_client.get_lists(list_name=self.ADDRESS)
+
+        assert mock_request.call_args.args[2] == f"/api/lists/{self.ENCODED}"
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_delete_list_encodes_address(self, mock_request, lists_client):
+        """Should encode the address in the path."""
+        mock_request.return_value = make_mock_response(status_code=204)
+
+        lists_client.delete_list(self.ADDRESS, ListType.BLOCK)
+
+        assert mock_request.call_args.args[2] == f"/api/lists/{self.ENCODED}"
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_update_list_encodes_address(self, mock_request, lists_client):
+        """Should encode the address in the path."""
+        mock_request.return_value = make_mock_response(
+            json_data={"lists": [], "processed": None, "took": 0.001}
+        )
+
+        lists_client.update_list(self.ADDRESS, ListType.BLOCK, comment="x")
+
+        assert mock_request.call_args.args[2] == f"/api/lists/{self.ENCODED}"
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_search_domains_encodes_term(self, mock_request, lists_client):
+        """Should encode the search term in the path."""
+        mock_request.return_value = make_mock_response(
+            json_data={
+                "search": {
+                    "domains": [],
+                    "gravity": [],
+                    "results": {
+                        "domains": {"exact": 0, "regex": 0},
+                        "gravity": {"allow": 0, "block": 0},
+                        "total": 0,
+                    },
+                    "parameters": {
+                        "N": 20,
+                        "partial": False,
+                        "domain": "a/b?c",
+                        "debug": False,
+                    },
+                },
+                "took": 0.0004,
+            }
+        )
+
+        lists_client.search_domains("a/b?c")
+
+        assert mock_request.call_args.args[2] == "/api/search/a%2Fb%3Fc"

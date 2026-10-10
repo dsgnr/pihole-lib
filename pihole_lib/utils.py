@@ -78,6 +78,7 @@ def make_pihole_request(
     endpoint: str,
     json: dict[str, Any] | list[dict[str, Any]] | None = None,
     files: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
     stream: bool = False,
 ) -> requests.Response:
@@ -89,6 +90,7 @@ def make_pihole_request(
         endpoint: The API endpoint path (e.g., "/api/info/login").
         json: Optional JSON data to send in the request body.
         files: Optional files to upload.
+        data: Optional form fields to send alongside ``files``.
         params: Optional query parameters to include in the URL.
         stream: Whether to stream the response. Defaults to False.
 
@@ -111,6 +113,7 @@ def make_pihole_request(
             f"{client.base_url}{endpoint}",
             json=json,
             files=files,
+            data=data,
             params=params,
             timeout=client.timeout,
             stream=stream,

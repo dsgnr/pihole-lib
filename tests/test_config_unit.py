@@ -43,6 +43,28 @@ class TestPiHoleConfigInit:
 class TestGetConfig:
     """Test get_config method."""
 
+    @pytest.mark.parametrize("element", [None, "dns"])
+    @pytest.mark.parametrize("detailed", [True, False])
+    @patch("pihole_lib.config.make_pihole_request")
+    def test_get_config_sends_detailed_param(
+        self, mock_request, config_client, element, detailed
+    ):
+        """Should always send the detailed flag, with or without an element."""
+        mock_request.return_value = Mock(json=lambda: {"config": {}})
+
+        config_client.get_config(element, detailed=detailed)
+
+        assert mock_request.call_args.kwargs["params"] == {"detailed": detailed}
+
+    @patch("pihole_lib.config.make_pihole_request")
+    def test_get_config_not_detailed_by_default(self, mock_request, config_client):
+        """Should default to the server default of detailed=False."""
+        mock_request.return_value = Mock(json=lambda: {"config": {}})
+
+        config_client.get_config()
+
+        assert mock_request.call_args.kwargs["params"] == {"detailed": False}
+
     @patch("pihole_lib.config.make_pihole_request")
     def test_get_config_full_success(self, mock_request, config_client):
         """Test successful full config retrieval."""
@@ -70,6 +92,7 @@ class TestGetConfig:
             config_client._client,
             "GET",
             config_client.BASE_URL,
+            params={"detailed": False},
         )
 
         # Verify the response structure
@@ -110,6 +133,7 @@ class TestGetConfig:
             config_client._client,
             "GET",
             "/api/config/dns",
+            params={"detailed": False},
         )
 
         # Verify the response structure
@@ -140,6 +164,7 @@ class TestGetConfig:
             config_client._client,
             "GET",
             "/api/config/dns/upstreams",
+            params={"detailed": False},
         )
 
         # Verify the response structure
@@ -175,6 +200,7 @@ class TestGetConfig:
             config_client._client,
             "GET",
             "/api/config/dhcp",
+            params={"detailed": False},
         )
 
         # Verify the response structure
@@ -209,6 +235,7 @@ class TestGetConfig:
             config_client._client,
             "GET",
             "/api/config/webserver",
+            params={"detailed": False},
         )
 
         # Verify the response structure

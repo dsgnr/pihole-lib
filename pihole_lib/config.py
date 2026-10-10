@@ -33,34 +33,27 @@ class PiHoleConfig(BasePiHoleAPIClient):
     BASE_URL = "/api/config"
 
     def get_config(
-        self, element: str | None = None, detailed: bool = True
+        self, element: str | None = None, detailed: bool = False
     ) -> dict[str, Any]:
         """Get Pi-hole configuration.
 
         Args:
             element: Optional configuration element path (e.g., 'dns', 'dhcp').
                     If None, returns the complete configuration.
-            detailed: Return detailed information (defaults to True).
+            detailed: Return detailed information for each setting, such as its
+                    type, default value and description (defaults to False).
 
         Returns:
             Dictionary containing the Pi-hole configuration.
         """
         endpoint = f"{self.BASE_URL}/{element}" if element else self.BASE_URL
 
-        # Only pass params if we have an element and detailed is False
-        if element and not detailed:
-            response = make_pihole_request(
-                self._client,
-                "GET",
-                endpoint,
-                params={"detailed": detailed},
-            )
-        else:
-            response = make_pihole_request(
-                self._client,
-                "GET",
-                endpoint,
-            )
+        response = make_pihole_request(
+            self._client,
+            "GET",
+            endpoint,
+            params={"detailed": detailed},
+        )
         result: dict[str, Any] = response.json()
         return dict(result["config"])
 
