@@ -133,6 +133,20 @@ class TestPiHoleGroups:
         assert result.groups[0].name == "updated_group"
         assert result.groups[0].enabled is False
 
+    @patch("pihole_lib.groups.make_pihole_request")
+    def test_update_group_omitted_enabled_not_sent(self, mock_request, groups_client):
+        """Should leave enabled out of the payload when not given."""
+        mock_request.return_value = make_mock_response(
+            json_data={"groups": [], "processed": None, "took": 0.001}
+        )
+
+        groups_client.update_group(name="family", comment="x")
+
+        assert mock_request.call_args.kwargs["json"] == {
+            "name": "family",
+            "comment": "x",
+        }
+
     @pytest.mark.parametrize(
         "status_code,expected_result",
         [

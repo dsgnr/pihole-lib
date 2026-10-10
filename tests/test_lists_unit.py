@@ -88,6 +88,19 @@ class TestPiHoleListsAddList:
     """Test list addition functionality."""
 
     @patch("pihole_lib.lists.make_pihole_request")
+    def test_add_list_empty_groups_sent_as_given(self, mock_request, lists_client):
+        """Should send an explicit empty groups list instead of the default."""
+        mock_request.return_value = make_mock_response(
+            json_data={"lists": [], "processed": None, "took": 0.001}
+        )
+
+        lists_client.add_list(
+            address="https://example.com/a.txt", list_type=ListType.BLOCK, groups=[]
+        )
+
+        assert mock_request.call_args.kwargs["json"]["groups"] == []
+
+    @patch("pihole_lib.lists.make_pihole_request")
     def test_add_list_success(self, mock_request, lists_client, mock_client):
         """Should successfully add a new list."""
         mock_request.return_value = make_mock_response(
@@ -242,6 +255,22 @@ class TestPiHoleListsUpdateList:
         assert hasattr(result, "lists")
         assert result.lists[0].comment == "Updated comment"
         assert result.lists[0].enabled is False
+
+    @patch("pihole_lib.lists.make_pihole_request")
+    def test_update_list_omitted_fields_not_sent(self, mock_request, lists_client):
+        """Should leave groups and enabled out of the payload when not given."""
+        mock_request.return_value = make_mock_response(
+            json_data={"lists": [], "processed": None, "took": 0.001}
+        )
+
+        lists_client.update_list(
+            address="test.com", list_type=ListType.BLOCK, comment="x"
+        )
+
+        assert mock_request.call_args.kwargs["json"] == {
+            "comment": "x",
+            "type": "block",
+        }
 
 
 class TestPiHoleListsBatchDelete:

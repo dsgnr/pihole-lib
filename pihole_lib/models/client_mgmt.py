@@ -41,7 +41,7 @@ class ClientUpdateRequest(StrictModel):
     comment: str | None = Field(
         None, description="User-provided free-text comment for this client"
     )
-    groups: list[int] = Field(..., description="Array of group IDs")
+    groups: list[int] | None = Field(None, description="Array of group IDs")
 
 
 class ClientBatchDeleteItem(StrictModel):

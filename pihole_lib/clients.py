@@ -101,15 +101,12 @@ class PiHoleClients(BasePiHoleAPIClient):
         Args:
             client: Client identifier to update.
             comment: Optional comment for this client.
-            groups: Group IDs to assign (defaults to [0]).
+            groups: Group IDs to assign. If None, the current value is kept.
 
         Returns:
             ClientsResponse with the updated client and processing results.
         """
-        request_data = ClientUpdateRequest(
-            comment=comment,
-            groups=groups if groups is not None else [0],
-        )
+        request_data = ClientUpdateRequest(comment=comment, groups=groups)
         encoded_client = quote(client, safe="")
         response = make_pihole_request(
             self._client,
