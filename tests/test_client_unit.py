@@ -176,3 +176,42 @@ class TestPiHoleClientAuthenticate:
         client.authenticate()
 
         assert client.get_session_id() == TEST_SESSION_ID
+
+
+class TestPiHoleClientSubClients:
+    """Test the lazily created API sub-clients."""
+
+    def test_sub_clients_not_created_on_init(self):
+        """Sub-clients should only exist once they are first accessed."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+
+        assert "info" not in vars(client)
+        _ = client.info
+        assert "info" in vars(client)
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "info",
+            "actions",
+            "backup",
+            "config",
+            "dhcp",
+            "dns",
+            "lists",
+            "groups",
+            "padd",
+            "stats",
+            "domains",
+            "network",
+            "clients",
+        ],
+    )
+    def test_sub_client_is_cached_and_bound_to_client(self, name):
+        """Each sub-client should be created once and reference the client."""
+        client = PiHoleClient(TEST_LOCALHOST_URL, password=TEST_SECRET_PASSWORD)
+
+        sub_client = getattr(client, name)
+
+        assert getattr(client, name) is sub_client
+        assert sub_client._client is client

@@ -3,7 +3,6 @@
 from urllib.parse import quote
 
 from pihole_lib.base import BasePiHoleAPIClient
-from pihole_lib.exceptions import PiHoleAPIError
 from pihole_lib.models.domains import (
     Domain,
     DomainBatchDeleteItem,
@@ -357,7 +356,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
         # URL encode the domain for safe transmission
         encoded_domain = quote(domain, safe="")
         url_path = (
-            f"/api/domains/{domain_type.value}/{domain_kind.value}/{encoded_domain}"
+            f"{self.BASE_URL}/{domain_type.value}/{domain_kind.value}/{encoded_domain}"
         )
 
         make_pihole_request(self._client, "DELETE", url_path)
@@ -369,7 +368,7 @@ class PiHoleDomains(BasePiHoleAPIClient):
             domains: List of DomainBatchDeleteItem objects specifying domains to delete.
 
         Returns:
-            True if successful.
+            True if the domains were deleted.
 
         Raises:
             PiHoleAPIError: API request failed.
@@ -406,9 +405,4 @@ class PiHoleDomains(BasePiHoleAPIClient):
 
         response = make_pihole_request(self._client, "POST", url_path, json=payload)
 
-        if response.status_code == 204:  # No Content - success
-            return True
-
-        raise PiHoleAPIError(
-            f"{response.json().get('error', {}).get('message', 'Unknown error')}"
-        )
+        return bool(response.status_code == 204)

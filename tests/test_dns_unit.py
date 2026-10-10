@@ -1,6 +1,6 @@
 """Unit tests for PiHoleDNS."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -35,29 +35,22 @@ def mock_dns_config_data():
 class TestPiHoleDNSGetConfig:
     """Test DNS configuration retrieval."""
 
-    @patch("pihole_lib.dns.PiHoleConfig")
-    def test_get_config_success(
-        self, mock_config_class, dns_client, mock_client, mock_dns_config_data
-    ):
+    def test_get_config_success(self, dns_client, mock_client, mock_dns_config_data):
         """Test successful DNS configuration retrieval."""
-        mock_config_instance = Mock()
-        mock_config_class.return_value = mock_config_instance
+        mock_config_instance = mock_client.config
         mock_config_instance.get_config.return_value = mock_dns_config_data
 
         result = dns_client.get_config()
 
-        mock_config_class.assert_called_once_with(mock_client)
         mock_config_instance.get_config.assert_called_once_with("dns")
         assert isinstance(result, DNSConfig)
         assert result.upstreams == ["8.8.8.8", "8.8.4.4"]
         assert len(result.records) == 2
         assert result.blocking_active is True
 
-    @patch("pihole_lib.dns.PiHoleConfig")
-    def test_get_config_api_error(self, mock_config_class, dns_client):
+    def test_get_config_api_error(self, dns_client, mock_client):
         """Test DNS configuration retrieval with API error."""
-        mock_config_instance = Mock()
-        mock_config_class.return_value = mock_config_instance
+        mock_config_instance = mock_client.config
         mock_config_instance.get_config.side_effect = PiHoleAPIError(
             "API request failed"
         )
@@ -69,13 +62,9 @@ class TestPiHoleDNSGetConfig:
 class TestPiHoleDNSGetRecords:
     """Test DNS records retrieval."""
 
-    @patch("pihole_lib.dns.PiHoleConfig")
-    def test_get_records_success(
-        self, mock_config_class, dns_client, mock_dns_config_data
-    ):
+    def test_get_records_success(self, dns_client, mock_client, mock_dns_config_data):
         """Test successful DNS records retrieval."""
-        mock_config_instance = Mock()
-        mock_config_class.return_value = mock_config_instance
+        mock_config_instance = mock_client.config
         mock_config_instance.get_config.return_value = mock_dns_config_data
 
         result = dns_client.get_records()
@@ -93,18 +82,16 @@ class TestPiHoleDNSGetRecords:
             ("CNAME", 1),
         ],
     )
-    @patch("pihole_lib.dns.PiHoleConfig")
     def test_get_records_filter(
         self,
-        mock_config_class,
         dns_client,
+        mock_client,
         mock_dns_config_data,
         record_type,
         expected_count,
     ):
         """Test DNS records retrieval with type filtering."""
-        mock_config_instance = Mock()
-        mock_config_class.return_value = mock_config_instance
+        mock_config_instance = mock_client.config
         mock_config_instance.get_config.return_value = mock_dns_config_data
 
         result = dns_client.get_records(record_type=record_type)
@@ -113,8 +100,7 @@ class TestPiHoleDNSGetRecords:
         for record in result:
             assert record.record_type == record_type
 
-    @patch("pihole_lib.dns.PiHoleConfig")
-    def test_get_records_invalid_type(self, mock_config_class, dns_client):
+    def test_get_records_invalid_type(self, dns_client):
         """Test DNS records retrieval with invalid type parameter."""
         with pytest.raises(ValueError, match="Invalid record type 'INVALID'"):
             dns_client.get_records(record_type="INVALID")
