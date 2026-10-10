@@ -131,10 +131,10 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
 
 ```python
 client = PiHoleClient(
-    base_url="https://pihole.local",      # Your Pi-hole's address
-    password="your-admin-password",       # Pi-hole admin password
-    timeout=60,                           # Request timeout in seconds (default: 30)
-    verify_ssl=False                      # SSL certificate verification (default: True)
+    base_url="https://pihole.local",  # Your Pi-hole's address
+    password="your-admin-password",  # Pi-hole admin password
+    timeout=60,  # Request timeout in seconds (default: 30)
+    verify_ssl=False,  # SSL certificate verification (default: True)
 )
 ```
 

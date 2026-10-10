@@ -73,7 +73,7 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     client.lists.add_list(
         address="https://example.com/blocklist.txt",
         list_type=ListType.BLOCK,
-        comment="Example blocklist"
+        comment="Example blocklist",
     )
 
     # Search domains
@@ -101,14 +101,12 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
         domain="badsite.com",
         domain_type=DomainType.DENY,
         domain_kind=DomainKind.EXACT,
-        comment="Malicious site"
+        comment="Malicious site",
     )
 
     # Add a regex pattern
     domains.add_domain(
-        domain=r".*\.ads\..*",
-        domain_type=DomainType.DENY,
-        domain_kind=DomainKind.REGEX
+        domain=r".*\.ads\..*", domain_type=DomainType.DENY, domain_kind=DomainKind.REGEX
     )
 
     # Delete a domain
@@ -146,11 +144,7 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     all_clients = clients.get_clients()
 
     # Add a client
-    clients.add_client(
-        client="192.168.1.100",
-        comment="John's laptop",
-        groups=[0]
-    )
+    clients.add_client(client="192.168.1.100", comment="John's laptop", groups=[0])
 
     # Get suggestions (unconfigured clients)
     suggestions = clients.get_client_suggestions()
@@ -170,12 +164,9 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     dns_only = config.get_config("dns")
 
     # Update configuration
-    config.update_config({
-        "dns": {
-            "upstreams": ["1.1.1.1", "1.0.0.1"],
-            "queryLogging": True
-        }
-    })
+    config.update_config(
+        {"dns": {"upstreams": ["1.1.1.1", "1.0.0.1"], "queryLogging": True}}
+    )
 
     # Add/remove config items
     config.add_config_item("dns/upstreams", "8.8.8.8")
@@ -217,7 +208,7 @@ with PiHoleClient("http://192.168.1.100", password="your-password") as client:
     options = TeleporterImportOptions(
         config=True,
         dhcp_leases=False,
-        gravity=TeleporterGravityOptions(group=True, adlist=True)
+        gravity=TeleporterGravityOptions(group=True, adlist=True),
     )
     backup.import_backup(backup_file, options)
 ```
@@ -284,7 +275,7 @@ from pihole_lib import (
     PiHoleClient,
     PiHoleAuthenticationError,
     PiHoleConnectionError,
-    PiHoleServerError
+    PiHoleServerError,
 )
 
 try:
