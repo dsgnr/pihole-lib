@@ -78,7 +78,7 @@ class PiHoleClients(BasePiHoleAPIClient):
         request_data = ClientRequest(
             client=client,
             comment=comment,
-            groups=groups or [0],
+            groups=groups if groups is not None else [0],
         )
         response = make_pihole_request(
             self._client,
@@ -108,7 +108,7 @@ class PiHoleClients(BasePiHoleAPIClient):
         """
         request_data = ClientUpdateRequest(
             comment=comment,
-            groups=groups or [0],
+            groups=groups if groups is not None else [0],
         )
         encoded_client = quote(client, safe="")
         response = make_pihole_request(
