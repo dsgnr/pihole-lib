@@ -46,9 +46,11 @@ def handle_pihole_response(response: requests.Response) -> None:
     # Handle authentication-related errors (common in Pi-hole)
     if status_code in _AUTH_ERROR_CODES:
         if status_code == 401:
-            raise PiHoleAuthenticationError("Invalid credentials")
+            raise PiHoleAuthenticationError(
+                "Invalid credentials", status_code=status_code
+            )
         else:  # 403
-            raise PiHoleAuthenticationError("Access denied")
+            raise PiHoleAuthenticationError("Access denied", status_code=status_code)
 
     # Handle common client errors (4xx) with pre-computed messages
     if status_code in _CLIENT_ERROR_MESSAGES:
@@ -58,18 +60,19 @@ def handle_pihole_response(response: requests.Response) -> None:
             error_message = None
         base_message = _CLIENT_ERROR_MESSAGES[status_code]
         raise PiHoleAPIError(
-            f"{base_message}: {error_message}" if error_message else base_message
+            f"{base_message}: {error_message}" if error_message else base_message,
+            status_code=status_code,
         )
 
     # Handle server errors (5xx)
     if status_code >= 500:
-        raise PiHoleServerError(f"Server error: {status_code}")
+        raise PiHoleServerError(f"Server error: {status_code}", status_code=status_code)
 
     # Handle any other non-200 status codes
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
-        raise PiHoleAPIError(f"HTTP error: {e}") from e
+        raise PiHoleAPIError(f"HTTP error: {e}", status_code=status_code) from e
 
 
 def make_pihole_request(
@@ -103,25 +106,44 @@ def make_pihole_request(
         PiHoleServerError: Server error (5xx status codes).
         PiHoleAPIError: Other API errors (4xx status codes).
     """
-    # Ensure the client has a session
-    client._ensure_session()
-    assert client._session is not None
+
+    def send() -> requests.Response:
+        client._ensure_session()
+        assert client._session is not None
+        try:
+            response = client._session.request(
+                method,
+                f"{client.base_url}{endpoint}",
+                json=json,
+                files=files,
+                data=data,
+                params=params,
+                timeout=client.timeout,
+                stream=stream,
+            )
+            handle_pihole_response(response)
+            return response
+        except requests.RequestException as e:
+            raise PiHoleConnectionError(f"Connection failed: {e}") from e
 
     try:
-        response = client._session.request(
-            method,
-            f"{client.base_url}{endpoint}",
-            json=json,
-            files=files,
-            data=data,
-            params=params,
-            timeout=client.timeout,
-            stream=stream,
+        return send()
+    except PiHoleAuthenticationError as e:
+        # An upload stream cannot be replayed once it has been consumed.
+        expired = (
+            e.status_code == 401
+            and client._session_id
+            and endpoint != "/api/auth"
+            and files is None
         )
-        handle_pihole_response(response)
-        return response
-    except requests.RequestException as e:
-        raise PiHoleConnectionError(f"Connection failed: {e}") from e
+        if not expired:
+            raise
+
+    client._session_id = None
+    if client._session is not None:
+        client._session.headers.pop(client.HEADER_SESSION_ID, None)
+    client.authenticate()
+    return send()
 
 
 def check_api_errors(

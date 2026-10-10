@@ -298,7 +298,7 @@ client = PiHoleClient("http://192.168.1.100", password="your-password")
 
 try:
     client._ensure_session()
-    client._authenticate()
+    client.authenticate()
 
     if client.is_authenticated():
         print(f"Session: {client.get_session_id()}")

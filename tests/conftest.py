@@ -227,7 +227,7 @@ def _ensure_live_session(client, timeout: int = 60) -> None:
         try:
             _reset_client_session(client)
             client._ensure_session()
-            client._authenticate()
+            client.authenticate()
             return
         except (PiHoleAuthenticationError, PiHoleConnectionError) as exc:
             last_error = exc
